@@ -38,7 +38,9 @@ export default function MerchantDemands() {
     volume: '',
     pickup_time: '',
     pickup_address: '',
+    pickup_location: null as { latitude: number; longitude: number } | null,
     delivery_address: '',
+    delivery_location: null as { latitude: number; longitude: number } | null,
     remarks: ''
   })
 
@@ -88,7 +90,9 @@ export default function MerchantDemands() {
       volume: '',
       pickup_time: '',
       pickup_address: '',
+      pickup_location: null,
       delivery_address: '',
+      delivery_location: null,
       remarks: ''
     })
   }
@@ -171,11 +175,80 @@ export default function MerchantDemands() {
     setFormData({ ...formData, pickup_time: newPickupTime })
   }
 
+  const handleChooseLocation = async (type: 'pickup' | 'delivery') => {
+    try {
+      const env = Taro.getEnv()
+      const isMiniApp = env === Taro.ENV_TYPE.WEAPP || env === Taro.ENV_TYPE.TT
+
+      if (!isMiniApp) {
+        Taro.showToast({
+          title: '地图定位仅在小程序中可用',
+          icon: 'none'
+        })
+        return
+      }
+
+      const location = await Taro.chooseLocation({
+        latitude: 39.90469, // 默认坐标（北京）
+        longitude: 116.40717
+      })
+
+      console.log('选择位置:', location)
+
+      if (location) {
+        const locationData = {
+          latitude: location.latitude,
+          longitude: location.longitude
+        }
+
+        if (type === 'pickup') {
+          setFormData({
+            ...formData,
+            pickup_address: location.name || location.address,
+            pickup_location: locationData
+          })
+        } else {
+          setFormData({
+            ...formData,
+            delivery_address: location.name || location.address,
+            delivery_location: locationData
+          })
+        }
+      }
+    } catch (error) {
+      console.error('选择位置失败:', error)
+      if (error.errMsg && error.errMsg.includes('cancel')) {
+        // 用户取消选择，不显示错误
+        return
+      }
+      Taro.showToast({
+        title: '选择位置失败',
+        icon: 'none'
+      })
+    }
+  }
+
   const handleSubmit = async () => {
     if (!formData.cargo_name || !formData.weight || !formData.volume ||
         !formData.pickup_time || !formData.pickup_address || !formData.delivery_address) {
       Taro.showToast({
         title: '请填写完整信息',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (!formData.pickup_location) {
+      Taro.showToast({
+        title: '请选择取货位置',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (!formData.delivery_location) {
+      Taro.showToast({
+        title: '请选择送货位置',
         icon: 'none'
       })
       return
@@ -191,7 +264,16 @@ export default function MerchantDemands() {
         method: 'POST',
         data: {
           merchant_id: userInfo.id,
-          ...formData
+          cargo_name: formData.cargo_name,
+          cargo_type: formData.cargo_type,
+          weight: formData.weight,
+          volume: formData.volume,
+          pickup_time: formData.pickup_time,
+          pickup_address: formData.pickup_address,
+          pickup_location: JSON.stringify(formData.pickup_location),
+          delivery_address: formData.delivery_address,
+          delivery_location: JSON.stringify(formData.delivery_location),
+          remarks: formData.remarks
         }
       })
 
@@ -211,7 +293,9 @@ export default function MerchantDemands() {
           volume: '',
           pickup_time: '',
           pickup_address: '',
+          pickup_location: null,
           delivery_address: '',
+          delivery_location: null,
           remarks: ''
         })
 
@@ -526,28 +610,56 @@ export default function MerchantDemands() {
                   <Label className="block text-sm font-medium mb-2">
                     <Text className="text-red-500">*</Text>取货地址
                   </Label>
-                  <View className="bg-gray-50 rounded-lg px-4 py-3">
-                    <Input
-                      className="w-full bg-transparent"
-                      placeholder="请输入取货地址"
-                      value={formData.pickup_address}
-                      onInput={(e) => setFormData({ ...formData, pickup_address: e.detail.value })}
-                    />
+                  <View className="flex gap-2">
+                    <View className="flex-1 bg-gray-50 rounded-lg px-4 py-3">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="请输入取货地址"
+                        value={formData.pickup_address}
+                        onInput={(e) => setFormData({ ...formData, pickup_address: e.detail.value })}
+                      />
+                    </View>
+                    <Button
+                      size="sm"
+                      className="bg-blue-500 px-4"
+                      onClick={() => handleChooseLocation('pickup')}
+                    >
+                      <Text className="text-xs">定位</Text>
+                    </Button>
                   </View>
+                  {formData.pickup_location && (
+                    <Text className="block text-xs text-gray-400 mt-1">
+                      已选择位置：{formData.pickup_location.latitude.toFixed(6)}, {formData.pickup_location.longitude.toFixed(6)}
+                    </Text>
+                  )}
                 </View>
 
                 <View>
                   <Label className="block text-sm font-medium mb-2">
                     <Text className="text-red-500">*</Text>送货地址
                   </Label>
-                  <View className="bg-gray-50 rounded-lg px-4 py-3">
-                    <Input
-                      className="w-full bg-transparent"
-                      placeholder="请输入送货地址"
-                      value={formData.delivery_address}
-                      onInput={(e) => setFormData({ ...formData, delivery_address: e.detail.value })}
-                    />
+                  <View className="flex gap-2">
+                    <View className="flex-1 bg-gray-50 rounded-lg px-4 py-3">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="请输入送货地址"
+                        value={formData.delivery_address}
+                        onInput={(e) => setFormData({ ...formData, delivery_address: e.detail.value })}
+                      />
+                    </View>
+                    <Button
+                      size="sm"
+                      className="bg-blue-500 px-4"
+                      onClick={() => handleChooseLocation('delivery')}
+                    >
+                      <Text className="text-xs">定位</Text>
+                    </Button>
                   </View>
+                  {formData.delivery_location && (
+                    <Text className="block text-xs text-gray-400 mt-1">
+                      已选择位置：{formData.delivery_location.latitude.toFixed(6)}, {formData.delivery_location.longitude.toFixed(6)}
+                    </Text>
+                  )}
                 </View>
 
                 <View>
