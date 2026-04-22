@@ -89,6 +89,26 @@ export class DemandsService {
     }
   }
 
+  async findByStatus(status: string) {
+    const client = getSupabaseClient()
+
+    const { data: demands, error } = await client
+      .from('demands')
+      .select('*')
+      .eq('status', status)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw new BadRequestException(`查询失败: ${error.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: demands || []
+    }
+  }
+
   async findById(id: string) {
     const client = getSupabaseClient()
     const { data: demand, error } = await client
@@ -202,6 +222,104 @@ export class DemandsService {
       code: 200,
       message: '需求已取消',
       data: demand
+    }
+  }
+
+  async accept(id: string, ownerId: string, note?: string) {
+    const client = getSupabaseClient()
+
+    // 验证车主是否存在
+    const { data: owner, error: ownerError } = await client
+      .from('users')
+      .select('id, role')
+      .eq('id', ownerId)
+      .maybeSingle()
+
+    if (ownerError || !owner) {
+      throw new BadRequestException('车主不存在')
+    }
+
+    // 验证用户角色
+    if (owner.role !== 'owner') {
+      throw new BadRequestException('只有车主可以接单')
+    }
+
+    // 检查需求是否存在
+    const { data: existingDemand, error: checkError } = await client
+      .from('demands')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingDemand) {
+      throw new NotFoundException('需求不存在')
+    }
+
+    // 检查需求状态
+    if (existingDemand.status !== 'pending') {
+      throw new BadRequestException('只有待接单的需求可以接单')
+    }
+
+    // 检查车主是否有可用车辆
+    const { data: vehicles, error: vehiclesError } = await client
+      .from('vehicles')
+      .select('*')
+      .eq('owner_id', ownerId)
+      .eq('status', 'active')
+      .maybeSingle()
+
+    if (vehiclesError || !vehicles) {
+      throw new BadRequestException('您没有可用的车辆，请先添加车辆')
+    }
+
+    // 开始事务：更新需求状态并创建订单
+    const { data: demand, error: updateError } = await client
+      .from('demands')
+      .update({
+        status: 'accepted',
+        owner_id: ownerId
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`接单失败: ${updateError.message}`)
+    }
+
+    // 创建订单
+    const { data: order, error: orderError } = await client
+      .from('orders')
+      .insert({
+        demand_id: id,
+        merchant_id: existingDemand.merchant_id,
+        owner_id: ownerId,
+        vehicle_id: vehicles.id,
+        status: 'transporting',
+        pickup_time: existingDemand.pickup_time,
+        pickup_address: existingDemand.pickup_address,
+        delivery_address: existingDemand.delivery_address,
+        remarks: note || ''
+      })
+      .select()
+      .single()
+
+    if (orderError) {
+      // 如果订单创建失败，回滚需求状态
+      await client
+        .from('demands')
+        .update({ status: 'pending', owner_id: null })
+        .eq('id', id)
+      throw new BadRequestException(`创建订单失败: ${orderError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '接单成功',
+      data: {
+        demand,
+        order
+      }
     }
   }
 }

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
@@ -25,6 +27,9 @@ interface Demand {
 export default function MerchantDemands() {
   const [demands, setDemands] = useState<Demand[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [selectedDemand, setSelectedDemand] = useState<Demand | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     cargo_name: '',
@@ -86,6 +91,69 @@ export default function MerchantDemands() {
       delivery_address: '',
       remarks: ''
     })
+  }
+
+  const handleCancelDemand = (demand: Demand) => {
+    setSelectedDemand(demand)
+    setShowCancelDialog(true)
+    setCancelReason('')
+  }
+
+  const handleCloseCancelDialog = () => {
+    setShowCancelDialog(false)
+    setSelectedDemand(null)
+    setCancelReason('')
+  }
+
+  const handleConfirmCancel = async () => {
+    if (!cancelReason.trim()) {
+      Taro.showToast({
+        title: '请输入取消原因',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (!selectedDemand) return
+
+    setLoading(true)
+
+    try {
+      const res = await Network.request({
+        url: `/api/demands/${selectedDemand.id}/cancel?id=${selectedDemand.id}`,
+        method: 'POST',
+        data: { reason: cancelReason }
+      })
+
+      console.log('取消需求响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '需求已取消',
+          icon: 'success'
+        })
+
+        setShowCancelDialog(false)
+        setSelectedDemand(null)
+        setCancelReason('')
+
+        // 重新加载需求列表
+        loadDemands()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '取消失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('取消需求失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handlePickupDateSelect = (e) => {
@@ -278,6 +346,16 @@ export default function MerchantDemands() {
                           </Badge>
                         </View>
                       </View>
+                      {demand.status === 'pending' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-500 border-red-500"
+                          onClick={() => handleCancelDemand(demand)}
+                        >
+                          <Text className="text-xs">取消</Text>
+                        </Button>
+                      )}
                     </View>
                     <View className="space-y-2 mb-3">
                       <View className="flex items-start">
@@ -506,6 +584,55 @@ export default function MerchantDemands() {
           </Card>
         )}
       </View>
+
+      {/* 取消需求弹窗 */}
+      {showCancelDialog && selectedDemand && (
+        <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+          <DialogContent className="sm:max-w-md">
+            <View className="p-6">
+              <Text className="block text-lg font-semibold mb-2">
+                取消需求
+              </Text>
+              <Text className="block text-sm text-gray-500 mb-4">
+                请确认取消需求：{selectedDemand.cargo_name}
+              </Text>
+              <Text className="block text-xs text-orange-500 mb-4">
+                提示：需求只能在取货时间前 2 小时内取消
+              </Text>
+              <View>
+                <Label className="block text-sm font-medium mb-2">
+                  <Text className="text-red-500">*</Text>取消原因
+                </Label>
+                <View className="bg-gray-50 rounded-lg p-4">
+                  <Textarea
+                    style={{ width: '100%', minHeight: '80px', backgroundColor: 'transparent' }}
+                    placeholder="请输入取消原因，如：临时取消需求、时间变更等"
+                    maxlength={200}
+                    value={cancelReason}
+                    onInput={(e) => setCancelReason(e.detail.value)}
+                  />
+                </View>
+              </View>
+              <View className="flex gap-3 mt-6">
+                <Button
+                  className="flex-1 bg-gray-200"
+                  onClick={handleCloseCancelDialog}
+                  disabled={loading}
+                >
+                  <Text>返回</Text>
+                </Button>
+                <Button
+                  className="flex-1 bg-red-500"
+                  onClick={handleConfirmCancel}
+                  disabled={loading}
+                >
+                  <Text>{loading ? '取消中...' : '确认取消'}</Text>
+                </Button>
+              </View>
+            </View>
+          </DialogContent>
+        </Dialog>
+      )}
     </View>
   )
 }
