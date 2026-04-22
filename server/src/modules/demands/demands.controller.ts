@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Body, Query, Req } from '@nestjs/common'
+import { Controller, Post, Get, Put, Body, Query, Req, Param } from '@nestjs/common'
 import { DemandsService } from './demands.service'
 import { CreateDemandDto, UpdateDemandDto } from './dto/demands.dto'
 
@@ -25,23 +25,23 @@ export class DemandsController {
   }
 
   @Get(':id')
-  async getDemandById(@Query('id') id: string) {
+  async getDemandById(@Param('id') id: string) {
     return this.demandsService.findById(id)
   }
 
   @Put(':id')
-  async updateDemand(@Query('id') id: string, @Body() updateDemandDto: UpdateDemandDto) {
+  async updateDemand(@Param('id') id: string, @Body() updateDemandDto: UpdateDemandDto) {
     return this.demandsService.update(id, updateDemandDto)
   }
 
   @Post(':id/cancel')
-  async cancelDemand(@Query('id') id: string, @Body('reason') reason: string) {
+  async cancelDemand(@Param('id') id: string, @Body('reason') reason: string) {
     return this.demandsService.cancel(id, reason)
   }
 
   @Post(':id/accept')
   async acceptDemand(
-    @Query('id') id: string,
+    @Param('id') id: string,
     @Body('ownerId') ownerId: string,
     @Body('note') note?: string
   ) {
