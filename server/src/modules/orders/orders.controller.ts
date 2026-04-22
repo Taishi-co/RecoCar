@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Body, Query } from '@nestjs/common'
+import { Controller, Post, Get, Put, Body, Query, Param } from '@nestjs/common'
 import { OrdersService } from './orders.service'
 import { CreateOrderDto } from './dto/orders.dto'
 
@@ -21,19 +21,19 @@ export class OrdersController {
   }
 
   @Get(':id')
-  async getOrderById(@Query('id') id: string) {
+  async getOrderById(@Param('id') id: string) {
     return this.ordersService.findById(id)
   }
 
   @Post(':id/start-transport')
-  async startTransport(@Query('id') id: string) {
+  async startTransport(@Param('id') id: string) {
     console.log('[OrdersController] 开始运输请求:', id)
     return this.ordersService.startTransport(id)
   }
 
   @Put(':id/complete')
   async completeOrder(
-    @Query('id') id: string,
+    @Param('id') id: string,
     @Body('pickup_photo_key') pickupPhotoKey?: string,
     @Body('delivery_photo_key') deliveryPhotoKey?: string
   ) {

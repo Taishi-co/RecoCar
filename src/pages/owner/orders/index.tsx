@@ -263,8 +263,8 @@ export default function OwnerOrders() {
     try {
       // TODO: 上传图片到TOS，这里先使用临时文件路径
       const res = await Network.request({
-        url: `/api/orders/${selectedOrder.id}/complete?id=${selectedOrder.id}`,
-        method: 'POST',
+        url: `/api/orders/${selectedOrder.id}/complete`,
+        method: 'PUT',
         data: {
           pickup_photo_key: pickupImage,
           delivery_photo_key: deliveryImage
