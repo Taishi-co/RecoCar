@@ -15,9 +15,10 @@ export class OrdersController {
   @Get()
   async getOrders(
     @Query('owner_id') ownerId?: string,
-    @Query('merchant_id') merchantId?: string
+    @Query('merchant_id') merchantId?: string,
+    @Query('status') status?: string
   ) {
-    return this.ordersService.findByUserId(ownerId, merchantId)
+    return this.ordersService.findByUserId(ownerId, merchantId, status)
   }
 
   @Get(':id')

@@ -71,7 +71,7 @@ export class OrdersService {
     }
   }
 
-  async findByUserId(ownerId?: string, merchantId?: string) {
+  async findByUserId(ownerId?: string, merchantId?: string, status?: string) {
     const client = getSupabaseClient()
 
     let query = client.from('orders').select('*')
@@ -82,6 +82,10 @@ export class OrdersService {
 
     if (merchantId) {
       query = query.eq('merchant_id', merchantId)
+    }
+
+    if (status) {
+      query = query.eq('status', status)
     }
 
     const { data: orders, error } = await query.order('created_at', { ascending: false })

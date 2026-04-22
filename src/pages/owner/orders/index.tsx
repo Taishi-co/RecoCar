@@ -95,7 +95,7 @@ export default function OwnerOrders() {
           orderList.map(async (order: Order) => {
             try {
               const demandRes = await Network.request({
-                url: `/api/demands/${order.demand_id}?id=${order.demand_id}`,
+                url: `/api/demands/${order.demand_id}`,
                 method: 'GET'
               })
 
@@ -178,7 +178,7 @@ export default function OwnerOrders() {
 
     try {
       const res = await Network.request({
-        url: `/api/orders/${selectedOrder.id}/start-transport?id=${selectedOrder.id}`,
+        url: `/api/orders/${selectedOrder.id}/start-transport`,
         method: 'POST'
       })
 
