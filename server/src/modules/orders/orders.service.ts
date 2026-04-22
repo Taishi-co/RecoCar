@@ -87,6 +87,7 @@ export class OrdersService {
     const { data: orders, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
+      console.error('[OrdersService] 查询订单失败:', error)
       throw new BadRequestException(`查询失败: ${error.message}`)
     }
 

@@ -380,6 +380,41 @@ export default function MerchantDemands() {
 
   return (
     <View className="min-h-screen bg-gray-100">
+      {/* 导航菜单 */}
+      <View className="bg-white shadow-sm">
+        <View className="px-4 py-3">
+          <View className="flex gap-2">
+            <Button
+              size="sm"
+              className="bg-blue-500"
+            >
+              <Text className="text-xs">发布需求</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/orders/index' })}
+            >
+              <Text className="text-xs">订单管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/stats/index' })}
+            >
+              <Text className="text-xs">数据统计</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/profile/index' })}
+            >
+              <Text className="text-xs">我的</Text>
+            </Button>
+          </View>
+        </View>
+      </View>
+
       <View className="px-4 py-4">
         {/* 需求列表 */}
         <Card className="bg-white rounded-lg shadow-sm mb-4">
