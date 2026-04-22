@@ -50,7 +50,7 @@ export default function Index() {
       if (mode === 'login') {
         // 登录逻辑
         const res = await Network.request({
-          url: '/auth/login',
+          url: '/api/auth/login',
           method: 'POST',
           data: { phone, password }
         })
@@ -81,7 +81,7 @@ export default function Index() {
       } else {
         // 注册逻辑
         const res = await Network.request({
-          url: '/auth/register',
+          url: '/api/auth/register',
           method: 'POST',
           data: { phone, password, name, role }
         })
