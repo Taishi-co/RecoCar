@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { View, Text } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Taro from '@tarojs/taro'
-import './index.css'
 
 export default function AdminUsers() {
   useEffect(() => {

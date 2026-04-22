@@ -1,6 +1,5 @@
 import { View, Text } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import './index.css'
 
 export default function AdminOrders() {
   return (

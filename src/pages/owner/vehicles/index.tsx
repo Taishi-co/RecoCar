@@ -3,7 +3,6 @@ import { View, Text } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Taro from '@tarojs/taro'
-import './index.css'
 
 export default function OwnerVehicles() {
   useEffect(() => {
