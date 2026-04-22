@@ -61,7 +61,7 @@ export class VehiclesService {
         battery_life: parseFloat(battery_life),
         operation_area: operation_area ? JSON.parse(operation_area) : null,
         available_hours: available_hours ? JSON.parse(available_hours) : null,
-        status: 'active', // 默认为可用状态
+        status: 'pending', // 默认待审核状态，需要后台审核通过才能使用
         photos: photoKeys.length > 0 ? JSON.stringify(photoKeys) : null,
       })
       .select()
@@ -73,7 +73,7 @@ export class VehiclesService {
 
     return {
       code: 200,
-      message: '车辆注册成功',
+      message: '车辆注册成功，等待后台审核',
       data: vehicle
     }
   }
@@ -212,6 +212,12 @@ export class VehiclesService {
       throw new NotFoundException('车辆不存在')
     }
 
+    // 验证状态值
+    const validStatuses = ['pending', 'active', 'rejected', 'inactive']
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException('无效的状态值')
+    }
+
     // 更新状态
     const { data: vehicle, error: updateError } = await client
       .from('vehicles')
@@ -227,6 +233,54 @@ export class VehiclesService {
     return {
       code: 200,
       message: '状态更新成功',
+      data: vehicle
+    }
+  }
+
+  async review(id: string, action: string, reason?: string) {
+    const client = getSupabaseClient()
+
+    // 检查车辆是否存在
+    const { data: existingVehicle, error: checkError } = await client
+      .from('vehicles')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingVehicle) {
+      throw new NotFoundException('车辆不存在')
+    }
+
+    // 验证审核动作
+    if (action !== 'approve' && action !== 'reject') {
+      throw new BadRequestException('无效的审核动作')
+    }
+
+    // 更新状态
+    const status = action === 'approve' ? 'active' : 'rejected'
+    const updateData: any = { status }
+
+    // 如果拒绝，记录拒绝原因
+    if (action === 'reject' && reason) {
+      updateData.remarks = reason
+    }
+
+    const { data: vehicle, error: updateError } = await client
+      .from('vehicles')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`审核失败: ${updateError.message}`)
+    }
+
+    const message = action === 'approve' ? '车辆审核通过' : '车辆已拒绝'
+
+    return {
+      code: 200,
+      message,
       data: vehicle
     }
   }

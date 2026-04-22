@@ -180,6 +180,13 @@ export default function AdminUsers() {
             <Button
               size="sm"
               variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/admin/vehicles/index' })}
+            >
+              <Text className="text-xs">车辆审核</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/admin/orders/index' })}
             >
               <Text className="text-xs">订单管理</Text>

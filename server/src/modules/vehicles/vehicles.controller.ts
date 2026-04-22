@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Body, UseInterceptors, UploadedFile, Query, ParseIntPipe } from '@nestjs/common'
+import { Controller, Post, Get, Put, Body, UseInterceptors, UploadedFile, Query, ParseIntPipe, Param } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { VehiclesService } from './vehicles.service'
 import { CreateVehicleDto, UpdateVehicleDto } from './dto/vehicles.dto'
@@ -23,14 +23,14 @@ export class VehiclesController {
   }
 
   @Get(':id')
-  async getVehicleById(@Query('id') id: string) {
+  async getVehicleById(@Param('id') id: string) {
     return this.vehiclesService.findById(id)
   }
 
   @Put(':id')
   @UseInterceptors(FileInterceptor('photos'))
   async updateVehicle(
-    @Query('id') id: string,
+    @Param('id') id: string,
     @UploadedFile() photos: any,
     @Body() updateVehicleDto: UpdateVehicleDto
   ) {
@@ -39,9 +39,19 @@ export class VehiclesController {
 
   @Put(':id/status')
   async updateVehicleStatus(
-    @Query('id') id: string,
+    @Param('id') id: string,
     @Body('status') status: string
   ) {
     return this.vehiclesService.updateStatus(id, status)
+  }
+
+  @Post(':id/review')
+  async reviewVehicle(
+    @Param('id') id: string,
+    @Body('action') action: string,
+    @Body('reason') reason?: string
+  ) {
+    console.log('[VehiclesController] 车辆审核请求 - id:', id, 'action:', action, 'reason:', reason)
+    return this.vehiclesService.review(id, action, reason)
   }
 }
