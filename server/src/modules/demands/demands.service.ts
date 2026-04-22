@@ -263,9 +263,10 @@ export class DemandsService {
     // 检查车主是否有可用车辆
     const { data: vehicles, error: vehiclesError } = await client
       .from('vehicles')
-      .select('*')
+      .select('id')
       .eq('owner_id', ownerId)
       .eq('status', 'active')
+      .limit(1)
       .maybeSingle()
 
     if (vehiclesError || !vehicles) {

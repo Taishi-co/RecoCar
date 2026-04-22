@@ -61,7 +61,7 @@ export class VehiclesService {
         battery_life: parseFloat(battery_life),
         operation_area: operation_area ? JSON.parse(operation_area) : null,
         available_hours: available_hours ? JSON.parse(available_hours) : null,
-        status: 'pending', // 默认待审核
+        status: 'active', // 默认为可用状态
         photos: photoKeys.length > 0 ? JSON.stringify(photoKeys) : null,
       })
       .select()
@@ -73,7 +73,7 @@ export class VehiclesService {
 
     return {
       code: 200,
-      message: '车辆注册成功，等待审核',
+      message: '车辆注册成功',
       data: vehicle
     }
   }
