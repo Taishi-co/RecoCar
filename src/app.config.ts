@@ -8,6 +8,8 @@ export default typeof definePageConfig === 'function'
         'pages/owner/stats/index',         // 车主端-统计
         'pages/owner/profile/index',       // 车主端-我的
         'pages/merchant/demands/index',    // 需求方端-发布需求
+        'pages/merchant/demands/publish',  // 需求方端-发布需求表单
+        'pages/merchant/demands/list',     // 需求方端-需求列表
         'pages/merchant/orders/index',     // 需求方端-订单管理
         'pages/merchant/stats/index',      // 需求方端-统计
         'pages/merchant/profile/index',    // 需求方端-我的
@@ -33,6 +35,8 @@ export default typeof definePageConfig === 'function'
         'pages/owner/stats/index',         // 车主端-统计
         'pages/owner/profile/index',       // 车主端-我的
         'pages/merchant/demands/index',    // 需求方端-发布需求
+        'pages/merchant/demands/publish',  // 需求方端-发布需求表单
+        'pages/merchant/demands/list',     // 需求方端-需求列表
         'pages/merchant/orders/index',     // 需求方端-订单管理
         'pages/merchant/stats/index',      // 需求方端-统计
         'pages/merchant/profile/index',    // 需求方端-我的
