@@ -119,11 +119,11 @@ export default function Index() {
 
   const switchTabByRole = (userRole: string) => {
     if (userRole === 'owner') {
-      Taro.switchTab({ url: '/pages/owner/vehicles/index' })
+      Taro.redirectTo({ url: '/pages/owner/vehicles/index' })
     } else if (userRole === 'merchant') {
-      Taro.switchTab({ url: '/pages/merchant/demands/index' })
+      Taro.redirectTo({ url: '/pages/merchant/demands/index' })
     } else if (userRole === 'admin') {
-      Taro.switchTab({ url: '/pages/admin/users/index' })
+      Taro.redirectTo({ url: '/pages/admin/users/index' })
     }
   }
 
