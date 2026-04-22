@@ -109,10 +109,24 @@ export default function OwnerDemands() {
     setLoading(true)
 
     try {
+      // 获取当前车主信息
+      const userInfo = Taro.getStorageSync('userInfo')
+      if (!userInfo || userInfo.role !== 'owner') {
+        setLoading(false)
+        Taro.showToast({
+          title: '请先登录',
+          icon: 'none'
+        })
+        return
+      }
+
       const res = await Network.request({
-        url: `/api/demands/${selectedDemand.id}/accept?id=${selectedDemand.id}`,
+        url: `/api/demands/${selectedDemand.id}/accept`,
         method: 'POST',
-        data: { note: acceptNote }
+        data: {
+          ownerId: userInfo.id,
+          note: acceptNote
+        }
       })
 
       console.log('接单响应:', res.data)

@@ -40,8 +40,11 @@ export class DemandsController {
   }
 
   @Post(':id/accept')
-  async acceptDemand(@Query('id') id: string, @Req() req, @Body('note') note?: string) {
-    const ownerId = req.user?.id
+  async acceptDemand(
+    @Query('id') id: string,
+    @Body('ownerId') ownerId: string,
+    @Body('note') note?: string
+  ) {
     console.log('[DemandsController] 接单请求 - demandId:', id, 'ownerId:', ownerId, 'note:', note)
     return this.demandsService.accept(id, ownerId, note)
   }
