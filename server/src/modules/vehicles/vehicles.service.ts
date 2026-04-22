@@ -93,10 +93,26 @@ export class VehiclesService {
       throw new BadRequestException(`查询失败: ${error.message}`)
     }
 
+    // 为每个车辆查询车主信息
+    const vehiclesWithOwner = await Promise.all(
+      (vehicles || []).map(async (vehicle) => {
+        const { data: owner, error: ownerError } = await client
+          .from('users')
+          .select('id, phone, role, name')
+          .eq('id', vehicle.owner_id)
+          .maybeSingle()
+
+        return {
+          ...vehicle,
+          owner: ownerError ? null : owner
+        }
+      })
+    )
+
     return {
       code: 200,
       message: '查询成功',
-      data: vehicles || []
+      data: vehiclesWithOwner
     }
   }
 

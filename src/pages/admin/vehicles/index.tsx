@@ -8,6 +8,13 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
+interface VehicleOwner {
+  id: string
+  phone: string
+  role: string
+  name?: string
+}
+
 interface Vehicle {
   id: string
   owner_id: string
@@ -21,10 +28,7 @@ interface Vehicle {
   photos: string | null
   remarks: string | null
   created_at: string
-  owner?: {
-    phone: string
-    role: string
-  }
+  owner?: VehicleOwner
 }
 
 export default function AdminVehicles() {
@@ -71,27 +75,10 @@ export default function AdminVehicles() {
           ? vehicleList.filter((v: Vehicle) => v.status === filterStatus)
           : vehicleList
 
-        // 为每个车辆查询车主信息
-        const vehiclesWithOwner = await Promise.all(
-          filteredVehicles.map(async (vehicle: Vehicle) => {
-            try {
-              const userRes = await Network.request({
-                url: `/api/users/${vehicle.owner_id}`,
-                method: 'GET'
-              })
+        console.log('过滤后的车辆列表:', filteredVehicles)
+        console.log('第一个车辆的车主信息:', filteredVehicles[0]?.owner)
 
-              if (userRes.data.code === 200 && userRes.data.data) {
-                vehicle.owner = userRes.data.data
-              }
-            } catch (error) {
-              console.error('查询车主信息失败:', error)
-            }
-
-            return vehicle
-          })
-        )
-
-        setVehicles(vehiclesWithOwner)
+        setVehicles(filteredVehicles)
       } else {
         Taro.showToast({
           title: res.data.message || '加载失败',
@@ -373,7 +360,9 @@ export default function AdminVehicles() {
                     <View className="space-y-1 text-sm text-gray-600">
                       <View>
                         <Text className="block text-gray-500 text-xs">车主</Text>
-                        <Text className="block">{vehicle.owner?.phone || '未知'}</Text>
+                        <Text className="block">
+                          {vehicle.owner?.name || vehicle.owner?.phone || '未知'}
+                        </Text>
                       </View>
                       <View>
                         <Text className="block text-gray-500 text-xs">载重</Text>
@@ -424,7 +413,9 @@ export default function AdminVehicles() {
                 </View>
                 <View>
                   <Text className="block text-gray-500 text-xs mb-1">车主</Text>
-                  <Text className="block">{selectedVehicle.owner?.phone || '未知'}</Text>
+                  <Text className="block">
+                    {selectedVehicle.owner?.name || selectedVehicle.owner?.phone || '未知'}
+                  </Text>
                 </View>
                 <View>
                   <Text className="block text-gray-500 text-xs mb-1">载重</Text>
