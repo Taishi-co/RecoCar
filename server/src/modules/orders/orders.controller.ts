@@ -25,8 +25,19 @@ export class OrdersController {
     return this.ordersService.findById(id)
   }
 
+  @Post(':id/start-transport')
+  async startTransport(@Query('id') id: string) {
+    console.log('[OrdersController] 开始运输请求:', id)
+    return this.ordersService.startTransport(id)
+  }
+
   @Put(':id/complete')
-  async completeOrder(@Query('id') id: string) {
-    return this.ordersService.complete(id)
+  async completeOrder(
+    @Query('id') id: string,
+    @Body('pickup_photo_key') pickupPhotoKey?: string,
+    @Body('delivery_photo_key') deliveryPhotoKey?: string
+  ) {
+    console.log('[OrdersController] 完成订单请求:', id, pickupPhotoKey, deliveryPhotoKey)
+    return this.ordersService.complete(id, pickupPhotoKey, deliveryPhotoKey)
   }
 }

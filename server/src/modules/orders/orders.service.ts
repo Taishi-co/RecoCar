@@ -117,7 +117,7 @@ export class OrdersService {
     }
   }
 
-  async complete(id: string) {
+  async startTransport(id: string) {
     const client = getSupabaseClient()
 
     // 检查订单是否存在
@@ -131,12 +131,66 @@ export class OrdersService {
       throw new NotFoundException('订单不存在')
     }
 
+    // 检查订单状态
+    if (existingOrder.status !== 'accepted') {
+      throw new BadRequestException('只有已接单的订单可以开始运输')
+    }
+
+    // 更新订单状态为运输中
+    const { data: order, error: updateError } = await client
+      .from('orders')
+      .update({
+        status: 'in_transit',
+        pickup_time: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`开始运输失败: ${updateError.message}`)
+    }
+
+    // 更新需求状态为运输中
+    await client
+      .from('demands')
+      .update({ status: 'in_transit' })
+      .eq('id', existingOrder.demand_id)
+
+    return {
+      code: 200,
+      message: '已开始运输',
+      data: order
+    }
+  }
+
+  async complete(id: string, pickupPhotoKey?: string, deliveryPhotoKey?: string) {
+    const client = getSupabaseClient()
+
+    // 检查订单是否存在
+    const { data: existingOrder, error: checkError } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingOrder) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 检查订单状态
+    if (existingOrder.status !== 'in_transit') {
+      throw new BadRequestException('只有运输中的订单可以完成')
+    }
+
     // 更新订单状态为已完成
     const { data: order, error: updateError } = await client
       .from('orders')
       .update({
         status: 'completed',
-        complete_time: new Date().toISOString()
+        complete_time: new Date().toISOString(),
+        pickup_photo_key: pickupPhotoKey || existingOrder.pickup_photo_key,
+        delivery_photo_key: deliveryPhotoKey || existingOrder.delivery_photo_key
       })
       .eq('id', id)
       .select()
