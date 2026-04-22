@@ -323,4 +323,81 @@ export class DemandsService {
       }
     }
   }
+
+  async getMerchantStats(merchantId: string) {
+    const client = getSupabaseClient()
+
+    // 获取所有需求数据
+    const { data: demands, error: demandsError } = await client
+      .from('demands')
+      .select('*')
+      .eq('merchant_id', merchantId)
+
+    if (demandsError) {
+      throw new BadRequestException(`查询失败: ${demandsError.message}`)
+    }
+
+    // 统计各状态数量
+    const statusCounts = {
+      pending: 0,
+      accepted: 0,
+      in_transit: 0,
+      completed: 0,
+      cancelled: 0
+    }
+
+    // 统计货品类型
+    const cargoTypeCounts = {
+      normal: 0,
+      fresh: 0,
+      fragile: 0
+    }
+
+    // 计算总重量和总体积
+    let totalWeight = 0
+    let totalVolume = 0
+
+    demands.forEach(demand => {
+      // 状态统计
+      if (demand.status in statusCounts) {
+        statusCounts[demand.status as keyof typeof statusCounts]++
+      }
+
+      // 货品类型统计
+      if (demand.cargo_type in cargoTypeCounts) {
+        cargoTypeCounts[demand.cargo_type as keyof typeof cargoTypeCounts]++
+      }
+
+      // 重量和体积统计（仅统计已完成的需求）
+      if (demand.status === 'completed') {
+        totalWeight += demand.weight
+        totalVolume += demand.volume
+      }
+    })
+
+    // 获取最近的需求（最近5条）
+    const { data: recentDemands, error: recentError } = await client
+      .from('demands')
+      .select('*')
+      .eq('merchant_id', merchantId)
+      .order('created_at', { ascending: false })
+      .limit(5)
+
+    if (recentError) {
+      throw new BadRequestException(`查询最近需求失败: ${recentError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: {
+        total_demands: demands.length,
+        status_counts: statusCounts,
+        cargo_type_counts: cargoTypeCounts,
+        total_weight: totalWeight,
+        total_volume: totalVolume,
+        recent_demands: recentDemands || []
+      }
+    }
+  }
 }

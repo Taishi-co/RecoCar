@@ -49,4 +49,10 @@ export class DemandsController {
     console.log('[DemandsController] 接单请求 - demandId:', id, 'ownerId:', ownerId, 'vehicleId:', vehicleId, 'note:', note)
     return this.demandsService.accept(id, ownerId, vehicleId, note)
   }
+
+  @Get('stats/merchant')
+  async getMerchantStats(@Query('merchant_id') merchantId: string) {
+    console.log('[DemandsController] 获取需求方统计 - merchantId:', merchantId)
+    return this.demandsService.getMerchantStats(merchantId)
+  }
 }
