@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { View, Text, Picker } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -86,6 +86,21 @@ export default function MerchantDemands() {
       delivery_address: '',
       remarks: ''
     })
+  }
+
+  const handlePickupDateSelect = (e) => {
+    const date = e.detail.value
+    const currentDate = formData.pickup_time ? new Date(formData.pickup_time) : new Date()
+    const time = currentDate.toTimeString().slice(0, 5)
+    const newPickupTime = `${date} ${time}:00`
+    setFormData({ ...formData, pickup_time: newPickupTime })
+  }
+
+  const handlePickupTimeSelect = (e) => {
+    const time = e.detail.value
+    const date = formData.pickup_time ? formData.pickup_time.split(' ')[0] : new Date().toISOString().slice(0, 10)
+    const newPickupTime = `${date} ${time}:00`
+    setFormData({ ...formData, pickup_time: newPickupTime })
   }
 
   const handleSubmit = async () => {
@@ -401,13 +416,31 @@ export default function MerchantDemands() {
                   <Label className="block text-sm font-medium mb-2">
                     <Text className="text-red-500">*</Text>取货时间
                   </Label>
-                  <View className="bg-gray-50 rounded-lg px-4 py-3">
-                    <Input
-                      className="w-full bg-transparent"
-                      placeholder="如：2024-02-20 14:00"
-                      value={formData.pickup_time}
-                      onInput={(e) => setFormData({ ...formData, pickup_time: e.detail.value })}
-                    />
+                  <View className="flex gap-3">
+                    <Picker
+                      mode="date"
+                      value={formData.pickup_time ? formData.pickup_time.split(' ')[0] : ''}
+                      onChange={handlePickupDateSelect}
+                    >
+                      <View className="flex-1 bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
+                        <Text className={`text-sm ${formData.pickup_time ? 'text-gray-900' : 'text-gray-400'}`}>
+                          {formData.pickup_time ? formData.pickup_time.split(' ')[0] : '选择日期'}
+                        </Text>
+                        <Text className="text-gray-400">📅</Text>
+                      </View>
+                    </Picker>
+                    <Picker
+                      mode="time"
+                      value={formData.pickup_time ? formData.pickup_time.split(' ')[1].slice(0, 5) : ''}
+                      onChange={handlePickupTimeSelect}
+                    >
+                      <View className="flex-1 bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
+                        <Text className={`text-sm ${formData.pickup_time ? 'text-gray-900' : 'text-gray-400'}`}>
+                          {formData.pickup_time ? formData.pickup_time.split(' ')[1].slice(0, 5) : '选择时间'}
+                        </Text>
+                        <Text className="text-gray-400">⏰</Text>
+                      </View>
+                    </Picker>
                   </View>
                 </View>
 
