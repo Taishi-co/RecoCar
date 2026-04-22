@@ -14,7 +14,17 @@ const storage = new S3Storage({
 @Injectable()
 export class VehiclesService {
   async create(createVehicleDto: CreateVehicleDto, photos?: any) {
-    const { owner_id, vehicle_type, load_capacity, volume, battery_life, operation_area, available_hours } = createVehicleDto
+    const {
+      owner_id,
+      vehicle_type,
+      license_plate,
+      load_capacity,
+      volume,
+      battery_life,
+      has_cold_chain,
+      operation_area,
+      available_hours
+    } = createVehicleDto
 
     // 验证用户是否存在
     const client = getSupabaseClient()
@@ -56,9 +66,11 @@ export class VehiclesService {
       .insert({
         owner_id,
         vehicle_type,
+        license_plate,
         load_capacity: parseFloat(load_capacity),
         volume: parseFloat(volume),
         battery_life: parseFloat(battery_life),
+        has_cold_chain: has_cold_chain === 'true',
         operation_area: operation_area ? JSON.parse(operation_area) : null,
         available_hours: available_hours ? JSON.parse(available_hours) : null,
         status: 'pending', // 默认待审核状态，需要后台审核通过才能使用
@@ -184,10 +196,14 @@ export class VehiclesService {
 
     // 更新车辆信息
     const updateData: any = {
-      vehicle_type: updateVehicleDto.vehicle_type,
+      vehicle_type: updateVehicleDto.vehicle_type || existingVehicle.vehicle_type,
+      license_plate: updateVehicleDto.license_plate || existingVehicle.license_plate,
       load_capacity: updateVehicleDto.load_capacity ? parseFloat(updateVehicleDto.load_capacity) : existingVehicle.load_capacity,
       volume: updateVehicleDto.volume ? parseFloat(updateVehicleDto.volume) : existingVehicle.volume,
       battery_life: updateVehicleDto.battery_life ? parseFloat(updateVehicleDto.battery_life) : existingVehicle.battery_life,
+      has_cold_chain: updateVehicleDto.has_cold_chain !== undefined
+        ? updateVehicleDto.has_cold_chain === 'true'
+        : existingVehicle.has_cold_chain,
       operation_area: updateVehicleDto.operation_area ? JSON.parse(updateVehicleDto.operation_area) : existingVehicle.operation_area,
       available_hours: updateVehicleDto.available_hours ? JSON.parse(updateVehicleDto.available_hours) : existingVehicle.available_hours,
     }

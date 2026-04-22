@@ -19,9 +19,11 @@ interface Vehicle {
   id: string
   owner_id: string
   vehicle_type: string
+  license_plate: string
   load_capacity: number
   volume: number
   battery_life: number
+  has_cold_chain: boolean
   operation_area: any
   available_hours: any
   status: string
@@ -340,6 +342,11 @@ export default function AdminVehicles() {
                               {getStatusText(vehicle.status)}
                             </Text>
                           </Badge>
+                          {vehicle.has_cold_chain && (
+                            <Badge className="bg-cyan-500">
+                              <Text className="text-white text-xs">冷链</Text>
+                            </Badge>
+                          )}
                         </View>
                       </View>
                       <View className="flex gap-2">
@@ -365,6 +372,10 @@ export default function AdminVehicles() {
                         </Text>
                       </View>
                       <View>
+                        <Text className="block text-gray-500 text-xs">车牌号</Text>
+                        <Text className="block">{vehicle.license_plate || '未填写'}</Text>
+                      </View>
+                      <View>
                         <Text className="block text-gray-500 text-xs">载重</Text>
                         <Text className="block">{vehicle.load_capacity} kg</Text>
                       </View>
@@ -382,6 +393,14 @@ export default function AdminVehicles() {
                           {new Date(vehicle.created_at).toLocaleString('zh-CN')}
                         </Text>
                       </View>
+                      {vehicle.photos && (
+                        <View>
+                          <Text className="block text-gray-500 text-xs">车辆照片</Text>
+                          <Text className="block text-blue-500">
+                            已上传 {JSON.parse(vehicle.photos).length} 张照片
+                          </Text>
+                        </View>
+                      )}
                       {vehicle.remarks && (
                         <View>
                           <Text className="block text-gray-500 text-xs">拒绝原因</Text>
@@ -412,6 +431,10 @@ export default function AdminVehicles() {
                   <Text className="block">{selectedVehicle.vehicle_type}</Text>
                 </View>
                 <View>
+                  <Text className="block text-gray-500 text-xs mb-1">车牌号</Text>
+                  <Text className="block">{selectedVehicle.license_plate || '未填写'}</Text>
+                </View>
+                <View>
                   <Text className="block text-gray-500 text-xs mb-1">车主</Text>
                   <Text className="block">
                     {selectedVehicle.owner?.name || selectedVehicle.owner?.phone || '未知'}
@@ -425,6 +448,20 @@ export default function AdminVehicles() {
                   <Text className="block text-gray-500 text-xs mb-1">容积</Text>
                   <Text className="block">{selectedVehicle.volume} m³</Text>
                 </View>
+                <View>
+                  <Text className="block text-gray-500 text-xs mb-1">冷链能力</Text>
+                  <Text className="block">
+                    {selectedVehicle.has_cold_chain ? '支持冷链运输' : '不支持冷链运输'}
+                  </Text>
+                </View>
+                {selectedVehicle.photos && (
+                  <View>
+                    <Text className="block text-gray-500 text-xs mb-1">车辆照片</Text>
+                    <Text className="block text-blue-500">
+                      已上传 {JSON.parse(selectedVehicle.photos).length} 张照片
+                    </Text>
+                  </View>
+                )}
               </View>
 
               <View className="mb-4">

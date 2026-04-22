@@ -12,9 +12,11 @@ import { Network } from '@/network'
 interface Vehicle {
   id: string
   vehicle_type: string
+  license_plate: string
   load_capacity: number
   volume: number
   battery_life: number
+  has_cold_chain: boolean
   status: string
   photos: any
   created_at: string
@@ -26,9 +28,11 @@ export default function OwnerVehicles() {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     vehicle_type: '',
+    license_plate: '',
     load_capacity: '',
     volume: '',
-    battery_life: ''
+    battery_life: '',
+    has_cold_chain: 'false'
   })
 
   useEffect(() => {
@@ -72,14 +76,16 @@ export default function OwnerVehicles() {
     setShowAddForm(false)
     setFormData({
       vehicle_type: '',
+      license_plate: '',
       load_capacity: '',
       volume: '',
-      battery_life: ''
+      battery_life: '',
+      has_cold_chain: 'false'
     })
   }
 
   const handleSubmit = async () => {
-    if (!formData.vehicle_type || !formData.load_capacity || !formData.volume || !formData.battery_life) {
+    if (!formData.vehicle_type || !formData.license_plate || !formData.load_capacity || !formData.volume || !formData.battery_life) {
       Taro.showToast({
         title: '请填写完整信息',
         icon: 'none'
@@ -112,9 +118,11 @@ export default function OwnerVehicles() {
         setShowAddForm(false)
         setFormData({
           vehicle_type: '',
+          license_plate: '',
           load_capacity: '',
           volume: '',
-          battery_life: ''
+          battery_life: '',
+          has_cold_chain: 'false'
         })
 
         // 重新加载车辆列表
@@ -276,12 +284,24 @@ export default function OwnerVehicles() {
                         <Text className="block font-medium text-base mb-1">
                           {vehicle.vehicle_type}
                         </Text>
-                        <View className="flex items-center gap-2">
+                        <View className="flex items-center gap-2 mb-1">
+                          <Text className="text-xs text-gray-600">
+                            车牌号: {vehicle.license_plate || '未填写'}
+                          </Text>
+                        </View>
+                        <View className="flex items-center gap-2 mb-1">
                           <Badge className={getStatusColor(vehicle.status)}>
                             <Text className="text-white text-xs">
                               {getStatusText(vehicle.status)}
                             </Text>
                           </Badge>
+                          {vehicle.has_cold_chain && (
+                            <Badge className="bg-cyan-500">
+                              <Text className="text-white text-xs">冷链</Text>
+                            </Badge>
+                          )}
+                        </View>
+                        <View className="flex items-center gap-2">
                           <Text className="text-xs text-gray-500">
                             载重: {vehicle.load_capacity}kg | 体积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
                           </Text>
@@ -331,6 +351,20 @@ export default function OwnerVehicles() {
 
                 <View>
                   <Label className="block text-sm font-medium mb-2">
+                    <Text className="text-red-500">*</Text>车牌号
+                  </Label>
+                  <View className="bg-gray-50 rounded-lg px-4 py-3">
+                    <Input
+                      className="w-full bg-transparent"
+                      placeholder="如：京A12345"
+                      value={formData.license_plate}
+                      onInput={(e) => setFormData({ ...formData, license_plate: e.detail.value })}
+                    />
+                  </View>
+                </View>
+
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
                     <Text className="text-red-500">*</Text>载重（公斤）
                   </Label>
                   <View className="bg-gray-50 rounded-lg px-4 py-3">
@@ -371,6 +405,21 @@ export default function OwnerVehicles() {
                       value={formData.battery_life}
                       onInput={(e) => setFormData({ ...formData, battery_life: e.detail.value })}
                     />
+                  </View>
+                </View>
+
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    是否有冷链能力
+                  </Label>
+                  <View className="flex items-center gap-3">
+                    <Switch
+                      checked={formData.has_cold_chain === 'true'}
+                      onCheckedChange={(checked: boolean) => setFormData({ ...formData, has_cold_chain: checked ? 'true' : 'false' })}
+                    />
+                    <Text className="text-sm text-gray-600">
+                      {formData.has_cold_chain === 'true' ? '支持冷链运输' : '不支持冷链运输'}
+                    </Text>
                   </View>
                 </View>
 
