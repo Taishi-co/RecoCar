@@ -152,6 +152,48 @@ export default function OwnerDemands() {
 
   return (
     <View className="min-h-screen bg-gray-100">
+      {/* 导航菜单 */}
+      <View className="bg-white shadow-sm">
+        <View className="px-4 py-3">
+          <View className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/vehicles/index' })}
+            >
+              <Text className="text-xs">车辆管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              className="bg-blue-500"
+            >
+              <Text className="text-xs">接单大厅</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/orders/index' })}
+            >
+              <Text className="text-xs">订单管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/stats/index' })}
+            >
+              <Text className="text-xs">收益统计</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/profile/index' })}
+            >
+              <Text className="text-xs">我的</Text>
+            </Button>
+          </View>
+        </View>
+      </View>
+
       <View className="px-4 py-4">
         <Card className="bg-white rounded-lg shadow-sm">
           <CardHeader>
