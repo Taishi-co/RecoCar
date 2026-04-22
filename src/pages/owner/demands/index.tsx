@@ -9,6 +9,17 @@ import { Textarea } from '@/components/ui/textarea'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
+interface Vehicle {
+  id: string
+  vehicle_type: string
+  license_plate: string
+  load_capacity: number
+  volume: number
+  battery_life: number
+  has_cold_chain: boolean
+  status: string
+}
+
 interface Demand {
   id: string
   cargo_name: string
@@ -34,6 +45,8 @@ export default function OwnerDemands() {
   const [showAcceptDialog, setShowAcceptDialog] = useState(false)
   const [selectedDemand, setSelectedDemand] = useState<Demand | null>(null)
   const [acceptNote, setAcceptNote] = useState('')
+  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('')
 
   useEffect(() => {
     loadDemands()
@@ -91,20 +104,59 @@ export default function OwnerDemands() {
     return colors[type] || 'bg-gray-500'
   }
 
-  const handleAcceptDemand = (demand: Demand) => {
+  const handleAcceptDemand = async (demand: Demand) => {
     setSelectedDemand(demand)
     setShowAcceptDialog(true)
     setAcceptNote('')
+    setSelectedVehicleId('')
+
+    // 加载车主的可用车辆
+    try {
+      const res = await Network.request({
+        url: '/api/vehicles',
+        method: 'GET'
+      })
+
+      console.log('车辆列表响应:', res.data)
+
+      if (res.data.code === 200) {
+        const vehicleList = res.data.data || []
+        // 只显示状态为 active 的车辆
+        const activeVehicles = vehicleList.filter((v: Vehicle) => v.status === 'active')
+        setVehicles(activeVehicles)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '加载车辆列表失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('加载车辆列表失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    }
   }
 
   const handleCloseAcceptDialog = () => {
     setShowAcceptDialog(false)
     setSelectedDemand(null)
     setAcceptNote('')
+    setSelectedVehicleId('')
   }
 
   const handleConfirmAccept = async () => {
     if (!selectedDemand) return
+
+    // 验证是否选择了车辆
+    if (!selectedVehicleId) {
+      Taro.showToast({
+        title: '请选择一辆车',
+        icon: 'none'
+      })
+      return
+    }
 
     setLoading(true)
 
@@ -125,6 +177,7 @@ export default function OwnerDemands() {
         method: 'POST',
         data: {
           ownerId: userInfo.id,
+          vehicleId: selectedVehicleId,
           note: acceptNote
         }
       })
@@ -140,6 +193,7 @@ export default function OwnerDemands() {
         setShowAcceptDialog(false)
         setSelectedDemand(null)
         setAcceptNote('')
+        setSelectedVehicleId('')
 
         // 重新加载需求列表
         loadDemands()
@@ -356,6 +410,66 @@ export default function OwnerDemands() {
                   </View>
                 </View>
               </View>
+
+              {/* 车辆选择 */}
+              <View className="mb-4">
+                <Label className="block text-sm font-medium mb-2">
+                  <Text className="text-red-500">*</Text>选择车辆
+                </Label>
+                {vehicles.length === 0 ? (
+                  <View className="bg-gray-50 rounded-lg p-4 text-center">
+                    <Text className="block text-gray-500 text-sm">
+                      暂无可用车辆，请先添加并审核通过的车辆
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="space-y-2">
+                    {vehicles.map((vehicle) => (
+                      <View
+                        key={vehicle.id}
+                        className={`bg-gray-50 rounded-lg p-3 ${
+                          selectedVehicleId === vehicle.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
+                        }`}
+                        onClick={() => setSelectedVehicleId(vehicle.id)}
+                      >
+                        <View className="flex items-center justify-between">
+                          <View className="flex-1">
+                            <Text className="block font-medium text-sm mb-1">
+                              {vehicle.vehicle_type}
+                            </Text>
+                            <View className="flex items-center gap-2 mb-1">
+                              <Text className="text-xs text-gray-600">
+                                车牌: {vehicle.license_plate || '未填写'}
+                              </Text>
+                              {vehicle.has_cold_chain && (
+                                <Badge className="bg-cyan-500">
+                                  <Text className="text-white text-xs">冷链</Text>
+                                </Badge>
+                              )}
+                            </View>
+                            <Text className="text-xs text-gray-500">
+                              载重: {vehicle.load_capacity}kg | 容积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
+                            </Text>
+                          </View>
+                          <View className="flex-shrink-0">
+                            <View
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                border: '2px solid #d1d5db',
+                                backgroundColor: selectedVehicleId === vehicle.id ? '#3b82f6' : 'transparent',
+                                borderWidth: selectedVehicleId === vehicle.id ? '6px' : '2px'
+                              }}
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
               <View>
                 <Label className="block text-sm font-medium mb-2">
                   备注说明（可选）

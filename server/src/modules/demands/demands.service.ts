@@ -225,7 +225,7 @@ export class DemandsService {
     }
   }
 
-  async accept(id: string, ownerId: string, note?: string) {
+  async accept(id: string, ownerId: string, vehicleId: string, note?: string) {
     const client = getSupabaseClient()
 
     // 验证车主是否存在
@@ -260,17 +260,17 @@ export class DemandsService {
       throw new BadRequestException('只有待接单的需求可以接单')
     }
 
-    // 检查车主是否有可用车辆
-    const { data: vehicles, error: vehiclesError } = await client
+    // 验证车辆是否存在且可用
+    const { data: vehicle, error: vehicleError } = await client
       .from('vehicles')
-      .select('id')
+      .select('*')
+      .eq('id', vehicleId)
       .eq('owner_id', ownerId)
       .eq('status', 'active')
-      .limit(1)
       .maybeSingle()
 
-    if (vehiclesError || !vehicles) {
-      throw new BadRequestException('您没有可用的车辆，请先添加车辆')
+    if (vehicleError || !vehicle) {
+      throw new BadRequestException('所选车辆不存在或不可用')
     }
 
     // 开始事务：更新需求状态并创建订单
@@ -295,7 +295,7 @@ export class DemandsService {
         demand_id: id,
         merchant_id: existingDemand.merchant_id,
         owner_id: ownerId,
-        vehicle_id: vehicles.id,
+        vehicle_id: vehicleId,
         status: 'accepted',
         pickup_time: existingDemand.pickup_time,
         pickup_address: existingDemand.pickup_address,
