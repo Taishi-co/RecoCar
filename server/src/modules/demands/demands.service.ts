@@ -296,7 +296,7 @@ export class DemandsService {
         merchant_id: existingDemand.merchant_id,
         owner_id: ownerId,
         vehicle_id: vehicles.id,
-        status: 'transporting',
+        status: 'accepted',
         pickup_time: existingDemand.pickup_time,
         pickup_address: existingDemand.pickup_address,
         delivery_address: existingDemand.delivery_address,
