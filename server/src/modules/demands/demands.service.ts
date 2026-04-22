@@ -153,4 +153,55 @@ export class DemandsService {
       data: demand
     }
   }
+
+  async cancel(id: string, reason: string) {
+    const client = getSupabaseClient()
+
+    // 检查需求是否存在
+    const { data: existingDemand, error: checkError } = await client
+      .from('demands')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingDemand) {
+      throw new NotFoundException('需求不存在')
+    }
+
+    // 检查需求状态
+    if (existingDemand.status !== 'pending') {
+      throw new BadRequestException('只有待接单的需求可以取消')
+    }
+
+    // 检查是否提前2小时
+    const pickupTime = new Date(existingDemand.pickup_time)
+    const now = new Date()
+    const timeDiff = pickupTime.getTime() - now.getTime()
+    const hoursDiff = timeDiff / (1000 * 60 * 60)
+
+    if (hoursDiff < 2) {
+      throw new BadRequestException('距离取货时间不足2小时，无法取消')
+    }
+
+    // 更新需求状态为已取消
+    const { data: demand, error: updateError } = await client
+      .from('demands')
+      .update({
+        status: 'cancelled',
+        remarks: reason || '用户主动取消'
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`取消失败: ${updateError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '需求已取消',
+      data: demand
+    }
+  }
 }

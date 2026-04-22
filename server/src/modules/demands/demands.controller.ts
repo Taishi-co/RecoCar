@@ -26,4 +26,9 @@ export class DemandsController {
   async updateDemand(@Query('id') id: string, @Body() updateDemandDto: UpdateDemandDto) {
     return this.demandsService.update(id, updateDemandDto)
   }
+
+  @Post(':id/cancel')
+  async cancelDemand(@Query('id') id: string, @Body('reason') reason: string) {
+    return this.demandsService.cancel(id, reason)
+  }
 }
