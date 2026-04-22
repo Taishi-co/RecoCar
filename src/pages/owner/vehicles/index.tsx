@@ -19,12 +19,15 @@ interface Vehicle {
   has_cold_chain: boolean
   status: string
   photos: any
+  remarks: string | null
   created_at: string
 }
 
 export default function OwnerVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     vehicle_type: '',
@@ -81,6 +84,130 @@ export default function OwnerVehicles() {
       volume: '',
       battery_life: '',
       has_cold_chain: 'false'
+    })
+  }
+
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle)
+    setFormData({
+      vehicle_type: vehicle.vehicle_type,
+      license_plate: vehicle.license_plate,
+      load_capacity: vehicle.load_capacity.toString(),
+      volume: vehicle.volume.toString(),
+      battery_life: vehicle.battery_life.toString(),
+      has_cold_chain: vehicle.has_cold_chain ? 'true' : 'false'
+    })
+    setShowEditForm(true)
+  }
+
+  const handleCancelEdit = () => {
+    setShowEditForm(false)
+    setEditingVehicle(null)
+    setFormData({
+      vehicle_type: '',
+      license_plate: '',
+      load_capacity: '',
+      volume: '',
+      battery_life: '',
+      has_cold_chain: 'false'
+    })
+  }
+
+  const handleUpdateVehicle = async () => {
+    if (!editingVehicle) return
+
+    if (!formData.vehicle_type || !formData.license_plate || !formData.load_capacity || !formData.volume || !formData.battery_life) {
+      Taro.showToast({
+        title: '请填写完整信息',
+        icon: 'none'
+      })
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const res = await Network.request({
+        url: `/api/vehicles/${editingVehicle.id}`,
+        method: 'PUT',
+        data: formData
+      })
+
+      console.log('更新车辆响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '车辆信息已更新',
+          icon: 'success'
+        })
+
+        setShowEditForm(false)
+        setEditingVehicle(null)
+        setFormData({
+          vehicle_type: '',
+          license_plate: '',
+          load_capacity: '',
+          volume: '',
+          battery_life: '',
+          has_cold_chain: 'false'
+        })
+
+        loadVehicles()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '更新失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('更新车辆失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResubmit = async (vehicleId: string) => {
+    Taro.showModal({
+      title: '确认重新提交',
+      content: '确认重新提交审核？',
+      success: async (res) => {
+        if (res.confirm) {
+          setLoading(true)
+          try {
+            const dataRes = await Network.request({
+              url: `/api/vehicles/${vehicleId}/resubmit`,
+              method: 'POST'
+            })
+
+            console.log('重新提交响应:', dataRes.data)
+
+            if (dataRes.data.code === 200) {
+              Taro.showToast({
+                title: '已重新提交，等待审核',
+                icon: 'success'
+              })
+              loadVehicles()
+            } else {
+              Taro.showToast({
+                title: dataRes.data.message || '重新提交失败',
+                icon: 'none'
+              })
+            }
+          } catch (error) {
+            console.error('重新提交失败:', error)
+            Taro.showToast({
+              title: '网络错误，请重试',
+              icon: 'none'
+            })
+          } finally {
+            setLoading(false)
+          }
+        }
+      }
     })
   }
 
@@ -185,6 +312,8 @@ export default function OwnerVehicles() {
         return 'bg-gray-500'
       case 'pending':
         return 'bg-yellow-500'
+      case 'rejected':
+        return 'bg-red-500'
       default:
         return 'bg-gray-500'
     }
@@ -198,6 +327,8 @@ export default function OwnerVehicles() {
         return '不可用'
       case 'pending':
         return '待审核'
+      case 'rejected':
+        return '已拒绝'
       default:
         return '未知'
     }
@@ -307,14 +438,44 @@ export default function OwnerVehicles() {
                           </Text>
                         </View>
                       </View>
-                      {vehicle.status === 'active' || vehicle.status === 'inactive' ? (
-                        <View onClick={() => handleToggleStatus(vehicle.id, vehicle.status)}>
-                          <Switch
-                            checked={vehicle.status === 'active'}
-                          />
-                        </View>
-                      ) : null}
+                      <View className="flex gap-2">
+                        {vehicle.status === 'rejected' && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="bg-blue-500"
+                              onClick={() => handleEditVehicle(vehicle)}
+                            >
+                              <Text className="text-xs">编辑</Text>
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-green-500"
+                              onClick={() => handleResubmit(vehicle.id)}
+                            >
+                              <Text className="text-xs">重新提交</Text>
+                            </Button>
+                          </>
+                        )}
+                        {vehicle.status === 'active' || vehicle.status === 'inactive' ? (
+                          <View onClick={() => handleToggleStatus(vehicle.id, vehicle.status)}>
+                            <Switch
+                              checked={vehicle.status === 'active'}
+                            />
+                          </View>
+                        ) : null}
+                      </View>
                     </View>
+                    {vehicle.remarks && (
+                      <View className="mb-2 p-2 bg-red-50 rounded">
+                        <Text className="text-xs text-red-600 font-medium mb-1">
+                          拒绝原因：
+                        </Text>
+                        <Text className="text-xs text-red-500">
+                          {vehicle.remarks}
+                        </Text>
+                      </View>
+                    )}
                     <Text className="text-xs text-gray-400">
                       注册时间: {new Date(vehicle.created_at).toLocaleString()}
                     </Text>
@@ -436,6 +597,124 @@ export default function OwnerVehicles() {
                     disabled={loading}
                   >
                     <Text>{loading ? '提交中...' : '提交'}</Text>
+                  </Button>
+                </View>
+              </View>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 编辑车辆表单 */}
+        {showEditForm && editingVehicle && (
+          <Card className="bg-white rounded-lg shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                编辑车辆信息
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <View className="space-y-4">
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    <Text className="text-red-500">*</Text>车型
+                  </Label>
+                  <View className="bg-gray-50 rounded-lg px-4 py-3">
+                    <Input
+                      className="w-full bg-transparent"
+                      placeholder="如：小型无人配送车"
+                      value={formData.vehicle_type}
+                      onInput={(e) => setFormData({ ...formData, vehicle_type: e.detail.value })}
+                    />
+                  </View>
+                </View>
+
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    <Text className="text-red-500">*</Text>车牌号
+                  </Label>
+                  <View className="bg-gray-50 rounded-lg px-4 py-3">
+                    <Input
+                      className="w-full bg-transparent"
+                      placeholder="如：京A12345"
+                      value={formData.license_plate}
+                      onInput={(e) => setFormData({ ...formData, license_plate: e.detail.value })}
+                    />
+                  </View>
+                </View>
+
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    <Text className="text-red-500">*</Text>载重（公斤）
+                  </Label>
+                  <View className="bg-gray-50 rounded-lg px-4 py-3">
+                    <Input
+                      className="w-full bg-transparent"
+                      placeholder="如：50"
+                      type="number"
+                      value={formData.load_capacity}
+                      onInput={(e) => setFormData({ ...formData, load_capacity: e.detail.value })}
+                    />
+                  </View>
+                </View>
+
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    <Text className="text-red-500">*</Text>体积（立方米）
+                  </Label>
+                  <View className="bg-gray-50 rounded-lg px-4 py-3">
+                    <Input
+                      className="w-full bg-transparent"
+                      placeholder="如：0.5"
+                      type="digit"
+                      value={formData.volume}
+                      onInput={(e) => setFormData({ ...formData, volume: e.detail.value })}
+                    />
+                  </View>
+                </View>
+
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    <Text className="text-red-500">*</Text>续航（公里）
+                  </Label>
+                  <View className="bg-gray-50 rounded-lg px-4 py-3">
+                    <Input
+                      className="w-full bg-transparent"
+                      placeholder="如：100"
+                      type="number"
+                      value={formData.battery_life}
+                      onInput={(e) => setFormData({ ...formData, battery_life: e.detail.value })}
+                    />
+                  </View>
+                </View>
+
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    是否有冷链能力
+                  </Label>
+                  <View className="flex items-center gap-3">
+                    <Switch
+                      checked={formData.has_cold_chain === 'true'}
+                      onCheckedChange={(checked: boolean) => setFormData({ ...formData, has_cold_chain: checked ? 'true' : 'false' })}
+                    />
+                    <Text className="text-sm text-gray-600">
+                      {formData.has_cold_chain === 'true' ? '支持冷链运输' : '不支持冷链运输'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View className="flex gap-3 pt-2">
+                  <Button
+                    className="flex-1 bg-gray-200"
+                    onClick={handleCancelEdit}
+                  >
+                    <Text>取消</Text>
+                  </Button>
+                  <Button
+                    className="flex-1 bg-blue-500"
+                    onClick={handleUpdateVehicle}
+                    disabled={loading}
+                  >
+                    <Text>{loading ? '更新中...' : '保存修改'}</Text>
                   </Button>
                 </View>
               </View>

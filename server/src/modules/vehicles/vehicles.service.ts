@@ -316,4 +316,45 @@ export class VehiclesService {
       data: vehicle
     }
   }
+
+  async resubmit(id: string) {
+    const client = getSupabaseClient()
+
+    // 检查车辆是否存在
+    const { data: existingVehicle, error: checkError } = await client
+      .from('vehicles')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingVehicle) {
+      throw new NotFoundException('车辆不存在')
+    }
+
+    // 检查车辆状态，只有被拒绝的车辆可以重新提交
+    if (existingVehicle.status !== 'rejected') {
+      throw new BadRequestException('只有被拒绝的车辆可以重新提交')
+    }
+
+    // 重新提交：将状态改为 pending，清除拒绝原因
+    const { data: vehicle, error: updateError } = await client
+      .from('vehicles')
+      .update({
+        status: 'pending',
+        remarks: null  // 清除拒绝原因
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`重新提交失败: ${updateError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '已重新提交审核',
+      data: vehicle
+    }
+  }
 }

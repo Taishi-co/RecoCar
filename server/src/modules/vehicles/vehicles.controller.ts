@@ -54,4 +54,10 @@ export class VehiclesController {
     console.log('[VehiclesController] 车辆审核请求 - id:', id, 'action:', action, 'reason:', reason)
     return this.vehiclesService.review(id, action, reason)
   }
+
+  @Post(':id/resubmit')
+  async resubmitVehicle(@Param('id') id: string) {
+    console.log('[VehiclesController] 车辆重新提交请求 - id:', id)
+    return this.vehiclesService.resubmit(id)
+  }
 }
