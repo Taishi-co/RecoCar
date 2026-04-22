@@ -88,6 +88,34 @@ export default function AdminStats() {
 
   return (
     <View className="min-h-screen bg-gray-100">
+      {/* 导航菜单 */}
+      <View className="bg-white shadow-sm">
+        <View className="px-4 py-3">
+          <View className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/admin/users/index' })}
+            >
+              <Text className="text-xs">用户管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/admin/orders/index' })}
+            >
+              <Text className="text-xs">订单管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              className="bg-blue-500"
+            >
+              <Text className="text-xs">数据统计</Text>
+            </Button>
+          </View>
+        </View>
+      </View>
+
       <View className="px-4 py-4">
         <Card className="bg-white rounded-lg shadow-sm mb-4">
           <CardHeader>
