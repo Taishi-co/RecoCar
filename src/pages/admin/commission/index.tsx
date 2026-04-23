@@ -61,7 +61,8 @@ export default function AdminCommission() {
         url: '/api/orders',
         method: 'GET',
         data: {
-          status: 'commission_pending'
+          status: 'commission_pending',
+          commission_payment_status: 'paid'
         }
       })
 
