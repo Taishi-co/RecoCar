@@ -115,11 +115,24 @@ export default function OwnerDemands() {
     setFarePrice('')
     setSelectedVehicleId('')
 
+    // 获取当前车主信息
+    const userInfo = Taro.getStorageSync('userInfo')
+    if (!userInfo || userInfo.role !== 'owner') {
+      Taro.showToast({
+        title: '请先登录',
+        icon: 'none'
+      })
+      setShowAcceptDialog(false)
+      setSelectedDemand(null)
+      return
+    }
+
     // 加载车主的可用车辆
     try {
       const res = await Network.request({
         url: '/api/vehicles',
-        method: 'GET'
+        method: 'GET',
+        data: { owner_id: userInfo.id }
       })
 
       console.log('车辆列表响应:', res.data)
