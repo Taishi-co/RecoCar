@@ -38,7 +38,7 @@ export class HomeService {
       `)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
-      .limit(5)
+      .limit(10)
 
     // 查询可用车辆（激活状态）
     const { data: availableVehicles, error: vehiclesError } = await client

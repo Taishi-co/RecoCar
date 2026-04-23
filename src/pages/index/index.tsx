@@ -41,14 +41,6 @@ interface LatestInfo {
     merchantPhone: string
     createdAt: string
   }>
-  availableVehicles: Array<{
-    id: string
-    vehicleType: string
-    licensePlate: string
-    ownerPhone: string
-    status: string
-    createdAt: string
-  }>
   completedOrders: Array<{
     id: string
     cargoName: string
@@ -292,72 +284,33 @@ export default function Index() {
                     共 {latestInfo?.latestDemands.length || 0} 条
                   </Text>
                 </View>
-                <View className="space-y-2">
-                  {latestInfo?.latestDemands.map(item => (
-                    <View key={item.id} className="py-2 border-b border-gray-50 last:border-0">
-                      <View className="flex justify-between items-start mb-1">
-                        <Text className="text-xs font-medium text-gray-800 flex-1">
-                          {item.cargoName}
-                        </Text>
-                        <Text className="text-xs text-gray-400 ml-2">
-                          {item.cargoType === 'perishable' ? '易腐' : '普通'}
-                        </Text>
-                      </View>
-                      <Text className="text-xs text-gray-500 block">
-                        {item.pickupAddress}
-                      </Text>
-                      <Text className="text-xs text-gray-400 block mt-1">
-                        {item.merchantPhone}
-                      </Text>
-                    </View>
-                  ))}
-                  {!latestInfo?.latestDemands || latestInfo.latestDemands.length === 0 && (
-                    <Text className="text-xs text-gray-400 text-center py-4">
-                      暂无需求
-                    </Text>
-                  )}
-                </View>
-              </CardContent>
-            </Card>
-
-            {/* 可用车辆 */}
-            <Card className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <CardContent className="p-3">
-                <View className="flex items-center justify-between mb-2">
-                  <View className="flex items-center">
-                    <Truck size={16} color="#3b82f6" />
-                    <Text className="block text-sm font-semibold text-blue-500 ml-2">
-                      可用车辆
-                    </Text>
-                  </View>
-                  <Text className="text-xs text-gray-400">
-                    共 {latestInfo?.availableVehicles.length || 0} 辆
-                  </Text>
-                </View>
-                <View className="space-y-2">
-                  {latestInfo?.availableVehicles.map(item => (
-                    <View key={item.id} className="py-2 border-b border-gray-50 last:border-0">
-                      <View className="flex justify-between items-start mb-1">
-                        <Text className="text-xs font-medium text-gray-800 flex-1">
-                          {item.vehicleType}
-                        </Text>
-                        {item.licensePlate && (
-                          <Text className="text-xs text-gray-400 ml-2">
-                            {item.licensePlate}
+                <ScrollView scrollY style={{ maxHeight: '250px' }}>
+                  <View className="space-y-2">
+                    {latestInfo?.latestDemands.slice(0, 5).map(item => (
+                      <View key={item.id} className="py-2 border-b border-gray-50 last:border-0">
+                        <View className="flex justify-between items-start mb-1">
+                          <Text className="text-xs font-medium text-gray-800 flex-1">
+                            {item.cargoName}
                           </Text>
-                        )}
+                          <Text className="text-xs text-gray-400 ml-2">
+                            {item.cargoType === 'perishable' ? '易腐' : '普通'}
+                          </Text>
+                        </View>
+                        <Text className="text-xs text-gray-500 block">
+                          {item.pickupAddress}
+                        </Text>
+                        <Text className="text-xs text-gray-400 block mt-1">
+                          {item.merchantPhone}
+                        </Text>
                       </View>
-                      <Text className="text-xs text-gray-500 block">
-                        车主: {item.ownerPhone}
+                    ))}
+                    {!latestInfo?.latestDemands || latestInfo.latestDemands.length === 0 && (
+                      <Text className="text-xs text-gray-400 text-center py-4">
+                        暂无需求
                       </Text>
-                    </View>
-                  ))}
-                  {!latestInfo?.availableVehicles || latestInfo.availableVehicles.length === 0 && (
-                    <Text className="text-xs text-gray-400 text-center py-4">
-                      暂无可用车辆
-                    </Text>
-                  )}
-                </View>
+                    )}
+                  </View>
+                </ScrollView>
               </CardContent>
             </Card>
 
