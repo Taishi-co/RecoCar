@@ -807,4 +807,65 @@ export class OrdersService {
       }
     }
   }
+
+  // 获取待审核佣金订单
+  async getPendingCommissionOrders() {
+    console.log('[OrdersService] 获取待审核佣金订单')
+    const client = getSupabaseClient()
+
+    const { data: orders, error: ordersError } = await client
+      .from('orders')
+      .select(`
+        id,
+        fare_price,
+        commission_amount,
+        commission_payment_status,
+        commission_payment_time,
+        owner_id,
+        demands (
+          cargo_name,
+          pickup_address,
+          delivery_address
+        )
+      `)
+      .eq('status', 'commission_pending')
+      .order('commission_payment_time', { ascending: false, nullsFirst: true })
+
+    if (ordersError) {
+      console.error('[OrdersService] 查询订单失败:', ordersError)
+      throw new BadRequestException(`查询失败: ${ordersError.message}`)
+    }
+
+    // 获取车主信息
+    const ownerIds = orders?.map((o: any) => o.owner_id).filter(Boolean) || []
+    const { data: users, error: usersError } = ownerIds.length > 0
+      ? await client.from('users').select('id, name').in('id', ownerIds)
+      : { data: [], error: null }
+
+    const userMap = new Map<string, string>()
+    if (users) {
+      users.forEach((u: any) => {
+        userMap.set(u.id, u.name)
+      })
+    }
+
+    // 映射数据为前端需要的格式
+    const pendingOrders = (orders || []).map((order: any) => {
+      return {
+        id: order.id,
+        cargoName: (order.demands as any)?.cargo_name || '未知货物',
+        farePrice: order.fare_price,
+        commissionAmount: order.commission_amount,
+        commissionStatus: order.commission_payment_status,
+        paymentTime: order.commission_payment_time,
+        ownerName: userMap.get(order.owner_id) || '未知车主'
+      }
+    })
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: pendingOrders
+    }
+  }
 }

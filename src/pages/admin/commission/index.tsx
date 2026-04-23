@@ -58,11 +58,8 @@ export default function AdminCommission() {
 
     try {
       const res = await Network.request({
-        url: '/api/orders',
-        method: 'GET',
-        data: {
-          status: 'commission_pending'
-        }
+        url: '/api/orders/commission-pending',
+        method: 'GET'
       })
 
       console.log('待审核佣金订单响应:', res.data)

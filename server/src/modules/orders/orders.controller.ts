@@ -35,6 +35,13 @@ export class OrdersController {
     return this.ordersService.getCommissionSummary()
   }
 
+  // 获取待审核佣金订单 - 必须放在 :id 路由之前
+  @Get('commission-pending')
+  async getPendingCommissionOrders() {
+    console.log('[OrdersController] 获取待审核佣金订单')
+    return this.ordersService.getPendingCommissionOrders()
+  }
+
   @Get(':id')
   async getOrderById(@Param('id') id: string) {
     return this.ordersService.findById(id)
