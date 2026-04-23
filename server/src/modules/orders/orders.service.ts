@@ -633,4 +633,87 @@ export class OrdersService {
       data: updatedOrder
     }
   }
+
+  // 获取运力方收益统计
+  async getOwnerRevenueStats(ownerId: string) {
+    console.log('[OrdersService] 获取运力方收益统计，ownerId:', ownerId)
+    const client = getSupabaseClient()
+
+    // 查询已完成的订单
+    const { data: completedOrders, error: ordersError } = await client
+      .from('orders')
+      .select(`
+        id,
+        fare_price,
+        commission_amount,
+        payment_status,
+        commission_payment_status,
+        actual_complete_time,
+        demands (
+          cargo_name,
+          pickup_address,
+          delivery_address
+        )
+      `)
+      .eq('owner_id', ownerId)
+      .eq('status', 'completed')
+      .order('actual_complete_time', { ascending: false, nullsFirst: false })
+
+    if (ordersError) {
+      console.error('[OrdersService] 查询订单失败:', ordersError)
+      throw new BadRequestException(`查询订单失败: ${ordersError.message}`)
+    }
+
+    console.log('[OrdersService] 查询到的订单数:', completedOrders?.length || 0)
+
+    // 计算统计数据
+    const totalFare = (completedOrders || []).reduce((sum: number, order: any) => {
+      return sum + (order.payment_status === 'paid' ? order.fare_price : 0)
+    }, 0)
+
+    const totalCommission = (completedOrders || []).reduce((sum: number, order: any) => {
+      return sum + (order.commission_payment_status === 'paid' ? order.commission_amount : 0)
+    }, 0)
+
+    const netRevenue = totalFare - totalCommission
+
+    // 构建收益明细列表
+    const revenueList = (completedOrders || []).map((order: any) => {
+      const hasReceivedFare = order.payment_status === 'paid'
+      const hasPaidCommission = order.commission_payment_status === 'paid'
+
+      return {
+        id: order.id,
+        cargoName: (order.demands as any)?.cargo_name || '',
+        farePrice: order.fare_price,
+        commissionAmount: order.commission_amount,
+        receivedFare: hasReceivedFare ? order.fare_price : 0,
+        paidCommission: hasPaidCommission ? order.commission_amount : 0,
+        netIncome: hasReceivedFare ? (order.fare_price - (hasPaidCommission ? order.commission_amount : 0)) : 0,
+        completedTime: order.actual_complete_time,
+        paymentStatus: order.payment_status,
+        commissionPaymentStatus: order.commission_payment_status
+      }
+    })
+
+    const result = {
+      summary: {
+        totalFare,
+        totalCommission,
+        netRevenue,
+        totalOrders: completedOrders?.length || 0,
+        paidOrders: (completedOrders || []).filter((o: any) => o.payment_status === 'paid').length,
+        pendingPaymentOrders: (completedOrders || []).filter((o: any) => o.payment_status === 'unpaid').length
+      },
+      revenueList
+    }
+
+    console.log('[OrdersService] 收益统计结果:', result)
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: result
+    }
+  }
 }

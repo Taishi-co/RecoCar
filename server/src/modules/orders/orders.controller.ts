@@ -21,6 +21,13 @@ export class OrdersController {
     return this.ordersService.findByUserId(ownerId, merchantId, status)
   }
 
+  // 获取运力方收益统计 - 必须放在 :id 路由之前
+  @Get('owner-revenue/:ownerId')
+  async getOwnerRevenueStats(@Param('ownerId') ownerId: string) {
+    console.log('[OrdersController] 获取运力方收益统计:', ownerId)
+    return this.ordersService.getOwnerRevenueStats(ownerId)
+  }
+
   @Get(':id')
   async getOrderById(@Param('id') id: string) {
     return this.ordersService.findById(id)
@@ -84,7 +91,7 @@ export class OrdersController {
     return this.ordersService.getCommissionInfo(id)
   }
 
-  // 管理员确认佣金支付（需要单独的管理员模块路由）
+  // 管理员确认佣金支付
   @Put(':id/commission-confirm')
   async confirmCommission(@Param('id') id: string) {
     console.log('[OrdersController] 管理员确认佣金:', id)
