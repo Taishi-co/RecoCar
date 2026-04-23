@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -116,6 +116,15 @@ export default function AdminVehicles() {
       inactive: 'bg-gray-500'
     }
     return colors[status] || 'bg-gray-500'
+  }
+
+  const parsePhotoUrls = (photosJson: string | null): string[] => {
+    if (!photosJson) return []
+    try {
+      return JSON.parse(photosJson)
+    } catch {
+      return []
+    }
   }
 
   const handleReview = (vehicle: Vehicle) => {
@@ -400,12 +409,23 @@ export default function AdminVehicles() {
                           {new Date(vehicle.created_at).toLocaleString('zh-CN')}
                         </Text>
                       </View>
-                      {vehicle.photos && (
+                      {vehicle.photos && parsePhotoUrls(vehicle.photos).length > 0 && (
                         <View>
-                          <Text className="block text-gray-500 text-xs">车辆照片</Text>
-                          <Text className="block text-blue-500">
-                            已上传 {JSON.parse(vehicle.photos).length} 张照片
-                          </Text>
+                          <Text className="block text-gray-500 text-xs mb-2">车辆照片</Text>
+                          <View className="flex gap-2 flex-wrap">
+                            {parsePhotoUrls(vehicle.photos).map((photoUrl, idx) => (
+                              <Image
+                                key={idx}
+                                src={photoUrl}
+                                mode="aspectFill"
+                                className="w-20 h-20 rounded-lg bg-gray-200"
+                                onClick={() => Taro.previewImage({
+                                  current: idx,
+                                  urls: parsePhotoUrls(vehicle.photos)
+                                })}
+                              />
+                            ))}
+                          </View>
                         </View>
                       )}
                       {vehicle.remarks && (

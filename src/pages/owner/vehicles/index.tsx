@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,7 @@ interface Vehicle {
   has_cold_chain: boolean
   status: string
   is_available: boolean
-  photos: any
+  photos: string | null
   remarks: string | null
   created_at: string
 }
@@ -30,6 +30,7 @@ export default function OwnerVehicles() {
   const [showEditForm, setShowEditForm] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null)
   const [loading, setLoading] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [formData, setFormData] = useState({
     vehicle_type: '',
     license_plate: '',
@@ -38,6 +39,7 @@ export default function OwnerVehicles() {
     battery_life: '',
     has_cold_chain: 'false'
   })
+  const [photoUrls, setPhotoUrls] = useState<string[]>([])
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')
@@ -86,6 +88,7 @@ export default function OwnerVehicles() {
       battery_life: '',
       has_cold_chain: 'false'
     })
+    setPhotoUrls([])
   }
 
   const handleEditVehicle = (vehicle: Vehicle) => {
@@ -98,6 +101,7 @@ export default function OwnerVehicles() {
       battery_life: vehicle.battery_life.toString(),
       has_cold_chain: vehicle.has_cold_chain ? 'true' : 'false'
     })
+    setPhotoUrls(parsePhotoUrls(vehicle.photos))
     setShowEditForm(true)
   }
 
@@ -112,6 +116,80 @@ export default function OwnerVehicles() {
       battery_life: '',
       has_cold_chain: 'false'
     })
+    setPhotoUrls([])
+  }
+
+  const handleChoosePhoto = async () => {
+    try {
+      const res = await Taro.chooseImage({
+        count: 3,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera']
+      })
+
+      console.log('选择照片成功:', res.tempFilePaths)
+
+      // 上传每张照片
+      setUploadingPhoto(true)
+
+      const uploadPromises = res.tempFilePaths.map(async (filePath) => {
+        try {
+          const uploadRes = await Network.uploadFile({
+            url: '/api/vehicles/upload-photo',
+            filePath: filePath,
+            name: 'photo',
+            header: {
+              'Content-Type': 'multipart/form-data'
+            }
+          })
+
+          console.log('照片上传响应:', uploadRes)
+
+          // 解析响应数据
+          const response = typeof uploadRes === 'string' ? JSON.parse(uploadRes) : uploadRes
+
+          if (response.code === 200) {
+            return response.data.url
+          } else {
+            throw new Error(response.message || '上传失败')
+          }
+        } catch (error) {
+          console.error('照片上传失败:', error)
+          throw error
+        }
+      })
+
+      const urls = await Promise.all(uploadPromises)
+      setPhotoUrls([...photoUrls, ...urls])
+
+      Taro.showToast({
+        title: '照片上传成功',
+        icon: 'success'
+      })
+    } catch (error) {
+      console.error('选择照片失败:', error)
+      Taro.showToast({
+        title: '操作失败',
+        icon: 'none'
+      })
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  const handleDeletePhoto = (index: number) => {
+    const newPhotoUrls = [...photoUrls]
+    newPhotoUrls.splice(index, 1)
+    setPhotoUrls(newPhotoUrls)
+  }
+
+  const parsePhotoUrls = (photosJson: string | null): string[] => {
+    if (!photosJson) return []
+    try {
+      return JSON.parse(photosJson)
+    } catch {
+      return []
+    }
   }
 
   const handleUpdateVehicle = async () => {
@@ -131,7 +209,10 @@ export default function OwnerVehicles() {
       const res = await Network.request({
         url: `/api/vehicles/${editingVehicle.id}`,
         method: 'PUT',
-        data: formData
+        data: {
+          ...formData,
+          photoUrls: photoUrls
+        }
       })
 
       console.log('更新车辆响应:', res.data)
@@ -152,6 +233,7 @@ export default function OwnerVehicles() {
           battery_life: '',
           has_cold_chain: 'false'
         })
+        setPhotoUrls([])
 
         loadVehicles()
       } else {
@@ -231,7 +313,8 @@ export default function OwnerVehicles() {
         method: 'POST',
         data: {
           owner_id: userInfo.id,
-          ...formData
+          ...formData,
+          photoUrls: photoUrls
         }
       })
 
@@ -252,6 +335,7 @@ export default function OwnerVehicles() {
           battery_life: '',
           has_cold_chain: 'false'
         })
+        setPhotoUrls([])
 
         // 重新加载车辆列表
         loadVehicles()
@@ -407,90 +491,115 @@ export default function OwnerVehicles() {
               </View>
             ) : (
               <View className="space-y-3">
-                {vehicles.map((vehicle) => (
-                  <View key={vehicle.id} className="bg-gray-50 rounded-lg p-4">
-                    <View className="flex justify-between items-start mb-3">
-                      <View>
-                        <Text className="block font-medium text-base mb-1">
-                          {vehicle.vehicle_type}
-                        </Text>
-                        <View className="flex items-center gap-2 mb-1">
-                          <Text className="text-xs text-gray-600">
-                            车牌号: {vehicle.license_plate || '未填写'}
+                {vehicles.map((vehicle) => {
+                  const vehiclePhotos = parsePhotoUrls(vehicle.photos)
+                  return (
+                    <View key={vehicle.id} className="bg-gray-50 rounded-lg p-4">
+                      <View className="flex justify-between items-start mb-3">
+                        <View className="flex-1">
+                          <Text className="block font-medium text-base mb-1">
+                            {vehicle.vehicle_type}
                           </Text>
-                        </View>
-                        <View className="flex items-center gap-2 mb-1">
-                          <Badge className={getStatusColor(vehicle.status)}>
-                            <Text className="text-white text-xs">
-                              {getStatusText(vehicle.status)}
+                          <View className="flex items-center gap-2 mb-1">
+                            <Text className="text-xs text-gray-600">
+                              车牌号: {vehicle.license_plate || '未填写'}
                             </Text>
-                          </Badge>
-                          {vehicle.has_cold_chain && (
-                            <Badge className="bg-cyan-500">
-                              <Text className="text-white text-xs">冷链</Text>
-                            </Badge>
-                          )}
-                          {vehicle.status === 'active' && (
-                            <Badge className={vehicle.is_available ? 'bg-green-500' : 'bg-gray-500'}>
+                          </View>
+                          <View className="flex items-center gap-2 mb-1">
+                            <Badge className={getStatusColor(vehicle.status)}>
                               <Text className="text-white text-xs">
-                                {vehicle.is_available ? '出车' : '不出车'}
+                                {getStatusText(vehicle.status)}
                               </Text>
                             </Badge>
+                            {vehicle.has_cold_chain && (
+                              <Badge className="bg-cyan-500">
+                                <Text className="text-white text-xs">冷链</Text>
+                              </Badge>
+                            )}
+                            {vehicle.status === 'active' && (
+                              <Badge className={vehicle.is_available ? 'bg-green-500' : 'bg-gray-500'}>
+                                <Text className="text-white text-xs">
+                                  {vehicle.is_available ? '出车' : '不出车'}
+                                </Text>
+                              </Badge>
+                            )}
+                          </View>
+                          <View className="flex items-center gap-2">
+                            <Text className="text-xs text-gray-500">
+                              载重: {vehicle.load_capacity}kg | 体积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
+                            </Text>
+                          </View>
+                        </View>
+                        <View className="flex gap-2">
+                          {vehicle.status === 'rejected' && (
+                            <>
+                              <Button
+                                size="sm"
+                                className="bg-blue-500"
+                                onClick={() => handleEditVehicle(vehicle)}
+                              >
+                                <Text className="text-xs">编辑</Text>
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-green-500"
+                                onClick={() => handleResubmit(vehicle.id)}
+                              >
+                                <Text className="text-xs">重新提交</Text>
+                              </Button>
+                            </>
+                          )}
+                          {vehicle.status === 'active' && (
+                            <View>
+                              <Text className="text-xs text-gray-500 mb-1 block">
+                                {vehicle.is_available ? '出车中' : '已出车'}
+                              </Text>
+                              <Switch
+                                checked={vehicle.is_available}
+                                onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
+                              />
+                            </View>
                           )}
                         </View>
-                        <View className="flex items-center gap-2">
-                          <Text className="text-xs text-gray-500">
-                            载重: {vehicle.load_capacity}kg | 体积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
+                      </View>
+
+                      {/* 显示车辆照片 */}
+                      {vehiclePhotos.length > 0 && (
+                        <View className="mb-2">
+                          <Text className="block text-xs text-gray-500 mb-2">车辆照片</Text>
+                          <View className="flex gap-2 flex-wrap">
+                            {vehiclePhotos.map((photoUrl, idx) => (
+                              <Image
+                                key={idx}
+                                src={photoUrl}
+                                mode="aspectFill"
+                                className="w-20 h-20 rounded-lg bg-gray-200"
+                                onClick={() => Taro.previewImage({
+                                  current: idx,
+                                  urls: vehiclePhotos
+                                })}
+                              />
+                            ))}
+                          </View>
+                        </View>
+                      )}
+
+                      {vehicle.remarks && (
+                        <View className="mb-2 p-2 bg-red-50 rounded">
+                          <Text className="text-xs text-red-600 font-medium mb-1">
+                            拒绝原因：
+                          </Text>
+                          <Text className="text-xs text-red-500">
+                            {vehicle.remarks}
                           </Text>
                         </View>
-                      </View>
-                      <View className="flex gap-2">
-                        {vehicle.status === 'rejected' && (
-                          <>
-                            <Button
-                              size="sm"
-                              className="bg-blue-500"
-                              onClick={() => handleEditVehicle(vehicle)}
-                            >
-                              <Text className="text-xs">编辑</Text>
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="bg-green-500"
-                              onClick={() => handleResubmit(vehicle.id)}
-                            >
-                              <Text className="text-xs">重新提交</Text>
-                            </Button>
-                          </>
-                        )}
-                        {vehicle.status === 'active' && (
-                          <View>
-                            <Text className="text-xs text-gray-500 mb-1 block">
-                              {vehicle.is_available ? '出车中' : '已出车'}
-                            </Text>
-                            <Switch
-                              checked={vehicle.is_available}
-                              onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
-                            />
-                          </View>
-                        )}
-                      </View>
+                      )}
+                      <Text className="text-xs text-gray-400">
+                        注册时间: {new Date(vehicle.created_at).toLocaleString()}
+                      </Text>
                     </View>
-                    {vehicle.remarks && (
-                      <View className="mb-2 p-2 bg-red-50 rounded">
-                        <Text className="text-xs text-red-600 font-medium mb-1">
-                          拒绝原因：
-                        </Text>
-                        <Text className="text-xs text-red-500">
-                          {vehicle.remarks}
-                        </Text>
-                      </View>
-                    )}
-                    <Text className="text-xs text-gray-400">
-                      注册时间: {new Date(vehicle.created_at).toLocaleString()}
-                    </Text>
-                  </View>
-                ))}
+                  )
+                })}
               </View>
             )}
           </CardContent>
@@ -592,6 +701,50 @@ export default function OwnerVehicles() {
                       {formData.has_cold_chain === 'true' ? '支持冷链运输' : '不支持冷链运输'}
                     </Text>
                   </View>
+                </View>
+
+                {/* 照片上传 */}
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    车辆照片（最多3张）
+                  </Label>
+                  {photoUrls.length > 0 ? (
+                    <View className="flex gap-2 flex-wrap mb-2">
+                      {photoUrls.map((url, index) => (
+                        <View key={index} className="relative">
+                          <Image
+                            src={url}
+                            mode="aspectFill"
+                            className="w-20 h-20 rounded-lg bg-gray-200"
+                            onClick={() => Taro.previewImage({
+                              current: index,
+                              urls: photoUrls
+                            })}
+                          />
+                          <View
+                            className="absolute top-0 right-0 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                            onClick={() => handleDeletePhoto(index)}
+                          >
+                            <Text className="text-white text-xs">×</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text className="text-xs text-gray-400 mb-2 block">
+                      请上传车辆照片，以便平台审核
+                    </Text>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleChoosePhoto}
+                    disabled={uploadingPhoto || photoUrls.length >= 3}
+                  >
+                    <Text>
+                      {uploadingPhoto ? '上传中...' : photoUrls.length >= 3 ? '已达上限' : '添加照片'}
+                    </Text>
+                  </Button>
                 </View>
 
                 <View className="flex gap-3 pt-2">
@@ -710,6 +863,50 @@ export default function OwnerVehicles() {
                       {formData.has_cold_chain === 'true' ? '支持冷链运输' : '不支持冷链运输'}
                     </Text>
                   </View>
+                </View>
+
+                {/* 照片上传 */}
+                <View>
+                  <Label className="block text-sm font-medium mb-2">
+                    车辆照片（最多3张）
+                  </Label>
+                  {photoUrls.length > 0 ? (
+                    <View className="flex gap-2 flex-wrap mb-2">
+                      {photoUrls.map((url, index) => (
+                        <View key={index} className="relative">
+                          <Image
+                            src={url}
+                            mode="aspectFill"
+                            className="w-20 h-20 rounded-lg bg-gray-200"
+                            onClick={() => Taro.previewImage({
+                              current: index,
+                              urls: photoUrls
+                            })}
+                          />
+                          <View
+                            className="absolute top-0 right-0 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                            onClick={() => handleDeletePhoto(index)}
+                          >
+                            <Text className="text-white text-xs">×</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text className="text-xs text-gray-400 mb-2 block">
+                      请上传车辆照片，以便平台审核
+                    </Text>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleChoosePhoto}
+                    disabled={uploadingPhoto || photoUrls.length >= 3}
+                  >
+                    <Text>
+                      {uploadingPhoto ? '上传中...' : photoUrls.length >= 3 ? '已达上限' : '添加照片'}
+                    </Text>
+                  </Button>
                 </View>
 
                 <View className="flex gap-3 pt-2">
