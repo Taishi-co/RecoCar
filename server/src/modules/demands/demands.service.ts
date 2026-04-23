@@ -193,16 +193,6 @@ export class DemandsService {
       throw new BadRequestException('只有待接单的需求可以取消')
     }
 
-    // 检查是否提前2小时
-    const pickupTime = new Date(existingDemand.pickup_time)
-    const now = new Date()
-    const timeDiff = pickupTime.getTime() - now.getTime()
-    const hoursDiff = timeDiff / (1000 * 60 * 60)
-
-    if (hoursDiff < 2) {
-      throw new BadRequestException('距离取货时间不足2小时，无法取消')
-    }
-
     // 更新需求状态为已取消
     const { data: demand, error: updateError } = await client
       .from('demands')
