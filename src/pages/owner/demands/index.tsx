@@ -423,45 +423,46 @@ export default function OwnerDemands() {
                     </Text>
                   </View>
                 ) : (
-                  <View className="space-y-2">
+                  <View className="flex flex-row flex-wrap gap-2">
                     {vehicles.map((vehicle) => (
-                      <View
-                        key={vehicle.id}
-                        className={`bg-gray-50 rounded-lg p-3 ${
-                          selectedVehicleId === vehicle.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
-                        }`}
-                        onClick={() => setSelectedVehicleId(vehicle.id)}
-                      >
-                        <View className="flex items-center justify-between">
-                          <View className="flex-1">
-                            <Text className="block font-medium text-sm mb-1">
-                              {vehicle.vehicle_type}
-                            </Text>
-                            <View className="flex items-center gap-2 mb-1">
-                              <Text className="text-xs text-gray-600">
-                                车牌: {vehicle.license_plate || '未填写'}
+                      <View key={vehicle.id} className="w-1/2">
+                        <View
+                          className={`bg-gray-50 rounded-lg p-3 ${
+                            selectedVehicleId === vehicle.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
+                          }`}
+                          onClick={() => setSelectedVehicleId(vehicle.id)}
+                        >
+                          <View className="flex items-center justify-between">
+                            <View className="flex-1">
+                              <Text className="block font-medium text-sm mb-1">
+                                {vehicle.vehicle_type}
                               </Text>
-                              {vehicle.has_cold_chain && (
-                                <Badge className="bg-cyan-500">
-                                  <Text className="text-white text-xs">冷链</Text>
-                                </Badge>
-                              )}
+                              <View className="flex items-center gap-1 mb-1">
+                                <Text className="text-xs text-gray-600">
+                                  {vehicle.license_plate || '无车牌'}
+                                </Text>
+                                {vehicle.has_cold_chain && (
+                                  <Badge className="bg-cyan-500">
+                                    <Text className="text-white text-xs">冷链</Text>
+                                  </Badge>
+                                )}
+                              </View>
+                              <Text className="text-xs text-gray-500">
+                                {vehicle.load_capacity}kg | {vehicle.volume}m³ | {vehicle.battery_life}km
+                              </Text>
                             </View>
-                            <Text className="text-xs text-gray-500">
-                              载重: {vehicle.load_capacity}kg | 容积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
-                            </Text>
-                          </View>
-                          <View className="flex-shrink-0">
-                            <View
-                              style={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '50%',
-                                border: '2px solid #d1d5db',
-                                backgroundColor: selectedVehicleId === vehicle.id ? '#3b82f6' : 'transparent',
-                                borderWidth: selectedVehicleId === vehicle.id ? '6px' : '2px'
-                              }}
-                            />
+                            <View className="flex-shrink-0 ml-1">
+                              <View
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  borderRadius: '50%',
+                                  border: '2px solid #d1d5db',
+                                  backgroundColor: selectedVehicleId === vehicle.id ? '#3b82f6' : 'transparent',
+                                  borderWidth: selectedVehicleId === vehicle.id ? '5px' : '2px'
+                                }}
+                              />
+                            </View>
                           </View>
                         </View>
                       </View>
