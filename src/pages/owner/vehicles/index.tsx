@@ -18,6 +18,7 @@ interface Vehicle {
   battery_life: number
   has_cold_chain: boolean
   status: string
+  is_available: boolean
   photos: any
   remarks: string | null
   created_at: string
@@ -271,32 +272,32 @@ export default function OwnerVehicles() {
     }
   }
 
-  const handleToggleStatus = async (vehicleId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+  const handleToggleAvailability = async (vehicleId: string, currentAvailability: boolean) => {
+    const newAvailability = !currentAvailability
 
     try {
       const res = await Network.request({
-        url: `/api/vehicles/${vehicleId}/status?id=${vehicleId}`,
+        url: `/api/vehicles/${vehicleId}/availability?id=${vehicleId}`,
         method: 'PUT',
-        data: { status: newStatus }
+        data: { is_available: newAvailability }
       })
 
-      console.log('更新状态响应:', res.data)
+      console.log('切换运营状态响应:', res.data)
 
       if (res.data.code === 200) {
         Taro.showToast({
-          title: '状态更新成功',
+          title: newAvailability ? '车辆已出车' : '车辆已不出车',
           icon: 'success'
         })
         loadVehicles()
       } else {
         Taro.showToast({
-          title: res.data.message || '更新失败',
+          title: res.data.message || '操作失败',
           icon: 'none'
         })
       }
     } catch (error) {
-      console.error('更新状态失败:', error)
+      console.error('切换运营状态失败:', error)
       Taro.showToast({
         title: '网络错误，请重试',
         icon: 'none'
@@ -431,6 +432,13 @@ export default function OwnerVehicles() {
                               <Text className="text-white text-xs">冷链</Text>
                             </Badge>
                           )}
+                          {vehicle.status === 'active' && (
+                            <Badge className={vehicle.is_available ? 'bg-green-500' : 'bg-gray-500'}>
+                              <Text className="text-white text-xs">
+                                {vehicle.is_available ? '出车' : '不出车'}
+                              </Text>
+                            </Badge>
+                          )}
                         </View>
                         <View className="flex items-center gap-2">
                           <Text className="text-xs text-gray-500">
@@ -457,13 +465,16 @@ export default function OwnerVehicles() {
                             </Button>
                           </>
                         )}
-                        {vehicle.status === 'active' || vehicle.status === 'inactive' ? (
-                          <View onClick={() => handleToggleStatus(vehicle.id, vehicle.status)}>
+                        {vehicle.status === 'active' && (
+                          <View onClick={() => handleToggleAvailability(vehicle.id, vehicle.is_available)}>
+                            <Text className="text-xs text-gray-500 mb-1 block">
+                              {vehicle.is_available ? '出车中' : '已出车'}
+                            </Text>
                             <Switch
-                              checked={vehicle.status === 'active'}
+                              checked={vehicle.is_available}
                             />
                           </View>
-                        ) : null}
+                        )}
                       </View>
                     </View>
                     {vehicle.remarks && (

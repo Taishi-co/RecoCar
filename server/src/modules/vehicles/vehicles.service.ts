@@ -357,4 +357,42 @@ export class VehiclesService {
       data: vehicle
     }
   }
+
+  async updateAvailability(id: string, isAvailable: boolean) {
+    const client = getSupabaseClient()
+
+    // 检查车辆是否存在
+    const { data: existingVehicle, error: checkError } = await client
+      .from('vehicles')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingVehicle) {
+      throw new NotFoundException('车辆不存在')
+    }
+
+    // 检查车辆审核状态，只有审核通过的车辆可以切换运营状态
+    if (existingVehicle.status !== 'active') {
+      throw new BadRequestException('只有审核通过的车辆可以切换运营状态')
+    }
+
+    // 更新运营状态
+    const { data: vehicle, error: updateError } = await client
+      .from('vehicles')
+      .update({ is_available: isAvailable })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`更新运营状态失败: ${updateError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: isAvailable ? '车辆已设置为出车' : '车辆已设置为不出车',
+      data: vehicle
+    }
+  }
 }

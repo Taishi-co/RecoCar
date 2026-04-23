@@ -18,6 +18,7 @@ interface Vehicle {
   battery_life: number
   has_cold_chain: boolean
   status: string
+  is_available: boolean
 }
 
 interface Demand {
@@ -121,9 +122,11 @@ export default function OwnerDemands() {
 
       if (res.data.code === 200) {
         const vehicleList = res.data.data || []
-        // 只显示状态为 active 的车辆
-        const activeVehicles = vehicleList.filter((v: Vehicle) => v.status === 'active')
-        setVehicles(activeVehicles)
+        // 只显示状态为 active 且 is_available 为 true 的车辆
+        const availableVehicles = vehicleList.filter((v: Vehicle) =>
+          v.status === 'active' && v.is_available === true
+        )
+        setVehicles(availableVehicles)
       } else {
         Taro.showToast({
           title: res.data.message || '加载车辆列表失败',
@@ -418,8 +421,11 @@ export default function OwnerDemands() {
                 </Label>
                 {vehicles.length === 0 ? (
                   <View className="bg-gray-50 rounded-lg p-4 text-center">
-                    <Text className="block text-gray-500 text-sm">
-                      暂无可用车辆，请先添加并审核通过的车辆
+                    <Text className="block text-gray-500 text-sm mb-2">
+                      暂无可用车辆
+                    </Text>
+                    <Text className="block text-gray-400 text-xs">
+                      请前往车辆管理页面设置车辆为出车状态
                     </Text>
                   </View>
                 ) : (

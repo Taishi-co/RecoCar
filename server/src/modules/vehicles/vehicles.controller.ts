@@ -60,4 +60,13 @@ export class VehiclesController {
     console.log('[VehiclesController] 车辆重新提交请求 - id:', id)
     return this.vehiclesService.resubmit(id)
   }
+
+  @Put(':id/availability')
+  async updateAvailability(
+    @Param('id') id: string,
+    @Body('is_available') isAvailable: boolean
+  ) {
+    console.log('[VehiclesController] 切换车辆运营状态 - id:', id, 'isAvailable:', isAvailable)
+    return this.vehiclesService.updateAvailability(id, isAvailable)
+  }
 }
