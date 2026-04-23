@@ -1,7 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
 import { CreateOrderDto } from './dto/orders.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
-import { calculateDistance } from '@/utils/distance.util'
 
 @Injectable()
 export class OrdersService {
@@ -41,21 +40,6 @@ export class OrdersService {
       throw new BadRequestException('车辆不可用')
     }
 
-    // 计算运输距离（如果有经纬度信息）
-    let distance = 0
-    if (demand.pickup_latitude &&
-        demand.pickup_longitude &&
-        demand.delivery_latitude &&
-        demand.delivery_longitude) {
-      distance = calculateDistance(
-        demand.pickup_latitude,
-        demand.pickup_longitude,
-        demand.delivery_latitude,
-        demand.delivery_longitude
-      )
-      console.log('[OrdersService] 计算运输距离:', distance, '公里')
-    }
-
     // 创建订单
     const { data: order, error: insertError } = await client
       .from('orders')
@@ -65,8 +49,7 @@ export class OrdersService {
         merchant_id: demand.merchant_id,
         owner_id,
         status: 'accepted',
-        accept_time: new Date().toISOString(),
-        distance: distance
+        accept_time: new Date().toISOString()
       })
       .select()
       .single()
@@ -648,6 +631,241 @@ export class OrdersService {
       code: 200,
       message: '运费已确认',
       data: updatedOrder
+    }
+  }
+
+  // 获取运力方收益统计
+  async getOwnerRevenueStats(ownerId: string) {
+    console.log('[OrdersService] 获取运力方收益统计，ownerId:', ownerId)
+    const client = getSupabaseClient()
+
+    // 查询已完成的订单
+    const { data: completedOrders, error: ordersError } = await client
+      .from('orders')
+      .select(`
+        id,
+        fare_price,
+        commission_amount,
+        payment_status,
+        commission_payment_status,
+        actual_complete_time,
+        demands (
+          cargo_name,
+          pickup_address,
+          delivery_address
+        )
+      `)
+      .eq('owner_id', ownerId)
+      .eq('status', 'completed')
+      .order('actual_complete_time', { ascending: false, nullsFirst: false })
+
+    if (ordersError) {
+      console.error('[OrdersService] 查询订单失败:', ordersError)
+      throw new BadRequestException(`查询订单失败: ${ordersError.message}`)
+    }
+
+    console.log('[OrdersService] 查询到的订单数:', completedOrders?.length || 0)
+
+    // 计算统计数据
+    const totalFare = (completedOrders || []).reduce((sum: number, order: any) => {
+      return sum + (order.payment_status === 'paid' ? order.fare_price : 0)
+    }, 0)
+
+    const totalCommission = (completedOrders || []).reduce((sum: number, order: any) => {
+      return sum + (order.commission_payment_status === 'paid' ? order.commission_amount : 0)
+    }, 0)
+
+    const netRevenue = totalFare - totalCommission
+
+    // 构建收益明细列表
+    const revenueList = (completedOrders || []).map((order: any) => {
+      const hasReceivedFare = order.payment_status === 'paid'
+      const hasPaidCommission = order.commission_payment_status === 'paid'
+
+      return {
+        id: order.id,
+        cargoName: (order.demands as any)?.cargo_name || '',
+        farePrice: order.fare_price,
+        commissionAmount: order.commission_amount,
+        receivedFare: hasReceivedFare ? order.fare_price : 0,
+        paidCommission: hasPaidCommission ? order.commission_amount : 0,
+        netIncome: hasReceivedFare ? (order.fare_price - (hasPaidCommission ? order.commission_amount : 0)) : 0,
+        completedTime: order.actual_complete_time,
+        paymentStatus: order.payment_status,
+        commissionPaymentStatus: order.commission_payment_status
+      }
+    })
+
+    const result = {
+      summary: {
+        totalFare,
+        totalCommission,
+        netRevenue,
+        totalOrders: completedOrders?.length || 0,
+        paidOrders: (completedOrders || []).filter((o: any) => o.payment_status === 'paid').length,
+        pendingPaymentOrders: (completedOrders || []).filter((o: any) => o.payment_status === 'unpaid').length
+      },
+      revenueList
+    }
+
+    console.log('[OrdersService] 收益统计结果:', result)
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: result
+    }
+  }
+
+  // 获取平台佣金汇总统计
+  async getCommissionSummary() {
+    console.log('[OrdersService] 获取平台佣金汇总统计')
+    const client = getSupabaseClient()
+
+    // 查询已完成和待审核佣金的订单
+    const { data: orders, error: ordersError } = await client
+      .from('orders')
+      .select(`
+        id,
+        fare_price,
+        commission_amount,
+        payment_status,
+        commission_payment_status,
+        commission_payment_time,
+        actual_complete_time,
+        owner_id,
+        demands (
+          cargo_name,
+          pickup_address,
+          delivery_address
+        )
+      `)
+      .in('status', ['completed', 'commission_pending'])
+      .order('actual_complete_time', { ascending: false, nullsFirst: false })
+
+    if (ordersError) {
+      console.error('[OrdersService] 查询订单失败:', ordersError)
+      throw new BadRequestException(`查询订单失败: ${ordersError.message}`)
+    }
+
+    console.log('[OrdersService] 查询到的订单数:', orders?.length || 0)
+
+    // 获取车主和车辆信息
+    const ownerIds = orders?.map((o: any) => o.owner_id).filter(Boolean) || []
+    const { data: users, error: usersError } = ownerIds.length > 0
+      ? await client.from('users').select('id, name').in('id', ownerIds)
+      : { data: [], error: null }
+
+    const userMap = new Map<string, string>()
+    if (users) {
+      users.forEach((u: any) => {
+        userMap.set(u.id, u.name)
+      })
+    }
+
+    // 计算汇总数据
+    const summary = {
+      totalCommission: 0,
+      confirmedCommission: 0,
+      pendingCommission: 0,
+      totalOrders: orders?.length || 0
+    }
+
+    // 构建佣金订单列表
+    const commissionOrders = (orders || []).map((order: any) => {
+      // 累加佣金
+      if (order.commission_payment_status === 'paid') {
+        summary.confirmedCommission += order.commission_amount || 0
+        summary.totalCommission += order.commission_amount || 0
+      } else if (order.commission_payment_status === 'unpaid' && order.status === 'commission_pending') {
+        summary.pendingCommission += order.commission_amount || 0
+        summary.totalCommission += order.commission_amount || 0
+      }
+
+      return {
+        id: order.id,
+        cargoName: (order.demands as any)?.cargo_name || '',
+        farePrice: order.fare_price,
+        commissionAmount: order.commission_amount,
+        commissionStatus: order.commission_payment_status,
+        fareStatus: order.payment_status,
+        completedTime: order.actual_complete_time,
+        paymentTime: order.commission_payment_time,
+        ownerName: userMap.get(order.owner_id) || '未知',
+        status: order.status
+      }
+    })
+
+    console.log('[OrdersService] 佣金汇总统计:', summary)
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: {
+        summary,
+        commissionOrders
+      }
+    }
+  }
+
+  // 获取待审核佣金订单
+  async getPendingCommissionOrders() {
+    console.log('[OrdersService] 获取待审核佣金订单')
+    const client = getSupabaseClient()
+
+    const { data: orders, error: ordersError } = await client
+      .from('orders')
+      .select(`
+        id,
+        fare_price,
+        commission_amount,
+        commission_payment_status,
+        commission_payment_time,
+        owner_id,
+        demands (
+          cargo_name,
+          pickup_address,
+          delivery_address
+        )
+      `)
+      .eq('status', 'commission_pending')
+      .order('commission_payment_time', { ascending: false, nullsFirst: true })
+
+    if (ordersError) {
+      console.error('[OrdersService] 查询订单失败:', ordersError)
+      throw new BadRequestException(`查询失败: ${ordersError.message}`)
+    }
+
+    // 获取车主信息
+    const ownerIds = orders?.map((o: any) => o.owner_id).filter(Boolean) || []
+    const { data: users, error: usersError } = ownerIds.length > 0
+      ? await client.from('users').select('id, name').in('id', ownerIds)
+      : { data: [], error: null }
+
+    const userMap = new Map<string, string>()
+    if (users) {
+      users.forEach((u: any) => {
+        userMap.set(u.id, u.name)
+      })
+    }
+
+    // 映射数据为前端需要的格式
+    const pendingOrders = (orders || []).map((order: any) => {
+      return {
+        id: order.id,
+        cargoName: (order.demands as any)?.cargo_name || '未知货物',
+        farePrice: order.fare_price,
+        commissionAmount: order.commission_amount,
+        commissionStatus: order.commission_payment_status,
+        paymentTime: order.commission_payment_time,
+        ownerName: userMap.get(order.owner_id) || '未知车主'
+      }
+    })
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: pendingOrders
     }
   }
 }

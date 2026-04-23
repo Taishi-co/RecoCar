@@ -1,7 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
 import { CreateDemandDto, UpdateDemandDto } from './dto/demands.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
-import { calculateDistance } from '@/utils/distance.util'
 
 @Injectable()
 export class DemandsService {
@@ -37,34 +36,6 @@ export class DemandsService {
       throw new BadRequestException('只有需求方可以发布需求')
     }
 
-    // 解析位置信息
-    const pickupLoc = pickup_location ? JSON.parse(pickup_location) : null
-    const deliveryLoc = delivery_location ? JSON.parse(delivery_location) : null
-
-    // 计算预估距离
-    let estimatedDistance = 0
-    let pickupLat: number | null = null
-    let pickupLng: number | null = null
-    let deliveryLat: number | null = null
-    let deliveryLng: number | null = null
-
-    if (pickupLoc && deliveryLoc && 
-        pickupLoc.latitude && pickupLoc.longitude && 
-        deliveryLoc.latitude && deliveryLoc.longitude) {
-      pickupLat = pickupLoc.latitude
-      pickupLng = pickupLoc.longitude
-      deliveryLat = deliveryLoc.latitude
-      deliveryLng = deliveryLoc.longitude
-
-      estimatedDistance = calculateDistance(
-        pickupLat as number, 
-        pickupLng as number, 
-        deliveryLat as number, 
-        deliveryLng as number
-      )
-      console.log('[DemandsService] 计算预估距离:', estimatedDistance, '公里')
-    }
-
     // 创建需求记录
     const { data: demand, error: insertError } = await client
       .from('demands')
@@ -76,14 +47,9 @@ export class DemandsService {
         volume: parseFloat(volume),
         pickup_time,
         pickup_address,
-        pickup_location: pickupLoc,
+        pickup_location: pickup_location ? JSON.parse(pickup_location) : null,
         delivery_address,
-        delivery_location: deliveryLoc,
-        pickup_latitude: pickupLat,
-        pickup_longitude: pickupLng,
-        delivery_latitude: deliveryLat,
-        delivery_longitude: deliveryLng,
-        estimated_distance: estimatedDistance,
+        delivery_location: delivery_location ? JSON.parse(delivery_location) : null,
         remarks,
         status: 'pending', // 默认待接单
       })
