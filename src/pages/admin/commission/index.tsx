@@ -1,34 +1,40 @@
 import { useEffect, useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { View, Text, ScrollView } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
+import { DollarSign, CircleCheckBig, Clock, CircleAlert } from 'lucide-react-taro'
 
-interface PendingCommissionOrder {
+interface CommissionSummary {
+  totalCommission: number
+  confirmedCommission: number
+  pendingCommission: number
+  totalOrders: number
+}
+
+interface CommissionOrder {
   id: string
-  fare_price: number
-  commission_amount: number
-  commission_payment_time: string
-  vehicle?: {
-    brand: string
-    model: string
-    plate_number: string
-  }
-  owner?: {
-    name: string
-    phone: string
-  }
-  demand?: {
-    cargo_name: string
-    pickup_address: string
-    delivery_address: string
-  }
+  cargoName: string
+  farePrice: number | null
+  commissionAmount: number | null
+  commissionStatus: string
+  fareStatus: string
+  completedTime: string | null
+  paymentTime: string | null
+  ownerName: string
+  status: string
+}
+
+interface CommissionData {
+  summary: CommissionSummary
+  commissionOrders: CommissionOrder[]
 }
 
 export default function AdminCommission() {
-  const [orders, setOrders] = useState<PendingCommissionOrder[]>([])
+  const [pendingOrders, setPendingOrders] = useState<CommissionOrder[]>([])
+  const [summaryData, setSummaryData] = useState<CommissionData | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -44,6 +50,7 @@ export default function AdminCommission() {
       return
     }
     loadPendingCommissionOrders()
+    loadCommissionSummary()
   }, [])
 
   const loadPendingCommissionOrders = async () => {
@@ -61,21 +68,29 @@ export default function AdminCommission() {
       console.log('待审核佣金订单响应:', res.data)
 
       if (res.data.code === 200) {
-        setOrders(res.data.data || [])
-      } else {
-        Taro.showToast({
-          title: res.data.message || '加载失败',
-          icon: 'none'
-        })
+        setPendingOrders(res.data.data || [])
       }
     } catch (error) {
       console.error('加载待审核佣金订单失败:', error)
-      Taro.showToast({
-        title: '网络错误，请重试',
-        icon: 'none'
-      })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadCommissionSummary = async () => {
+    try {
+      const res = await Network.request({
+        url: '/api/orders/commission-summary',
+        method: 'GET'
+      })
+
+      console.log('佣金汇总统计响应:', res.data)
+
+      if (res.data.code === 200) {
+        setSummaryData(res.data.data)
+      }
+    } catch (error) {
+      console.error('加载佣金汇总统计失败:', error)
     }
   }
 
@@ -100,6 +115,7 @@ export default function AdminCommission() {
               })
 
               loadPendingCommissionOrders()
+              loadCommissionSummary()
             } else {
               Taro.showToast({
                 title: response.data.message || '操作失败',
@@ -118,140 +134,214 @@ export default function AdminCommission() {
     })
   }
 
+  const getCommissionStatusText = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return '已确认'
+      case 'unpaid':
+        return '待审核'
+      default:
+        return '未知'
+    }
+  }
+
   return (
-    <View className="min-h-screen bg-gray-100">
+    <View className="min-h-screen bg-gray-50">
       {/* 头部 */}
       <View className="bg-purple-500 pt-12 pb-6 px-4">
-        <Text className="block text-xl font-bold text-white">
-          佣金审核
-        </Text>
-        <Text className="block text-sm text-purple-100 mt-1">
-          待审核的佣金支付
-        </Text>
+        <Text className="block text-xl font-bold text-white">佣金审核</Text>
+        <Text className="block text-sm text-purple-100 mt-1">平台收益统计与佣金审核</Text>
       </View>
 
-      {/* 内容区域 */}
-      <View className="px-4 -mt-4">
-        {loading ? (
-          <View className="bg-white rounded-lg shadow-sm p-4 text-center">
-            <Text className="text-gray-500">加载中...</Text>
-          </View>
-        ) : orders.length === 0 ? (
-          <View className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <Text className="text-gray-500">暂无待审核佣金</Text>
-          </View>
-        ) : (
-          <View className="space-y-3 pb-4">
-            {orders.map((order) => (
-              <Card key={order.id} className="bg-white rounded-lg shadow-sm">
-                <CardHeader>
-                  <View className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold">
-                      订单 #{order.id.slice(-6)}
-                    </CardTitle>
-                    <Badge className="bg-pink-500">
-                      <Text className="text-white text-xs">
-                        待审核
-                      </Text>
-                    </Badge>
-                  </View>
-                </CardHeader>
-                <CardContent>
-                  {/* 货物信息 */}
-                  {order.demand && (
-                    <View className="mb-3 pb-3 border-b border-gray-200">
-                      <View className="flex items-center mb-1">
-                        <Text className="text-xs text-gray-500 w-16 flex-shrink-0">
-                          货物：
-                        </Text>
-                        <Text className="text-xs text-gray-800 flex-1">
-                          {order.demand.cargo_name}
-                        </Text>
+      <ScrollView scrollY className="pb-4">
+        <View className="px-4 -mt-4">
+          {/* 收益汇总 */}
+          {summaryData && (
+            <Card className="bg-white rounded-lg shadow-sm mb-4">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">平台收益汇总</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <View className="space-y-3">
+                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border-purple-200">
+                    <CardContent className="p-4">
+                      <Text className="block text-sm font-semibold text-gray-700 mb-3">佣金统计</Text>
+                      <View className="grid grid-cols-3 gap-4">
+                        <View className="text-center">
+                          <View className="flex items-center justify-center mb-1">
+                            <DollarSign size={16} color="#8b5cf6" />
+                          </View>
+                          <Text className="block text-lg font-bold text-purple-600">
+                            ¥{summaryData.summary.totalCommission.toFixed(2)}
+                          </Text>
+                          <Text className="block text-xs text-gray-600">总佣金</Text>
+                        </View>
+                        <View className="text-center">
+                          <View className="flex items-center justify-center mb-1">
+                            <CircleCheckBig size={16} color="#10b981" />
+                          </View>
+                          <Text className="block text-lg font-bold text-green-600">
+                            ¥{summaryData.summary.confirmedCommission.toFixed(2)}
+                          </Text>
+                          <Text className="block text-xs text-gray-600">已确认</Text>
+                        </View>
+                        <View className="text-center">
+                          <View className="flex items-center justify-center mb-1">
+                            <Clock size={16} color="#f59e0b" />
+                          </View>
+                          <Text className="block text-lg font-bold text-orange-600">
+                            ¥{summaryData.summary.pendingCommission.toFixed(2)}
+                          </Text>
+                          <Text className="block text-xs text-gray-600">待审核</Text>
+                        </View>
                       </View>
-                      <View className="flex items-start">
-                        <Text className="text-xs text-gray-500 w-16 flex-shrink-0">
-                          路线：
-                        </Text>
-                        <Text className="text-xs text-gray-700 flex-1">
-                          {order.demand.pickup_address}
-                          {' → '}
-                          {order.demand.delivery_address}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
+                    </CardContent>
+                  </Card>
 
-                  {/* 车辆信息 */}
-                  {order.vehicle && (
-                    <View className="mb-3 pb-3 border-b border-gray-200">
-                      <View className="flex items-center">
-                        <Text className="text-xs text-gray-500 w-16 flex-shrink-0">
-                          车辆：
-                        </Text>
-                        <Text className="text-xs text-gray-800 flex-1">
-                          {order.vehicle.brand} {order.vehicle.model}
-                          {' · '}
-                          {order.vehicle.plate_number}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* 运力方信息 */}
-                  {order.owner && (
-                    <View className="mb-3 pb-3 border-b border-gray-200">
-                      <View className="flex items-center">
-                        <Text className="text-xs text-gray-500 w-16 flex-shrink-0">
-                          运力方：
-                        </Text>
-                        <Text className="text-xs text-gray-800 flex-1">
-                          {order.owner.name} ({order.owner.phone})
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* 金额信息 */}
-                  <View className="mb-4">
-                    <View className="flex justify-between items-center mb-1">
-                      <Text className="text-sm text-gray-600">运费金额</Text>
-                      <Text className="text-sm font-semibold">
-                        ¥{order.fare_price || 0}
-                      </Text>
-                    </View>
-                    <View className="flex justify-between items-center">
-                      <Text className="text-sm text-gray-600">佣金金额</Text>
-                      <Text className="text-lg font-bold text-red-500">
-                        ¥{order.commission_amount || 0}
-                      </Text>
-                    </View>
+                  <View className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                    <Text className="text-sm text-gray-600">已完成订单数</Text>
+                    <Text className="text-base font-bold text-gray-800">
+                      {summaryData.summary.totalOrders} 单
+                    </Text>
                   </View>
 
-                  {/* 提交时间 */}
-                  {order.commission_payment_time && (
-                    <View className="mb-4">
-                      <Text className="text-xs text-gray-500 block">
-                        提交时间：{new Date(order.commission_payment_time).toLocaleString('zh-CN')}
-                      </Text>
-                    </View>
+                  {summaryData.summary.pendingCommission > 0 && (
+                    <Card className="bg-yellow-50 rounded-lg border-yellow-200">
+                      <CardContent className="p-3">
+                        <View className="flex items-center">
+                          <CircleAlert size={14} color="#ca8a04" />
+                          <Text className="text-xs text-yellow-700 ml-2">
+                            有 ¥{summaryData.summary.pendingCommission.toFixed(2)} 佣金待审核，请及时处理
+                          </Text>
+                        </View>
+                      </CardContent>
+                    </Card>
                   )}
+                </View>
+              </CardContent>
+            </Card>
+          )}
 
-                  {/* 操作按钮 */}
-                  <View className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-green-500"
-                      onClick={() => handleConfirmCommission(order.id)}
+          {/* 待审核佣金 */}
+          <Card className="bg-white rounded-lg shadow-sm mb-4">
+            <CardHeader>
+              <View className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold">待审核佣金</CardTitle>
+                <Badge className="bg-orange-500">
+                  <Text className="text-white text-xs">{pendingOrders.length} 条待审核</Text>
+                </Badge>
+              </View>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <View className="text-center py-8">
+                  <Text className="text-gray-500">加载中...</Text>
+                </View>
+              ) : pendingOrders.length === 0 ? (
+                <View className="text-center py-8">
+                  <Text className="text-gray-500">暂无待审核佣金</Text>
+                </View>
+              ) : (
+                <View className="space-y-3">
+                  {pendingOrders.map((order) => (
+                    <Card key={order.id} className="bg-gray-50 rounded-lg border border-gray-200">
+                      <CardContent className="p-3">
+                        <View className="flex justify-between items-start mb-2">
+                          <View className="flex-1">
+                            <Text className="block text-sm font-medium text-gray-800 mb-1">
+                              {order.cargoName || '未知货物'}
+                            </Text>
+                            <Text className="block text-xs text-gray-500">
+                              运费: ¥{(order.farePrice || 0).toFixed(2)} | 佣金: ¥{(order.commissionAmount || 0).toFixed(2)}
+                            </Text>
+                          </View>
+                          <View className="text-right">
+                            <Text className="block text-lg font-bold text-purple-600">
+                              ¥{(order.commissionAmount || 0).toFixed(2)}
+                            </Text>
+                            <Text className="text-xs text-gray-500">
+                              {order.ownerName}
+                            </Text>
+                          </View>
+                        </View>
+                        {order.paymentTime && (
+                          <Text className="block text-xs text-gray-400 mt-2 mb-3">
+                            支付时间: {new Date(order.paymentTime).toLocaleString('zh-CN')}
+                          </Text>
+                        )}
+                        <Button
+                          size="sm"
+                          className="w-full bg-green-500"
+                          onClick={() => handleConfirmCommission(order.id)}
+                        >
+                          <Text className="text-xs">确认收到佣金</Text>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </View>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 佣金订单列表 */}
+          {summaryData && summaryData.commissionOrders.length > 0 && (
+            <Card className="bg-white rounded-lg shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">佣金订单明细</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <View className="space-y-3">
+                  {summaryData.commissionOrders.map((order) => (
+                    <Card
+                      key={order.id}
+                      className="bg-gray-50 rounded-lg border border-gray-200"
                     >
-                      <Text className="text-xs">确认收到佣金</Text>
-                    </Button>
-                  </View>
-                </CardContent>
-              </Card>
-            ))}
-          </View>
-        )}
-      </View>
+                      <CardContent className="p-3">
+                        <View className="flex justify-between items-start mb-2">
+                          <View className="flex-1">
+                            <Text className="block text-sm font-medium text-gray-800 mb-1">
+                              {order.cargoName || '未知货物'}
+                            </Text>
+                            <Text className="block text-xs text-gray-500">
+                              运费: ¥{(order.farePrice || 0).toFixed(2)}
+                              {order.commissionAmount && ` | 佣金: ¥${order.commissionAmount.toFixed(2)}`}
+                            </Text>
+                          </View>
+                          <View className="text-right">
+                            <Text
+                              className={`block text-sm font-bold ${
+                                order.commissionStatus === 'paid' ? 'text-green-600' : 'text-orange-600'
+                              }`}
+                            >
+                              {order.commissionAmount ? `¥${order.commissionAmount.toFixed(2)}` : '未设置'}
+                            </Text>
+                            <Text
+                              className={`text-xs ${
+                                order.commissionStatus === 'paid' ? 'text-green-500' : 'text-orange-500'
+                              }`}
+                            >
+                              {getCommissionStatusText(order.commissionStatus)}
+                            </Text>
+                          </View>
+                        </View>
+                        <View className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
+                          <Text className="text-xs text-gray-500">{order.ownerName}</Text>
+                          {order.paymentTime && (
+                            <Text className="text-xs text-gray-400">
+                              {new Date(order.paymentTime).toLocaleDateString('zh-CN')}
+                            </Text>
+                          )}
+                        </View>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </View>
+              </CardContent>
+            </Card>
+          )}
+        </View>
+      </ScrollView>
     </View>
   )
 }

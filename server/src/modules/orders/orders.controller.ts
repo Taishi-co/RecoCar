@@ -28,6 +28,13 @@ export class OrdersController {
     return this.ordersService.getOwnerRevenueStats(ownerId)
   }
 
+  // 获取平台佣金汇总统计 - 必须放在 :id 路由之前
+  @Get('commission-summary')
+  async getCommissionSummary() {
+    console.log('[OrdersController] 获取平台佣金汇总统计')
+    return this.ordersService.getCommissionSummary()
+  }
+
   @Get(':id')
   async getOrderById(@Param('id') id: string) {
     return this.ordersService.findById(id)

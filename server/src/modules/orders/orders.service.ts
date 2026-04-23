@@ -716,4 +716,95 @@ export class OrdersService {
       data: result
     }
   }
+
+  // 获取平台佣金汇总统计
+  async getCommissionSummary() {
+    console.log('[OrdersService] 获取平台佣金汇总统计')
+    const client = getSupabaseClient()
+
+    // 查询已完成和待审核佣金的订单
+    const { data: orders, error: ordersError } = await client
+      .from('orders')
+      .select(`
+        id,
+        fare_price,
+        commission_amount,
+        payment_status,
+        commission_payment_status,
+        commission_payment_time,
+        actual_complete_time,
+        owner_id,
+        demands (
+          cargo_name,
+          pickup_address,
+          delivery_address
+        )
+      `)
+      .in('status', ['completed', 'commission_pending'])
+      .order('actual_complete_time', { ascending: false, nullsFirst: false })
+
+    if (ordersError) {
+      console.error('[OrdersService] 查询订单失败:', ordersError)
+      throw new BadRequestException(`查询订单失败: ${ordersError.message}`)
+    }
+
+    console.log('[OrdersService] 查询到的订单数:', orders?.length || 0)
+
+    // 获取车主和车辆信息
+    const ownerIds = orders?.map((o: any) => o.owner_id).filter(Boolean) || []
+    const { data: users, error: usersError } = ownerIds.length > 0
+      ? await client.from('users').select('id, name').in('id', ownerIds)
+      : { data: [], error: null }
+
+    const userMap = new Map<string, string>()
+    if (users) {
+      users.forEach((u: any) => {
+        userMap.set(u.id, u.name)
+      })
+    }
+
+    // 计算汇总数据
+    const summary = {
+      totalCommission: 0,
+      confirmedCommission: 0,
+      pendingCommission: 0,
+      totalOrders: orders?.length || 0
+    }
+
+    // 构建佣金订单列表
+    const commissionOrders = (orders || []).map((order: any) => {
+      // 累加佣金
+      if (order.commission_payment_status === 'paid') {
+        summary.confirmedCommission += order.commission_amount || 0
+        summary.totalCommission += order.commission_amount || 0
+      } else if (order.commission_payment_status === 'unpaid' && order.status === 'commission_pending') {
+        summary.pendingCommission += order.commission_amount || 0
+        summary.totalCommission += order.commission_amount || 0
+      }
+
+      return {
+        id: order.id,
+        cargoName: (order.demands as any)?.cargo_name || '',
+        farePrice: order.fare_price,
+        commissionAmount: order.commission_amount,
+        commissionStatus: order.commission_payment_status,
+        fareStatus: order.payment_status,
+        completedTime: order.actual_complete_time,
+        paymentTime: order.commission_payment_time,
+        ownerName: userMap.get(order.owner_id) || '未知',
+        status: order.status
+      }
+    })
+
+    console.log('[OrdersService] 佣金汇总统计:', summary)
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: {
+        summary,
+        commissionOrders
+      }
+    }
+  }
 }
