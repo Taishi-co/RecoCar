@@ -23,8 +23,11 @@ export class VehiclesService {
       battery_life,
       has_cold_chain,
       operation_area,
-      available_hours
+      available_hours,
+      photoUrls
     } = createVehicleDto
+
+    console.log('[VehiclesService] 创建车辆，photoUrls:', photoUrls)
 
     // 验证用户是否存在
     const client = getSupabaseClient()
@@ -43,21 +46,11 @@ export class VehiclesService {
       throw new BadRequestException('只有车主可以注册车辆')
     }
 
-    // 处理照片上传
+    // 使用前端传递的 photoUrls
     let photoKeys: string[] = []
-    if (photos) {
-      try {
-        const fileKey = await storage.uploadFile({
-          fileContent: photos.buffer,
-          fileName: `vehicles/${Date.now()}_${photos.originalname}`,
-          contentType: photos.mimetype,
-        })
-        photoKeys.push(fileKey)
-        console.log('[VehiclesService] 照片上传成功:', fileKey)
-      } catch (error) {
-        console.error('[VehiclesService] 照片上传失败:', error)
-        throw new BadRequestException('照片上传失败')
-      }
+    if (photoUrls && Array.isArray(photoUrls)) {
+      photoKeys = photoUrls
+      console.log('[VehiclesService] 使用前端传递的照片 URL:', photoKeys)
     }
 
     // 创建车辆记录
@@ -150,6 +143,20 @@ export class VehiclesService {
   async update(id: string, updateVehicleDto: UpdateVehicleDto, photos?: any) {
     const client = getSupabaseClient()
 
+    const {
+      vehicle_type,
+      license_plate,
+      load_capacity,
+      volume,
+      battery_life,
+      has_cold_chain,
+      operation_area,
+      available_hours,
+      photoUrls
+    } = updateVehicleDto
+
+    console.log('[VehiclesService] 更新车辆，photoUrls:', photoUrls)
+
     // 检查车辆是否存在
     const { data: existingVehicle, error: checkError } = await client
       .from('vehicles')
@@ -161,32 +168,11 @@ export class VehiclesService {
       throw new NotFoundException('车辆不存在')
     }
 
-    // 处理照片上传（如果有新照片）
+    // 使用前端传递的 photoUrls
     let photoKeys: string[] = []
-    if (photos) {
-      try {
-        const fileKey = await storage.uploadFile({
-          fileContent: photos.buffer,
-          fileName: `vehicles/${Date.now()}_${photos.originalname}`,
-          contentType: photos.mimetype,
-        })
-        photoKeys.push(fileKey)
-
-        // 删除旧照片
-        if (existingVehicle.photos) {
-          const oldPhotoKeys = JSON.parse(existingVehicle.photos)
-          for (const oldKey of oldPhotoKeys) {
-            try {
-              await storage.deleteFile({ fileKey: oldKey })
-            } catch (e) {
-              console.warn('[VehiclesService] 删除旧照片失败:', e)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('[VehiclesService] 照片上传失败:', error)
-        throw new BadRequestException('照片上传失败')
-      }
+    if (photoUrls && Array.isArray(photoUrls)) {
+      photoKeys = photoUrls
+      console.log('[VehiclesService] 使用前端传递的照片 URL:', photoKeys)
     } else {
       // 保留旧照片
       if (existingVehicle.photos) {

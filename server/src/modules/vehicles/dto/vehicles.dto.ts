@@ -11,6 +11,7 @@ export const createVehicleSchema = z.object({
   has_cold_chain: z.string().optional(), // 是否有冷链能力，字符串形式 'true' 或 'false'
   operation_area: z.string().optional(), // JSON 字符串
   available_hours: z.string().optional(), // JSON 字符串
+  photoUrls: z.array(z.string()).optional(), // 车辆照片URL数组
 })
 
 export type CreateVehicleDto = z.infer<typeof createVehicleSchema>
@@ -25,6 +26,7 @@ export const updateVehicleSchema = z.object({
   has_cold_chain: z.string().optional(),
   operation_area: z.string().optional(),
   available_hours: z.string().optional(),
+  photoUrls: z.array(z.string()).optional(), // 车辆照片URL数组
 })
 
 export type UpdateVehicleDto = z.infer<typeof updateVehicleSchema>
