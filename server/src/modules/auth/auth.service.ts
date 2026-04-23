@@ -148,14 +148,29 @@ export class AuthService {
       throw new NotFoundException('用户不存在')
     }
 
-    // 只返回需要的字段，确保 wechat_payment_qr 字段存在
+    // 如果有收款码，生成签名URL
+    let paymentQrUrl: string | null = null
+    if (user.wechat_payment_qr) {
+      try {
+        paymentQrUrl = await storage.generatePresignedUrl({
+          key: user.wechat_payment_qr,
+          expireTime: 86400 // 1天有效期
+        })
+        console.log('[AuthService] 收款码签名URL生成成功:', paymentQrUrl)
+      } catch (err) {
+        console.error('[AuthService] 生成签名URL失败:', err)
+        paymentQrUrl = null
+      }
+    }
+
+    // 只返回需要的字段
     const result = {
       id: user.id,
       phone: user.phone,
       name: user.name,
       role: user.role,
       avatar: user.avatar,
-      wechat_payment_qr: user.wechat_payment_qr || null,
+      wechat_payment_qr: paymentQrUrl,
       created_at: user.created_at
     }
 
@@ -198,20 +213,16 @@ export class AuthService {
         fileName: `payment_qr/${userId}_${Date.now()}_${file.originalname}`,
         contentType: file.mimetype,
       })
-      console.log('[AuthService] 收款码上传成功:', fileKey)
+      console.log('[AuthService] 收款码上传成功，fileKey:', fileKey)
     } catch (error) {
       console.error('[AuthService] 收款码上传失败:', error)
       throw new BadRequestException('收款码上传失败')
     }
 
-    // 构建完整的图片URL
-    const imageUrl = `${process.env.COZE_BUCKET_ENDPOINT_URL}/${process.env.COZE_BUCKET_NAME}/${fileKey}`
-    console.log('[AuthService] 收款码URL:', imageUrl)
-
-    // 更新用户收款码
+    // 更新用户收款码，只保存fileKey（不保存URL）
     const { data: updatedUser, error: updateError } = await client
       .from('users')
-      .update({ wechat_payment_qr: imageUrl })
+      .update({ wechat_payment_qr: fileKey })
       .eq('id', userId)
       .select('id, phone, name, role, wechat_payment_qr')
       .single()
@@ -220,10 +231,30 @@ export class AuthService {
       throw new BadRequestException(`更新失败: ${updateError.message}`)
     }
 
+    // 生成收款码签名URL返回给前端
+    let paymentQrUrl: string | null = null
+    try {
+      paymentQrUrl = await storage.generatePresignedUrl({
+        key: fileKey,
+        expireTime: 86400 // 1天有效期
+      })
+      console.log('[AuthService] 收款码签名URL生成成功:', paymentQrUrl)
+    } catch (err) {
+      console.error('[AuthService] 生成签名URL失败:', err)
+    }
+
+    const result = {
+      id: updatedUser.id,
+      phone: updatedUser.phone,
+      name: updatedUser.name,
+      role: updatedUser.role,
+      wechat_payment_qr: paymentQrUrl
+    }
+
     return {
       code: 200,
       message: '收款码上传成功',
-      data: updatedUser
+      data: result
     }
   }
 }
