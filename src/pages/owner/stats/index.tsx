@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { DollarSign, TrendingUp, Package, CircleAlert } from 'lucide-react-taro'
+import { DollarSign, TrendingUp, CircleAlert } from 'lucide-react-taro'
 
 interface RevenueSummary {
   totalFare: number
@@ -200,9 +200,6 @@ export default function OwnerStats() {
                       <Text className="block text-sm font-semibold text-gray-700 mb-3">订单统计</Text>
                       <View className="grid grid-cols-3 gap-4">
                         <View className="text-center">
-                          <View className="flex items-center justify-center mb-1">
-                            <Package size={16} color="#10b981" />
-                          </View>
                           <Text className="block text-2xl font-bold text-green-600 mb-1">
                             {revenueData.summary.totalOrders}
                           </Text>
