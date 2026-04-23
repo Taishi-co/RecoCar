@@ -27,6 +27,7 @@ interface Order {
   merchant_confirmed: boolean
   confirm_time: string | null
   created_at: string
+  cancellation_status?: 'pending' | 'approved' | 'rejected' | null // 取消申请状态
   demand?: {
     id: string
     cargo_name: string
@@ -105,7 +106,7 @@ export default function MerchantOrders() {
       if (res.data.code === 200) {
         const orderList = res.data.data || []
 
-        // 为每个订单查询需求详情
+        // 为每个订单查询需求详情和取消申请状态
         const ordersWithDetails = await Promise.all(
           orderList.map(async (order: Order) => {
             try {
@@ -119,6 +120,28 @@ export default function MerchantOrders() {
               }
             } catch (error) {
               console.error('查询需求详情失败:', error)
+            }
+
+            // 查询取消申请状态（仅针对已接单且已确认运费的订单）
+            if (order.status === 'accepted' && order.merchant_confirmed) {
+              try {
+                const cancelRes = await Network.request({
+                  url: '/api/cancellations/pending',
+                  method: 'GET',
+                  data: { owner_id: order.owner_id }
+                })
+
+                if (cancelRes.data.code === 200 && cancelRes.data.data) {
+                  const cancelRequest = cancelRes.data.data.find(
+                    (req: any) => req.order_id === order.id
+                  )
+                  if (cancelRequest) {
+                    order.cancellation_status = cancelRequest.status
+                  }
+                }
+              } catch (error) {
+                console.error('查询取消申请状态失败:', error)
+              }
             }
 
             return order
@@ -513,7 +536,7 @@ export default function MerchantOrders() {
                         <Text className="block font-medium text-base mb-1">
                           {order.demand?.cargo_name || '货物'}
                         </Text>
-                        <View className="flex items-center gap-2 mb-2">
+                        <View className="flex items-center gap-2 mb-2 flex-wrap">
                           {order.demand && (
                             <Badge className={getCargoTypeColor(order.demand.cargo_type)}>
                               <Text className="text-white text-xs">
@@ -526,6 +549,28 @@ export default function MerchantOrders() {
                               {getStatusText(order.status)}
                             </Text>
                           </Badge>
+                          {/* 显示取消申请状态 */}
+                          {order.cancellation_status === 'pending' && (
+                            <Badge className="bg-orange-500">
+                              <Text className="text-white text-xs">
+                                等待运力方同意
+                              </Text>
+                            </Badge>
+                          )}
+                          {order.cancellation_status === 'approved' && (
+                            <Badge className="bg-green-500">
+                              <Text className="text-white text-xs">
+                                已同意取消
+                              </Text>
+                            </Badge>
+                          )}
+                          {order.cancellation_status === 'rejected' && (
+                            <Badge className="bg-gray-500">
+                              <Text className="text-white text-xs">
+                                已拒绝取消
+                              </Text>
+                            </Badge>
+                          )}
                         </View>
                       </View>
                     </View>
