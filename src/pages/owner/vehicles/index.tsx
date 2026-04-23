@@ -134,27 +134,45 @@ export default function OwnerVehicles() {
 
       const uploadPromises = res.tempFilePaths.map(async (filePath) => {
         try {
+          console.log('[上传照片] 开始上传:', filePath)
+
           const uploadRes = await Network.uploadFile({
             url: '/api/vehicles/upload-photo',
             filePath: filePath,
-            name: 'photo',
-            header: {
-              'Content-Type': 'multipart/form-data'
-            }
+            name: 'photo'
           })
 
-          console.log('照片上传响应:', uploadRes)
+          console.log('[上传照片] 原始响应:', uploadRes)
+          console.log('[上传照片] statusCode:', uploadRes.statusCode)
+          console.log('[上传照片] data:', uploadRes.data)
+          console.log('[上传照片] data type:', typeof uploadRes.data)
+
+          // 检查 HTTP 状态码
+          if (uploadRes.statusCode !== 200) {
+            console.error('[上传照片] HTTP 状态码错误:', uploadRes.statusCode)
+            throw new Error(`上传失败，状态码: ${uploadRes.statusCode}`)
+          }
 
           // 解析响应数据
-          const response = typeof uploadRes === 'string' ? JSON.parse(uploadRes) : uploadRes
+          let response: any
+          try {
+            response = JSON.parse(uploadRes.data)
+          } catch (parseError) {
+            console.error('[上传照片] JSON 解析失败:', parseError)
+            throw new Error('响应数据格式错误')
+          }
+
+          console.log('[上传照片] 解析后响应:', response)
 
           if (response.code === 200) {
+            console.log('[上传照片] 成功，URL:', response.data.url)
             return response.data.url
           } else {
+            console.error('[上传照片] 业务错误:', response.message)
             throw new Error(response.message || '上传失败')
           }
         } catch (error) {
-          console.error('照片上传失败:', error)
+          console.error('[上传照片] 异常:', error)
           throw error
         }
       })
