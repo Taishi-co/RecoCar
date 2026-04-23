@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -263,50 +263,6 @@ export default function Index() {
               <Text className="block text-xs text-gray-500">
                 简单几步，轻松完成
               </Text>
-            </Card>
-          </View>
-        </View>
-
-        {/* 角色介绍 */}
-        <View className="px-4 mb-6">
-          <Text className="block text-lg font-semibold text-gray-800 mb-3">
-            选择您的角色
-          </Text>
-          <View className="space-y-3">
-            <Card className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <CardHeader>
-                <View className="flex items-center justify-between">
-                  <View className="flex items-center">
-                    <Truck size={24} color="#3b82f6" />
-                    <View className="ml-3">
-                      <Text className="block text-base font-semibold text-gray-800">
-                        运力方（车主）
-                      </Text>
-                      <Text className="block text-xs text-gray-500 mt-1">
-                        注册车辆、接单赚钱、查看收益
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </CardHeader>
-            </Card>
-
-            <Card className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <CardHeader>
-                <View className="flex items-center justify-between">
-                  <View className="flex items-center">
-                    <Package size={24} color="#10b981" />
-                    <View className="ml-3">
-                      <Text className="block text-base font-semibold text-gray-800">
-                        需求方
-                      </Text>
-                      <Text className="block text-xs text-gray-500 mt-1">
-                        发布需求、快捷下单、追踪运输
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </CardHeader>
             </Card>
           </View>
         </View>
