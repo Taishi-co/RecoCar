@@ -365,7 +365,7 @@ export class OrdersService {
     }
 
     // 如果车主有收款码，生成签名URL
-    let paymentQrUrl = null
+    let paymentQrUrl: string | null = null
     if (order.users?.wechat_payment_qr) {
       try {
         const { S3Storage } = await import('coze-coding-dev-sdk')
@@ -463,7 +463,7 @@ export class OrdersService {
     }
 
     // 获取平台收款码
-    let platformPaymentQrUrl = null
+    let platformPaymentQrUrl: string | null = null
     const { data: settings } = await client
       .from('platform_settings')
       .select('commission_payment_qr')
