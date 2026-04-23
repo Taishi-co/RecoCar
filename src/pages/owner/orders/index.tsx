@@ -35,9 +35,7 @@ interface Order {
     volume: number
     pickup_time: string
     pickup_address: string
-    pickup_location?: { lat: number; lng: number }
     delivery_address: string
-    delivery_location?: { lat: number; lng: number }
     remarks: string | null
   }
   vehicle?: {

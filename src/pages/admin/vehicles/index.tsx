@@ -249,13 +249,6 @@ export default function AdminVehicles() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => Taro.navigateTo({ url: '/pages/admin/commission/index' })}
-            >
-              <Text className="text-xs">佣金审核</Text>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/admin/stats/index' })}
             >
               <Text className="text-xs">数据统计</Text>
