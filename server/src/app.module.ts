@@ -6,9 +6,10 @@ import { VehiclesModule } from '@/modules/vehicles/vehicles.module';
 import { DemandsModule } from '@/modules/demands/demands.module';
 import { OrdersModule } from '@/modules/orders/orders.module';
 import { AdminModule } from '@/modules/admin/admin.module';
+import { PlatformModule } from '@/modules/platform/platform.module';
 
 @Module({
-  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule],
+  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule],
   controllers: [AppController],
   providers: [AppService],
 })

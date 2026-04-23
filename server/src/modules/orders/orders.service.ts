@@ -192,11 +192,26 @@ export class OrdersService {
       throw new BadRequestException('只有运输中的订单可以完成')
     }
 
-    // 更新订单状态为已完成
+    // 获取平台佣金比例
+    const { data: settings } = await client
+      .from('platform_settings')
+      .select('commission_rate')
+      .eq('id', 'default')
+      .single()
+
+    const commissionRate = settings?.commission_rate || 5.00
+    const farePrice = existingOrder.fare_price || 0
+    const commissionAmount = (farePrice * commissionRate) / 100
+
+    // 更新订单状态为运输完成（待付款）
     const { data: order, error: updateError } = await client
       .from('orders')
       .update({
-        status: 'completed',
+        status: 'transport_completed',
+        payment_status: 'unpaid',
+        commission_payment_status: 'unpaid',
+        commission_amount: commissionAmount,
+        transport_completed_time: new Date().toISOString(),
         complete_time: new Date().toISOString(),
         pickup_photo_key: pickupPhotoKey || existingOrder.pickup_photo_key,
         delivery_photo_key: deliveryPhotoKey || existingOrder.delivery_photo_key
@@ -206,27 +221,346 @@ export class OrdersService {
       .single()
 
     if (updateError) {
-      throw new BadRequestException(`完成订单失败: ${updateError.message}`)
+      throw new BadRequestException(`完成运输失败: ${updateError.message}`)
+    }
+
+    // 更新需求状态为运输完成
+    await client
+      .from('demands')
+      .update({ status: 'transport_completed' })
+      .eq('id', existingOrder.demand_id)
+
+    // 注意：此时不恢复车辆状态，等待佣金支付完成后才恢复
+
+    return {
+      code: 200,
+      message: '运输已完成，等待需求方付款',
+      data: order
+    }
+  }
+
+  // 需求方标记已付款
+  async markPayment(orderId: string) {
+    const client = getSupabaseClient()
+
+    // 检查订单是否存在
+    const { data: order, error: checkError } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle()
+
+    if (checkError || !order) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 检查订单状态
+    if (order.status !== 'transport_completed') {
+      throw new BadRequestException('订单状态不正确')
+    }
+
+    if (order.payment_status === 'paid') {
+      throw new BadRequestException('已标记为已付款')
+    }
+
+    // 更新付款状态
+    const { data: updatedOrder, error: updateError } = await client
+      .from('orders')
+      .update({
+        payment_status: 'paid',
+        payment_time: new Date().toISOString()
+      })
+      .eq('id', orderId)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`标记付款失败: ${updateError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '已标记为已付款，等待运力方确认',
+      data: updatedOrder
+    }
+  }
+
+  // 运力方确认收款
+  async confirmPayment(orderId: string) {
+    const client = getSupabaseClient()
+
+    // 检查订单是否存在
+    const { data: order, error: checkError } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle()
+
+    if (checkError || !order) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 检查订单状态
+    if (order.status !== 'transport_completed') {
+      throw new BadRequestException('订单状态不正确')
+    }
+
+    if (order.payment_status !== 'paid') {
+      throw new BadRequestException('需求方尚未付款')
+    }
+
+    // 更新订单状态
+    const { data: updatedOrder, error: updateError } = await client
+      .from('orders')
+      .update({
+        status: 'payment_confirmed',
+        payment_confirm_time: new Date().toISOString()
+      })
+      .eq('id', orderId)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`确认收款失败: ${updateError.message}`)
+    }
+
+    // 更新需求状态
+    await client
+      .from('demands')
+      .update({ status: 'payment_confirmed' })
+      .eq('id', order.demand_id)
+
+    return {
+      code: 200,
+      message: '收款已确认，请向平台支付撮合佣金',
+      data: updatedOrder
+    }
+  }
+
+  // 获取付款信息（需求方查看）
+  async getPaymentInfo(orderId: string) {
+    const client = getSupabaseClient()
+
+    const { data: order, error } = await client
+      .from('orders')
+      .select(`
+        *,
+        demands!inner (
+          merchant_id,
+          pickup_address,
+          delivery_address
+        ),
+        users!orders_owner_id_fkey (
+          id,
+          name,
+          phone,
+          wechat_payment_qr
+        )
+      `)
+      .eq('id', orderId)
+      .maybeSingle()
+
+    if (error || !order) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 如果车主有收款码，生成签名URL
+    let paymentQrUrl = null
+    if (order.users?.wechat_payment_qr) {
+      try {
+        const { S3Storage } = await import('coze-coding-dev-sdk')
+        const storage = new S3Storage({
+          endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
+          accessKey: '',
+          secretKey: '',
+          bucketName: process.env.COZE_BUCKET_NAME,
+          region: 'cn-beijing',
+        })
+        paymentQrUrl = await storage.generatePresignedUrl({
+          key: order.users.wechat_payment_qr,
+          expireTime: 86400
+        })
+      } catch (err) {
+        console.error('[OrdersService] 生成收款码URL失败:', err)
+      }
+    }
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: {
+        orderId: order.id,
+        farePrice: order.fare_price,
+        commissionAmount: order.commission_amount,
+        ownerName: order.users?.name,
+        ownerPhone: order.users?.phone,
+        paymentQr: paymentQrUrl,
+        paymentStatus: order.payment_status,
+        status: order.status
+      }
+    }
+  }
+
+  // 运力方标记已付佣金
+  async markCommissionPayment(orderId: string, paymentProof?: string) {
+    const client = getSupabaseClient()
+
+    // 检查订单是否存在
+    const { data: order, error: checkError } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle()
+
+    if (checkError || !order) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 检查订单状态
+    if (order.status !== 'payment_confirmed') {
+      throw new BadRequestException('请先确认收款')
+    }
+
+    if (order.commission_payment_status === 'paid') {
+      throw new BadRequestException('已标记为已支付佣金')
+    }
+
+    // 更新佣金付款状态
+    const { data: updatedOrder, error: updateError } = await client
+      .from('orders')
+      .update({
+        commission_payment_status: 'paid',
+        commission_payment_time: new Date().toISOString(),
+        status: 'commission_pending'
+      })
+      .eq('id', orderId)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`标记支付佣金失败: ${updateError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '已提交佣金支付，等待平台审核',
+      data: updatedOrder
+    }
+  }
+
+  // 获取佣金支付信息（运力方查看）
+  async getCommissionInfo(orderId: string) {
+    const client = getSupabaseClient()
+
+    const { data: order, error } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle()
+
+    if (error || !order) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 获取平台收款码
+    let platformPaymentQrUrl = null
+    const { data: settings } = await client
+      .from('platform_settings')
+      .select('commission_payment_qr')
+      .eq('id', 'default')
+      .single()
+
+    if (settings?.commission_payment_qr) {
+      try {
+        const { S3Storage } = await import('coze-coding-dev-sdk')
+        const storage = new S3Storage({
+          endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
+          accessKey: '',
+          secretKey: '',
+          bucketName: process.env.COZE_BUCKET_NAME,
+          region: 'cn-beijing',
+        })
+        platformPaymentQrUrl = await storage.generatePresignedUrl({
+          key: settings.commission_payment_qr,
+          expireTime: 86400
+        })
+      } catch (err) {
+        console.error('[OrdersService] 生成平台收款码URL失败:', err)
+      }
+    }
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: {
+        orderId: order.id,
+        farePrice: order.fare_price,
+        commissionAmount: order.commission_amount,
+        platformPaymentQr: platformPaymentQrUrl,
+        commissionPaymentStatus: order.commission_payment_status,
+        status: order.status
+      }
+    }
+  }
+
+  // 管理员确认佣金支付
+  async confirmCommission(orderId: string) {
+    const client = getSupabaseClient()
+
+    // 检查订单是否存在
+    const { data: order, error: checkError } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle()
+
+    if (checkError || !order) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 检查订单状态
+    if (order.status !== 'commission_pending') {
+      throw new BadRequestException('订单状态不正确')
+    }
+
+    if (order.commission_payment_status !== 'paid') {
+      throw new BadRequestException('运力方尚未支付佣金')
+    }
+
+    // 更新订单状态为已完成
+    const { data: updatedOrder, error: updateError } = await client
+      .from('orders')
+      .update({
+        status: 'completed',
+        commission_confirm_time: new Date().toISOString(),
+        actual_complete_time: new Date().toISOString()
+      })
+      .eq('id', orderId)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`确认佣金失败: ${updateError.message}`)
     }
 
     // 更新需求状态为已完成
     await client
       .from('demands')
       .update({ status: 'completed' })
-      .eq('id', existingOrder.demand_id)
+      .eq('id', order.demand_id)
 
-    // 恢复车辆状态为空闲
-    if (existingOrder.vehicle_id) {
+    // 恢复车辆状态为空闲（此时订单才真正完成）
+    if (order.vehicle_id) {
       await client
         .from('vehicles')
         .update({ trip_status: 'idle' })
-        .eq('id', existingOrder.vehicle_id)
+        .eq('id', order.vehicle_id)
     }
 
     return {
       code: 200,
-      message: '订单已完成',
-      data: order
+      message: '佣金已确认，订单完成',
+      data: updatedOrder
     }
   }
 

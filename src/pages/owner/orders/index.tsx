@@ -14,14 +14,18 @@ interface Order {
   merchant_id: string
   owner_id: string | null
   status: string
+  payment_status: string
+  commission_payment_status: string
   pickup_time: string | null
   pickup_photo_key: string | null
   delivery_photo_key: string | null
   accept_time: string | null
   complete_time: string | null
   fare_price: number | null
+  commission_amount: number | null
   merchant_confirmed: boolean
   confirm_time: string | null
+  payment_confirm_time: string | null
   created_at: string
   demand?: {
     id: string
@@ -136,6 +140,9 @@ export default function OwnerOrders() {
       pending: '待接单',
       accepted: '已接单',
       in_transit: '运输中',
+      transport_completed: '运输完成（待付款）',
+      payment_confirmed: '收款已确认（待付佣金）',
+      commission_pending: '佣金待审核',
       completed: '已完成',
       cancelled: '已取消'
     }
@@ -147,6 +154,9 @@ export default function OwnerOrders() {
       pending: 'bg-orange-500',
       accepted: 'bg-blue-500',
       in_transit: 'bg-cyan-500',
+      transport_completed: 'bg-yellow-500',
+      payment_confirmed: 'bg-purple-500',
+      commission_pending: 'bg-pink-500',
       completed: 'bg-green-500',
       cancelled: 'bg-red-500'
     }
@@ -278,7 +288,7 @@ export default function OwnerOrders() {
 
       if (res.data.code === 200) {
         Taro.showToast({
-          title: '订单已完成',
+          title: '运输已完成，等待需求方付款',
           icon: 'success'
         })
 
@@ -303,6 +313,49 @@ export default function OwnerOrders() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // 确认收款
+  const handleConfirmPayment = async (order: Order) => {
+    setLoading(true)
+
+    try {
+      const res = await Network.request({
+        url: `/api/orders/${order.id}/payment-confirm`,
+        method: 'PUT'
+      })
+
+      console.log('确认收款响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '收款已确认，请向平台支付撮合佣金',
+          icon: 'success'
+        })
+
+        loadOrders()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '操作失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('确认收款失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 跳转到佣金支付页
+  const handleGoToCommissionPayment = (order: Order) => {
+    Taro.navigateTo({
+      url: `/pages/owner/commission-payment/index?orderId=${order.id}`
+    })
   }
 
   return (
@@ -461,7 +514,34 @@ export default function OwnerOrders() {
                           className="bg-blue-500"
                           onClick={() => handleCompleteOrder(order)}
                         >
-                          <Text className="text-xs">完成订单</Text>
+                          <Text className="text-xs">完成运输</Text>
+                        </Button>
+                      )}
+                      {order.status === 'transport_completed' && order.payment_status === 'paid' && (
+                        <Button
+                          size="sm"
+                          className="bg-green-500"
+                          onClick={() => handleConfirmPayment(order)}
+                        >
+                          <Text className="text-xs">确认收款</Text>
+                        </Button>
+                      )}
+                      {order.status === 'payment_confirmed' && (
+                        <Button
+                          size="sm"
+                          className="bg-purple-500"
+                          onClick={() => handleGoToCommissionPayment(order)}
+                        >
+                          <Text className="text-xs">支付佣金</Text>
+                        </Button>
+                      )}
+                      {order.status === 'commission_pending' && (
+                        <Button
+                          size="sm"
+                          className="bg-gray-400"
+                          disabled
+                        >
+                          <Text className="text-xs">等待审核</Text>
                         </Button>
                       )}
                     </View>

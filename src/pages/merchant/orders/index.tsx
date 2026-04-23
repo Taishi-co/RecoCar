@@ -13,6 +13,7 @@ interface Order {
   merchant_id: string
   owner_id: string | null
   status: string
+  payment_status: string
   pickup_time: string | null
   accept_time: string | null
   complete_time: string | null
@@ -136,6 +137,9 @@ export default function MerchantOrders() {
       pending: '待接单',
       accepted: '已接单',
       in_transit: '运输中',
+      transport_completed: '运输完成（待付款）',
+      payment_confirmed: '收款已确认',
+      commission_pending: '佣金待审核',
       completed: '已完成',
       cancelled: '已取消'
     }
@@ -147,6 +151,9 @@ export default function MerchantOrders() {
       pending: 'bg-orange-500',
       accepted: 'bg-blue-500',
       in_transit: 'bg-cyan-500',
+      transport_completed: 'bg-yellow-500',
+      payment_confirmed: 'bg-purple-500',
+      commission_pending: 'bg-pink-500',
       completed: 'bg-green-500',
       cancelled: 'bg-red-500'
     }
@@ -183,6 +190,13 @@ export default function MerchantOrders() {
         icon: 'none'
       })
     }
+  }
+
+  // 跳转到付款页面
+  const handleGoToPayment = (order: Order) => {
+    Taro.navigateTo({
+      url: `/pages/merchant/payment/index?orderId=${order.id}`
+    })
   }
 
   const getCargoTypeText = (type: string) => {
@@ -425,7 +439,8 @@ export default function MerchantOrders() {
                               ¥{order.fare_price.toFixed(2)}
                             </Text>
                           </View>
-                          {!order.merchant_confirmed && (
+                          {/* 旧版运费确认（保留兼容性） */}
+                          {order.status === 'accepted' && !order.merchant_confirmed && (
                             <Button
                               size="sm"
                               className="bg-orange-500"
@@ -434,10 +449,34 @@ export default function MerchantOrders() {
                               <Text className="text-xs">确认运费</Text>
                             </Button>
                           )}
-                          {order.merchant_confirmed && (
+                          {order.status === 'accepted' && order.merchant_confirmed && (
                             <View className="bg-green-500 px-3 py-1 rounded-lg">
                               <Text className="text-xs text-white">已确认</Text>
                             </View>
+                          )}
+                          {/* 新版付款流程 */}
+                          {order.status !== 'accepted' && (
+                            <>
+                              {order.status === 'transport_completed' && order.payment_status === 'unpaid' && (
+                                <Button
+                                  size="sm"
+                                  className="bg-green-500"
+                                  onClick={() => handleGoToPayment(order)}
+                                >
+                                  <Text className="text-xs">去付款</Text>
+                                </Button>
+                              )}
+                              {order.status === 'transport_completed' && order.payment_status === 'paid' && (
+                                <View className="bg-blue-500 px-3 py-1 rounded-lg">
+                                  <Text className="text-xs text-white">已付款</Text>
+                                </View>
+                              )}
+                              {order.status === 'payment_confirmed' && (
+                                <View className="bg-purple-500 px-3 py-1 rounded-lg">
+                                  <Text className="text-xs text-white">收款已确认</Text>
+                                </View>
+                              )}
+                            </>
                           )}
                         </View>
                         {order.confirm_time && (

@@ -1,0 +1,265 @@
+import { useEffect, useState } from 'react'
+import { View, Text, Image } from '@tarojs/components'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import Taro from '@tarojs/taro'
+import { Network } from '@/network'
+
+interface PaymentInfo {
+  orderId: string
+  farePrice: number
+  commissionAmount: number
+  ownerName: string
+  ownerPhone: string
+  paymentQr: string
+  paymentStatus: string
+  status: string
+}
+
+export default function MerchantPayment() {
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [marking, setMarking] = useState(false)
+
+  useEffect(() => {
+    const instance = Taro.getCurrentInstance()
+    const orderId = instance.router?.params?.orderId
+
+    if (!orderId) {
+      Taro.showToast({
+        title: '参数错误',
+        icon: 'none'
+      })
+      setTimeout(() => {
+        Taro.navigateBack()
+      }, 1500)
+      return
+    }
+
+    loadPaymentInfo(orderId)
+  }, [])
+
+  const loadPaymentInfo = async (orderId: string) => {
+    setLoading(true)
+
+    try {
+      const res = await Network.request({
+        url: `/api/orders/${orderId}/payment-info`,
+        method: 'GET'
+      })
+
+      console.log('付款信息响应:', res.data)
+
+      if (res.data.code === 200) {
+        setPaymentInfo(res.data.data)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '加载失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('加载付款信息失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleMarkPayment = async () => {
+    if (!paymentInfo) return
+
+    Taro.showModal({
+      title: '确认已付款',
+      content: '确认已向运力方支付运费？提交后等待运力方确认。',
+      success: async (res) => {
+        if (res.confirm) {
+          setMarking(true)
+
+          try {
+            const response = await Network.request({
+              url: `/api/orders/${paymentInfo.orderId}/payment-marked`,
+              method: 'PUT'
+            })
+
+            console.log('标记付款响应:', response.data)
+
+            if (response.data.code === 200) {
+              Taro.showToast({
+                title: '已标记为已付款，等待运力方确认',
+                icon: 'success'
+              })
+
+              setTimeout(() => {
+                Taro.navigateBack()
+              }, 1500)
+            } else {
+              Taro.showToast({
+                title: response.data.message || '操作失败',
+                icon: 'none'
+              })
+            }
+          } catch (error) {
+            console.error('标记付款失败:', error)
+            Taro.showToast({
+              title: '网络错误，请重试',
+              icon: 'none'
+            })
+          } finally {
+            setMarking(false)
+          }
+        }
+      }
+    })
+  }
+
+  if (loading) {
+    return (
+      <View className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <Text className="text-gray-500">加载中...</Text>
+      </View>
+    )
+  }
+
+  return (
+    <View className="min-h-screen bg-gray-100">
+      {/* 头部 */}
+      <View className="bg-green-500 pt-12 pb-6 px-4">
+        <Text className="block text-xl font-bold text-white">
+          运费支付
+        </Text>
+        <Text className="block text-sm text-green-100 mt-1">
+          向运力方支付运费
+        </Text>
+      </View>
+
+      {/* 内容区域 */}
+      <View className="px-4 -mt-4">
+        {/* 金额信息卡片 */}
+        <Card className="bg-white rounded-lg shadow-sm mb-4">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">
+              订单信息
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <View className="space-y-3">
+              <View className="flex justify-between items-center py-2 border-b border-gray-100">
+                <Text className="text-sm text-gray-600">运费金额</Text>
+                <Text className="text-lg font-bold text-green-500">
+                  ¥{paymentInfo?.farePrice || 0}
+                </Text>
+              </View>
+              <View className="flex justify-between items-center py-2">
+                <Text className="text-sm text-gray-600">佣金金额</Text>
+                <Text className="text-sm text-gray-500">
+                  ¥{paymentInfo?.commissionAmount || 0}
+                </Text>
+              </View>
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* 车主信息卡片 */}
+        <Card className="bg-white rounded-lg shadow-sm mb-4">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">
+              运力方信息
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <View className="space-y-2">
+              <View className="flex items-center">
+                <Text className="text-sm text-gray-600 w-16">姓名：</Text>
+                <Text className="text-sm text-gray-800">{paymentInfo?.ownerName}</Text>
+              </View>
+              <View className="flex items-center">
+                <Text className="text-sm text-gray-600 w-16">电话：</Text>
+                <Text className="text-sm text-gray-800">{paymentInfo?.ownerPhone}</Text>
+              </View>
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* 收款码卡片 */}
+        {paymentInfo?.paymentQr && (
+          <Card className="bg-white rounded-lg shadow-sm mb-4">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">
+                收款码
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <View className="flex flex-col items-center">
+                <View className="w-48 h-48 bg-gray-100 rounded-lg overflow-hidden mb-3">
+                  <Image
+                    src={paymentInfo.paymentQr}
+                    className="w-full h-full"
+                    mode="aspectFit"
+                  />
+                </View>
+                <Text className="block text-xs text-gray-500 text-center">
+                  请使用微信扫描上方二维码支付
+                </Text>
+              </View>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 操作按钮 */}
+        {paymentInfo?.status === 'transport_completed' && paymentInfo.paymentStatus !== 'paid' && (
+          <Card className="bg-white rounded-lg shadow-sm mb-4">
+            <CardContent className="p-4">
+              <Button
+                className="w-full bg-green-500"
+                onClick={handleMarkPayment}
+                disabled={marking}
+              >
+                <Text className="text-sm">
+                  {marking ? '提交中...' : '我已付款'}
+                </Text>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 已付款提示 */}
+        {paymentInfo?.paymentStatus === 'paid' && (
+          <Card className="bg-white rounded-lg shadow-sm mb-4">
+            <CardContent className="p-4">
+              <View className="text-center py-2">
+                <Text className="block text-sm text-gray-600">
+                  已标记为已付款，等待运力方确认
+                </Text>
+              </View>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 提示信息 */}
+        <View className="bg-blue-50 rounded-lg p-4 mb-4">
+          <Text className="block text-xs font-semibold text-blue-800 mb-2">
+            支付说明
+          </Text>
+          <View className="space-y-1">
+            <Text className="block text-xs text-blue-700">
+              • 请在完成运输后向运力方支付运费
+            </Text>
+            <Text className="block text-xs text-blue-700">
+              • 扫码支付后请点击&quot;我已付款&quot;按钮
+            </Text>
+            <Text className="block text-xs text-blue-700">
+              • 运力方确认收款后，订单将继续进行
+            </Text>
+            <Text className="block text-xs text-blue-700">
+              • 如有疑问，请及时联系运力方
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  )
+}
