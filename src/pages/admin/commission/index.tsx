@@ -147,7 +147,7 @@ export default function AdminCommission() {
       {/* 导航菜单 */}
       <View className="bg-white shadow-sm">
         <View className="px-4 py-3">
-          <View className="flex gap-2">
+          <View className="flex gap-2 overflow-x-auto">
             <Button
               size="sm"
               variant="outline"
