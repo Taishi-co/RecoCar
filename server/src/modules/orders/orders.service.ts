@@ -211,6 +211,11 @@ export class OrdersService {
       throw new BadRequestException('只有已接单的订单可以取消')
     }
 
+    // 检查运费确认状态 - 已确认运费的订单不能直接取消，需要申请取消
+    if (existingOrder.merchant_confirmed) {
+      throw new BadRequestException('运费已确认，不能直接取消，请联系车主协商取消')
+    }
+
     // 检查是否是需求方的订单
     if (existingOrder.merchant_id !== merchantId) {
       throw new BadRequestException('无权取消此订单')
