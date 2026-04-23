@@ -66,8 +66,7 @@ export class HomeService {
         )
       `)
       .eq('status', 'completed')
-      .not('actual_complete_time', 'is', null)
-      .order('actual_complete_time', { ascending: false })
+      .order('actual_complete_time', { ascending: false, nullsFirst: false })
       .limit(5)
 
     // 获取用户信息（用于脱敏）
