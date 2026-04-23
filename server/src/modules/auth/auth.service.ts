@@ -136,7 +136,7 @@ export class AuthService {
 
     const { data: user, error } = await client
       .from('users')
-      .select('id, phone, name, role, avatar, wechat_payment_qr, created_at')
+      .select('*')
       .eq('id', userId)
       .maybeSingle()
 
@@ -148,10 +148,21 @@ export class AuthService {
       throw new NotFoundException('用户不存在')
     }
 
+    // 只返回需要的字段，确保 wechat_payment_qr 字段存在
+    const result = {
+      id: user.id,
+      phone: user.phone,
+      name: user.name,
+      role: user.role,
+      avatar: user.avatar,
+      wechat_payment_qr: user.wechat_payment_qr || null,
+      created_at: user.created_at
+    }
+
     return {
       code: 200,
       message: '查询成功',
-      data: user
+      data: result
     }
   }
 
