@@ -1,171 +1,11 @@
 import { useEffect, useState } from 'react'
-import { View, Text, Image, Map } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-
-// 订单地图展示组件
-interface OrderMapDisplayProps {
-  order: Order
-  mapData: any
-  onLoadMapData: () => void
-}
-
-const OrderMapDisplay = ({ order, mapData, onLoadMapData }: OrderMapDisplayProps) => {
-  const [showMap, setShowMap] = useState(false)
-
-  useEffect(() => {
-    // 订单有位置信息时，自动加载地图数据
-    if (order.demand?.pickup_location && order.demand?.delivery_location && !mapData) {
-      onLoadMapData()
-    }
-  }, [order.demand])
-
-  if (!order.demand?.pickup_location || !order.demand?.delivery_location) {
-    return null
-  }
-
-  const pickupLocation = order.demand.pickup_location as { lat: number; lng: number }
-  const deliveryLocation = order.demand.delivery_location as { lat: number; lng: number }
-
-  // 计算地图中心点
-  const centerLng = (pickupLocation.lng + deliveryLocation.lng) / 2
-  const centerLat = (pickupLocation.lat + deliveryLocation.lat) / 2
-
-  // 构建标记点
-  const markers = [
-    {
-      id: 1,
-      longitude: pickupLocation.lng,
-      latitude: pickupLocation.lat,
-      title: '起点',
-      iconPath: '', // 可以设置起点图标
-      width: 30,
-      height: 30,
-      callout: {
-        content: '起点',
-        color: '#ffffff',
-        fontSize: 12,
-        borderRadius: 4,
-        bgColor: '#1890ff',
-        padding: 4,
-        display: 'ALWAYS' as const,
-        anchorX: 0,
-        anchorY: 0,
-        textAlign: 'center' as const,
-        borderWidth: 0,
-        borderColor: '#ffffff'
-      }
-    },
-    {
-      id: 2,
-      longitude: deliveryLocation.lng,
-      latitude: deliveryLocation.lat,
-      title: '终点',
-      iconPath: '', // 可以设置终点图标
-      width: 30,
-      height: 30,
-      callout: {
-        content: '终点',
-        color: '#ffffff',
-        fontSize: 12,
-        borderRadius: 4,
-        bgColor: '#52c41a',
-        padding: 4,
-        display: 'ALWAYS' as const,
-        anchorX: 0,
-        anchorY: 0,
-        textAlign: 'center' as const,
-        borderWidth: 0,
-        borderColor: '#ffffff'
-      }
-    }
-  ]
-
-  // 构建路线
-  const polylines = mapData?.route && mapData.route.length > 0 ? [
-    {
-      points: mapData.route.map((point: any) => ({
-        longitude: point.longitude,
-        latitude: point.latitude
-      })),
-      color: '#1890ff',
-      width: 4,
-      dottedLine: false
-    }
-  ] : []
-
-  return (
-    <View className="mb-3">
-      <View className="flex justify-between items-center mb-2">
-        <Text className="text-xs font-medium text-gray-700">
-          📍 配送路线
-        </Text>
-        {mapData && (
-          <View className="flex items-center gap-2">
-            <Text className="text-xs text-gray-500">
-              距离: {mapData.distance || '未知'}
-            </Text>
-            {mapData.duration && (
-              <Text className="text-xs text-gray-500">
-                时长: {mapData.duration}
-              </Text>
-            )}
-          </View>
-        )}
-      </View>
-
-      <View
-        className="bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
-        onClick={() => setShowMap(!showMap)}
-      >
-        {showMap && (
-          <Map
-            id={`map-${order.id}`}
-            longitude={centerLng}
-            latitude={centerLat}
-            scale={12}
-            markers={markers}
-            polyline={polylines}
-            showLocation
-            onError={(e) => {
-              console.error('地图加载错误:', e)
-            }}
-            style={{ width: '100%', height: '300px' }}
-          />
-        )}
-        {!showMap && (
-          <View className="py-6 px-4">
-            <View className="flex items-center justify-center">
-              <Text className="text-sm text-gray-500">
-                点击查看配送路线地图
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
-
-      {/* 地址信息 */}
-      <View className="mt-2 space-y-1">
-        <View className="flex items-center gap-2">
-          <View className="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0"></View>
-          <Text className="text-xs text-gray-600 flex-1">
-            起点: {order.demand.pickup_address}
-          </Text>
-        </View>
-        <View className="flex items-center gap-2">
-          <View className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0"></View>
-          <Text className="text-xs text-gray-600 flex-1">
-            终点: {order.demand.delivery_address}
-          </Text>
-        </View>
-      </View>
-    </View>
-  )
-}
 
 interface Order {
   id: string
@@ -218,7 +58,6 @@ export default function OwnerOrders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [pickupImage, setPickupImage] = useState('')
   const [deliveryImage, setDeliveryImage] = useState('')
-  const [mapDataMap, setMapDataMap] = useState<Record<string, any>>({}) // 存储每个订单的地图数据
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')
@@ -514,36 +353,6 @@ export default function OwnerOrders() {
     }
   }
 
-  // 获取订单地图信息
-  const loadOrderMapData = async (orderId: string) => {
-    // 如果已经加载过，直接返回
-    if (mapDataMap[orderId]) {
-      return mapDataMap[orderId]
-    }
-
-    try {
-      const res = await Network.request({
-        url: `/api/map/order-info?orderId=${orderId}`,
-        method: 'GET'
-      })
-
-      console.log('订单地图信息响应:', res.data)
-
-      if (res.data.code === 200 && res.data.data) {
-        const mapData = res.data.data
-        setMapDataMap(prev => ({
-          ...prev,
-          [orderId]: mapData
-        }))
-        return mapData
-      }
-    } catch (error) {
-      console.error('获取订单地图信息失败:', error)
-    }
-
-    return null
-  }
-
   // 跳转到佣金支付页
   const handleGoToCommissionPayment = (order: Order) => {
     Taro.navigateTo({
@@ -809,15 +618,6 @@ export default function OwnerOrders() {
                           </Text>
                         )}
                       </View>
-                    )}
-
-                    {/* 地图展示 */}
-                    {order.demand && (
-                      <OrderMapDisplay
-                        order={order}
-                        mapData={mapDataMap[order.id]}
-                        onLoadMapData={() => loadOrderMapData(order.id)}
-                      />
                     )}
 
                     {/* 时间信息 */}
