@@ -9,4 +9,9 @@ export class HomeController {
   async getStatistics() {
     return this.homeService.getStatistics()
   }
+
+  @Get('latest-info')
+  async getLatestInfo() {
+    return this.homeService.getLatestInfo()
+  }
 }

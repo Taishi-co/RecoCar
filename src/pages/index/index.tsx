@@ -32,8 +32,35 @@ interface Statistics {
   }>
 }
 
+interface LatestInfo {
+  latestDemands: Array<{
+    id: string
+    cargoName: string
+    cargoType: string
+    pickupAddress: string
+    merchantPhone: string
+    createdAt: string
+  }>
+  availableVehicles: Array<{
+    id: string
+    vehicleType: string
+    licensePlate: string
+    ownerPhone: string
+    status: string
+    createdAt: string
+  }>
+  completedOrders: Array<{
+    id: string
+    cargoName: string
+    ownerPhone: string
+    farePrice: number
+    completedTime: string
+  }>
+}
+
 export default function Index() {
   const [statistics, setStatistics] = useState<Statistics | null>(null)
+  const [latestInfo, setLatestInfo] = useState<LatestInfo | null>(null)
 
   // 登录/注册弹窗
   const [showAuthDialog, setShowAuthDialog] = useState(false)
@@ -47,6 +74,7 @@ export default function Index() {
 
   useEffect(() => {
     loadStatistics()
+    loadLatestInfo()
   }, [])
 
   const loadStatistics = async () => {
@@ -63,6 +91,23 @@ export default function Index() {
       }
     } catch (error) {
       console.error('加载统计数据失败:', error)
+    }
+  }
+
+  const loadLatestInfo = async () => {
+    try {
+      const res = await Network.request({
+        url: '/api/home/latest-info',
+        method: 'GET'
+      })
+
+      console.log('最新信息响应:', res.data)
+
+      if (res.data.code === 200) {
+        setLatestInfo(res.data.data)
+      }
+    } catch (error) {
+      console.error('加载最新信息失败:', error)
     }
   }
 
@@ -214,6 +259,133 @@ export default function Index() {
           </Card>
         </View>
 
+        {/* 最新信息 */}
+        <View className="px-4 mb-4">
+          <View className="grid grid-cols-1 gap-3">
+            {/* 最新需求 */}
+            <Card className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <CardContent className="p-3">
+                <View className="flex items-center justify-between mb-2">
+                  <View className="flex items-center">
+                    <Package size={16} color="#ef4444" />
+                    <Text className="block text-sm font-semibold text-red-500 ml-2">
+                      最新需求
+                    </Text>
+                  </View>
+                  <Text className="text-xs text-gray-400">
+                    共 {latestInfo?.latestDemands.length || 0} 条
+                  </Text>
+                </View>
+                <View className="space-y-2">
+                  {latestInfo?.latestDemands.map(item => (
+                    <View key={item.id} className="py-2 border-b border-gray-50 last:border-0">
+                      <View className="flex justify-between items-start mb-1">
+                        <Text className="text-xs font-medium text-gray-800 flex-1">
+                          {item.cargoName}
+                        </Text>
+                        <Text className="text-xs text-gray-400 ml-2">
+                          {item.cargoType === 'perishable' ? '易腐' : '普通'}
+                        </Text>
+                      </View>
+                      <Text className="text-xs text-gray-500 block">
+                        {item.pickupAddress}
+                      </Text>
+                      <Text className="text-xs text-gray-400 block mt-1">
+                        {item.merchantPhone}
+                      </Text>
+                    </View>
+                  ))}
+                  {!latestInfo?.latestDemands || latestInfo.latestDemands.length === 0 && (
+                    <Text className="text-xs text-gray-400 text-center py-4">
+                      暂无需求
+                    </Text>
+                  )}
+                </View>
+              </CardContent>
+            </Card>
+
+            {/* 可用车辆 */}
+            <Card className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <CardContent className="p-3">
+                <View className="flex items-center justify-between mb-2">
+                  <View className="flex items-center">
+                    <Truck size={16} color="#3b82f6" />
+                    <Text className="block text-sm font-semibold text-blue-500 ml-2">
+                      可用车辆
+                    </Text>
+                  </View>
+                  <Text className="text-xs text-gray-400">
+                    共 {latestInfo?.availableVehicles.length || 0} 辆
+                  </Text>
+                </View>
+                <View className="space-y-2">
+                  {latestInfo?.availableVehicles.map(item => (
+                    <View key={item.id} className="py-2 border-b border-gray-50 last:border-0">
+                      <View className="flex justify-between items-start mb-1">
+                        <Text className="text-xs font-medium text-gray-800 flex-1">
+                          {item.vehicleType}
+                        </Text>
+                        {item.licensePlate && (
+                          <Text className="text-xs text-gray-400 ml-2">
+                            {item.licensePlate}
+                          </Text>
+                        )}
+                      </View>
+                      <Text className="text-xs text-gray-500 block">
+                        车主: {item.ownerPhone}
+                      </Text>
+                    </View>
+                  ))}
+                  {!latestInfo?.availableVehicles || latestInfo.availableVehicles.length === 0 && (
+                    <Text className="text-xs text-gray-400 text-center py-4">
+                      暂无可用车辆
+                    </Text>
+                  )}
+                </View>
+              </CardContent>
+            </Card>
+
+            {/* 完单信息 */}
+            <Card className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <CardContent className="p-3">
+                <View className="flex items-center justify-between mb-2">
+                  <View className="flex items-center">
+                    <Check size={16} color="#10b981" />
+                    <Text className="block text-sm font-semibold text-green-500 ml-2">
+                      完单信息
+                    </Text>
+                  </View>
+                  <Text className="text-xs text-gray-400">
+                    共 {latestInfo?.completedOrders.length || 0} 条
+                  </Text>
+                </View>
+                <View className="space-y-2">
+                  {latestInfo?.completedOrders.map(item => (
+                    <View key={item.id} className="py-2 border-b border-gray-50 last:border-0">
+                      <View className="flex justify-between items-start mb-1">
+                        <Text className="text-xs font-medium text-gray-800 flex-1">
+                          {item.cargoName}
+                        </Text>
+                        <Text className="text-xs font-bold text-green-500 ml-2">
+                          ¥{item.farePrice}
+                        </Text>
+                      </View>
+                      <Text className="text-xs text-gray-500 block">
+                        运力方: {item.ownerPhone}
+                      </Text>
+                    </View>
+                  ))}
+                  {!latestInfo?.completedOrders || latestInfo.completedOrders.length === 0 && (
+                    <Text className="text-xs text-gray-400 text-center py-4">
+                      暂无完单信息
+                    </Text>
+                  )}
+                </View>
+              </CardContent>
+            </Card>
+          </View>
+        </View>
+
         {/* 平台特色 */}
         <View className="px-4 mb-6">
           <Text className="block text-lg font-semibold text-gray-800 mb-3">
@@ -266,48 +438,6 @@ export default function Index() {
             </Card>
           </View>
         </View>
-
-        {/* 最近完成的订单 */}
-        {statistics?.recentOrders && statistics.recentOrders.length > 0 && (
-          <View className="px-4 mb-6">
-            <View className="flex items-center justify-between mb-3">
-              <Text className="block text-lg font-semibold text-gray-800">
-                最近完成订单
-              </Text>
-              <Text className="block text-xs text-gray-500">
-                共 {statistics.recentOrders.length} 条
-              </Text>
-            </View>
-            <View className="space-y-3">
-              {statistics.recentOrders.map((order) => (
-                <Card key={order.id} className="bg-white rounded-lg shadow-sm p-4">
-                  <View className="flex justify-between items-start">
-                    <View className="flex-1">
-                      <Text className="block text-sm font-semibold text-gray-800 mb-1">
-                        {order.cargoName}
-                      </Text>
-                      <Text className="block text-xs text-gray-500 mb-2">
-                        车主：{order.ownerName}
-                      </Text>
-                      <Text className="block text-xs text-gray-400">
-                        {order.completeTime}
-                      </Text>
-                    </View>
-                    <View className="text-right">
-                      <Text className="block text-base font-bold text-green-500">
-                        ¥{order.farePrice}
-                      </Text>
-                      <View className="flex items-center justify-end mt-1">
-                        <Check size={14} color="#10b981" />
-                        <Text className="text-xs text-green-500 ml-1">已完成</Text>
-                      </View>
-                    </View>
-                  </View>
-                </Card>
-              ))}
-            </View>
-          </View>
-        )}
 
         {/* 底部操作按钮 */}
         <View className="px-4 py-6 mb-8">
