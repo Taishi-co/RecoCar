@@ -42,11 +42,7 @@ export default function OwnerProfile() {
         data: { userId: savedUserInfo.id }
       })
 
-      console.log('用户信息响应:', res.data)
-
       if (res.data.code === 200) {
-        console.log('获取到的用户信息:', res.data.data)
-        console.log('收款码URL:', res.data.data.wechat_payment_qr)
         setUserInfo(res.data.data)
       } else {
         Taro.showToast({
@@ -104,13 +100,9 @@ export default function OwnerProfile() {
         }
       })
 
-      console.log('上传收款码响应:', res)
-
       if (res.statusCode === 200) {
         const data = JSON.parse(res.data)
-        console.log('解析后的数据:', data)
         if (data.code === 200) {
-          console.log('后端返回的用户信息:', data.data)
           Taro.showToast({
             title: '收款码上传成功',
             icon: 'success'
@@ -225,16 +217,6 @@ export default function OwnerProfile() {
                     className="w-full h-full"
                     mode="aspectFit"
                     lazyLoad
-                    onError={() => {
-                      console.error('收款码图片加载失败:', userInfo.wechat_payment_qr)
-                      Taro.showToast({
-                        title: '图片加载失败',
-                        icon: 'none'
-                      })
-                    }}
-                    onLoad={() => {
-                      console.log('收款码图片加载成功:', userInfo.wechat_payment_qr)
-                    }}
                   />
                 </View>
                 <Text className="block text-xs text-gray-500">
@@ -306,20 +288,6 @@ export default function OwnerProfile() {
             无人车共享运营平台 v1.0.0
           </Text>
         </View>
-
-        {/* 调试信息 */}
-        {userInfo?.wechat_payment_qr && (
-          <View className="px-4 py-4">
-            <View className="bg-yellow-50 rounded-lg p-3">
-              <Text className="block text-xs font-semibold text-yellow-800 mb-2">
-                收款码URL（调试用）
-              </Text>
-              <Text className="block text-xs text-yellow-700 break-all">
-                {userInfo.wechat_payment_qr}
-              </Text>
-            </View>
-          </View>
-        )}
       </View>
     </View>
   )
