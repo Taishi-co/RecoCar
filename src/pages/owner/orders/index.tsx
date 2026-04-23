@@ -314,13 +314,6 @@ export default function OwnerOrders() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => Taro.navigateTo({ url: '/pages/owner/vehicles/index' })}
-            >
-              <Text className="text-xs">车辆管理</Text>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/owner/demands/index' })}
             >
               <Text className="text-xs">接单大厅</Text>
@@ -330,6 +323,13 @@ export default function OwnerOrders() {
               className="bg-blue-500"
             >
               <Text className="text-xs">订单管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/vehicles/index' })}
+            >
+              <Text className="text-xs">车辆管理</Text>
             </Button>
             <Button
               size="sm"

@@ -341,12 +341,6 @@ export default function OwnerVehicles() {
           <View className="flex gap-2">
             <Button
               size="sm"
-              className="bg-blue-500"
-            >
-              <Text className="text-xs">车辆管理</Text>
-            </Button>
-            <Button
-              size="sm"
               variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/owner/demands/index' })}
             >
@@ -358,6 +352,12 @@ export default function OwnerVehicles() {
               onClick={() => Taro.navigateTo({ url: '/pages/owner/orders/index' })}
             >
               <Text className="text-xs">订单管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              className="bg-blue-500"
+            >
+              <Text className="text-xs">车辆管理</Text>
             </Button>
             <Button
               size="sm"
