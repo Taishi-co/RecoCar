@@ -53,6 +53,8 @@ interface LatestInfo {
 export default function Index() {
   const [statistics, setStatistics] = useState<Statistics | null>(null)
   const [latestInfo, setLatestInfo] = useState<LatestInfo | null>(null)
+  const [currentDemandIndex, setCurrentDemandIndex] = useState(0)
+  const [autoScrollTimer, setAutoScrollTimer] = useState<NodeJS.Timeout | null>(null)
 
   // 登录/注册弹窗
   const [showAuthDialog, setShowAuthDialog] = useState(false)
@@ -68,6 +70,33 @@ export default function Index() {
     loadStatistics()
     loadLatestInfo()
   }, [])
+
+  // 自动滚动最新需求
+  useEffect(() => {
+    // 清除之前的定时器
+    if (autoScrollTimer) {
+      clearInterval(autoScrollTimer)
+    }
+
+    // 只有当有需求数据时才启动自动滚动
+    if (latestInfo && latestInfo.latestDemands.length > 0) {
+      const timer = setInterval(() => {
+        setCurrentDemandIndex((prev) => {
+          const nextIndex = (prev + 1) % latestInfo.latestDemands.length
+          return nextIndex
+        })
+      }, 3000) // 每3秒滚动一次
+
+      setAutoScrollTimer(timer)
+    }
+
+    // 组件卸载时清除定时器
+    return () => {
+      if (autoScrollTimer) {
+        clearInterval(autoScrollTimer)
+      }
+    }
+  }, [latestInfo])
 
   const loadStatistics = async () => {
     try {
@@ -284,10 +313,14 @@ export default function Index() {
                     共 {latestInfo?.latestDemands.length || 0} 条
                   </Text>
                 </View>
-                <ScrollView scrollY style={{ maxHeight: '250px' }}>
+                <ScrollView scrollY style={{ maxHeight: '250px' }} scrollIntoView={`demand-${currentDemandIndex}`}>
                   <View className="space-y-2">
-                    {latestInfo?.latestDemands.slice(0, 5).map(item => (
-                      <View key={item.id} className="py-2 border-b border-gray-50 last:border-0">
+                    {latestInfo?.latestDemands.map((item, index) => (
+                      <View
+                        key={item.id}
+                        id={`demand-${index}`}
+                        className="py-2 border-b border-gray-50 last:border-0"
+                      >
                         <View className="flex justify-between items-start mb-1">
                           <Text className="text-xs font-medium text-gray-800 flex-1">
                             {item.cargoName}
