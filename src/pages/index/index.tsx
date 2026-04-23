@@ -224,22 +224,19 @@ export default function Index() {
         {/* 头部 */}
         <View className="bg-gradient-to-br from-blue-500 to-blue-600 pt-12 pb-8 px-4 relative">
           {/* 右上角登录/注册按钮 */}
-          <View className="absolute top-4 right-4 flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="bg-transparent text-white border-white hover:bg-white hover:bg-opacity-10"
+          <View className="absolute top-4 right-4 flex gap-3">
+            <View
+              className="py-1 px-3 rounded-full"
               onClick={() => openAuthDialog('login')}
             >
-              <Text className="text-xs">登录</Text>
-            </Button>
-            <Button
-              size="sm"
-              className="bg-white text-blue-500"
+              <Text className="text-xs text-white font-medium">登录</Text>
+            </View>
+            <View
+              className="py-1 px-3 rounded-full"
               onClick={() => openAuthDialog('register')}
             >
-              <Text className="text-xs">注册</Text>
-            </Button>
+              <Text className="text-xs text-white font-medium">注册</Text>
+            </View>
           </View>
 
           <Text className="block text-2xl font-bold text-white text-center">
