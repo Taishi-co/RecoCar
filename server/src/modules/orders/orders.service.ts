@@ -700,6 +700,46 @@ export class OrdersService {
         .eq('id', order.vehicle_id)
     }
 
+    // 给运力方和需求方各增加 2 分信用积分
+    try {
+      // 给运力方增加积分
+      if (order.owner_id) {
+        const { data: owner } = await client
+          .from('users')
+          .select('credit_score')
+          .eq('id', order.owner_id)
+          .single()
+
+        const ownerCurrentScore = owner?.credit_score || 100
+        const ownerNewScore = ownerCurrentScore + 2
+
+        await client
+          .from('users')
+          .update({ credit_score: ownerNewScore })
+          .eq('id', order.owner_id)
+      }
+
+      // 给需求方增加积分
+      if (order.merchant_id) {
+        const { data: merchant } = await client
+          .from('users')
+          .select('credit_score')
+          .eq('id', order.merchant_id)
+          .single()
+
+        const merchantCurrentScore = merchant?.credit_score || 100
+        const merchantNewScore = merchantCurrentScore + 2
+
+        await client
+          .from('users')
+          .update({ credit_score: merchantNewScore })
+          .eq('id', order.merchant_id)
+      }
+    } catch (creditError) {
+      console.error('[OrdersService] 更新信用积分失败:', creditError)
+      // 积分更新失败不影响确认佣金流程
+    }
+
     // 给车主发送通知
     if (order.owner_id) {
       try {
@@ -707,7 +747,7 @@ export class OrdersService {
           userId: order.owner_id,
           type: 'commission_confirmed',
           title: '佣金已审核通过',
-          content: `您支付的佣金¥${order.commission_amount?.toFixed(2) || '0.00'}已审核通过，订单已完成，车辆已恢复空闲状态`,
+          content: `您支付的佣金¥${order.commission_amount?.toFixed(2) || '0.00'}已审核通过，订单已完成，车辆已恢复空闲状态。信用积分 +2`,
           relatedOrderId: order.id,
           relatedDemandId: order.demand_id
         })
@@ -724,7 +764,7 @@ export class OrdersService {
           userId: order.merchant_id,
           type: 'order_completed',
           title: '订单已完成',
-          content: `您的订单已完成，感谢使用本平台`,
+          content: `您的订单已完成，感谢使用本平台。信用积分 +2`,
           relatedOrderId: order.id,
           relatedDemandId: order.demand_id
         })
