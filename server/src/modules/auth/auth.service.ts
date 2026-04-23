@@ -193,10 +193,14 @@ export class AuthService {
       throw new BadRequestException('收款码上传失败')
     }
 
+    // 构建完整的图片URL
+    const imageUrl = `${process.env.COZE_BUCKET_ENDPOINT_URL}/${process.env.COZE_BUCKET_NAME}/${fileKey}`
+    console.log('[AuthService] 收款码URL:', imageUrl)
+
     // 更新用户收款码
     const { data: updatedUser, error: updateError } = await client
       .from('users')
-      .update({ wechat_payment_qr: fileKey })
+      .update({ wechat_payment_qr: imageUrl })
       .eq('id', userId)
       .select('id, phone, name, role, wechat_payment_qr')
       .single()
