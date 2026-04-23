@@ -34,7 +34,9 @@ export class HomeService {
         cargo_name,
         cargo_type,
         pickup_address,
-        merchant_id
+        delivery_address,
+        merchant_id,
+        created_at
       `)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
@@ -99,6 +101,7 @@ export class HomeService {
         cargoName: demand.cargo_name,
         cargoType: demand.cargo_type,
         pickupAddress: this.maskAddress(demand.pickup_address),
+        deliveryAddress: this.maskAddress(demand.delivery_address),
         merchantPhone: this.maskPhone(merchantPhone || ''),
         createdAt: demand.created_at
       }
