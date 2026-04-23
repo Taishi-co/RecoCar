@@ -810,7 +810,7 @@ export default function MerchantOrders() {
                   订单 &quot;{selectedOrder.demand?.cargo_name}&quot; 运费已确认，需要向车主申请取消
                 </Text>
                 <Text className="block text-sm text-orange-500 mb-2">
-                  注意：若车主同意，将扣除您10分信用积分
+                  注意：若车主同意，也将扣除您10分信用积分
                 </Text>
               </View>
 
