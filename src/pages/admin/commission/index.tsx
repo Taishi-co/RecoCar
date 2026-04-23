@@ -143,20 +143,53 @@ export default function AdminCommission() {
   }
 
   return (
-    <View className="min-h-screen bg-gray-50">
-      {/* 头部 */}
-      <View className="bg-purple-500 pt-12 pb-6 px-4">
-        <Text className="block text-xl font-bold text-white">佣金审核</Text>
-        <Text className="block text-sm text-purple-100 mt-1">平台收益统计与佣金审核</Text>
+    <View className="min-h-screen bg-gray-100">
+      {/* 导航菜单 */}
+      <View className="bg-white shadow-sm">
+        <View className="px-4 py-3">
+          <View className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/admin/users/index' })}
+            >
+              <Text className="text-xs">用户管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/admin/vehicles/index' })}
+            >
+              <Text className="text-xs">车辆审核</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/admin/orders/index' })}
+            >
+              <Text className="text-xs">订单管理</Text>
+            </Button>
+            <Button size="sm" className="bg-blue-500">
+              <Text className="text-xs">佣金审核</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/admin/stats/index' })}
+            >
+              <Text className="text-xs">数据统计</Text>
+            </Button>
+          </View>
+        </View>
       </View>
 
       <ScrollView scrollY className="pb-4">
-        <View className="px-4 -mt-4">
+        <View className="px-4 py-4">
           {/* 收益汇总 */}
           {summaryData && (
             <Card className="bg-white rounded-lg shadow-sm mb-4">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">平台收益汇总</CardTitle>
+                <CardTitle className="text-lg font-semibold">平台收益汇总</CardTitle>
               </CardHeader>
               <CardContent>
                 <View className="space-y-3">
@@ -223,7 +256,7 @@ export default function AdminCommission() {
           <Card className="bg-white rounded-lg shadow-sm mb-4">
             <CardHeader>
               <View className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold">待审核佣金</CardTitle>
+                <CardTitle className="text-lg font-semibold">待审核佣金</CardTitle>
                 <Badge className="bg-orange-500">
                   <Text className="text-white text-xs">{pendingOrders.length} 条待审核</Text>
                 </Badge>
@@ -285,7 +318,7 @@ export default function AdminCommission() {
           {summaryData && summaryData.commissionOrders.length > 0 && (
             <Card className="bg-white rounded-lg shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">佣金订单明细</CardTitle>
+                <CardTitle className="text-lg font-semibold">佣金订单明细</CardTitle>
               </CardHeader>
               <CardContent>
                 <View className="space-y-3">
