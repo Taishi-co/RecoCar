@@ -6,12 +6,39 @@ import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
+interface Demand {
+  id: string
+  cargo_name: string
+  cargo_type: string
+  weight: number
+  volume: number
+  pickup_address: string
+  delivery_address: string
+  pickup_time: string
+}
+
+interface Vehicle {
+  id: string
+  vehicle_type: string
+  license_plate: string
+}
+
+interface User {
+  id: string
+  username: string
+  phone: string
+}
+
 interface Order {
   id: string
   demand_id: string
+  demand: Demand
   vehicle_id: string | null
+  vehicle: Vehicle | null
   merchant_id: string
+  merchant: User
   owner_id: string | null
+  owner: User | null
   status: string
   pickup_photo_key: string | null
   delivery_photo_key: string | null
@@ -102,6 +129,32 @@ export default function AdminOrders() {
       cancelled: 'bg-red-500'
     }
     return colors[status] || 'bg-gray-500'
+  }
+
+  const getCargoTypeText = (type: string) => {
+    switch (type) {
+      case 'normal':
+        return '普通'
+      case 'fresh':
+        return '生鲜'
+      case 'fragile':
+        return '易碎'
+      default:
+        return '未知'
+    }
+  }
+
+  const getCargoTypeColor = (type: string) => {
+    switch (type) {
+      case 'normal':
+        return 'bg-blue-500'
+      case 'fresh':
+        return 'bg-green-500'
+      case 'fragile':
+        return 'bg-orange-500'
+      default:
+        return 'bg-gray-500'
+    }
   }
 
   return (
@@ -216,44 +269,77 @@ export default function AdminOrders() {
                     <View className="flex justify-between items-start mb-3">
                       <View className="flex-1">
                         <Text className="block font-medium text-base mb-1">
-                          订单 {order.id.slice(0, 8)}
+                          {order.demand?.cargo_name || '未知货物'}
                         </Text>
-                        <Badge className={getStatusColor(order.status)}>
-                          <Text className="text-white text-xs">
-                            {getStatusText(order.status)}
-                          </Text>
-                        </Badge>
+                        <View className="flex items-center gap-2">
+                          <Badge className={getStatusColor(order.status)}>
+                            <Text className="text-white text-xs">
+                              {getStatusText(order.status)}
+                            </Text>
+                          </Badge>
+                          {order.demand && (
+                            <Badge className={getCargoTypeColor(order.demand.cargo_type)}>
+                              <Text className="text-white text-xs">
+                                {getCargoTypeText(order.demand.cargo_type)}
+                              </Text>
+                            </Badge>
+                          )}
+                        </View>
                       </View>
                     </View>
-                    <View className="space-y-1">
-                      <View className="flex items-start">
-                        <Text className="text-xs text-gray-500 w-20 flex-shrink-0">需求ID:</Text>
-                        <Text className="text-xs text-gray-700 flex-1">
-                          {order.demand_id.slice(0, 12)}...
-                        </Text>
-                      </View>
-                      {order.vehicle_id && (
+                    <View className="space-y-2">
+                      {order.demand && (
+                        <>
+                          <View className="flex items-start">
+                            <Text className="text-xs text-gray-500 w-20 flex-shrink-0">取货:</Text>
+                            <Text className="text-xs text-gray-700 flex-1">
+                              {order.demand.pickup_address}
+                            </Text>
+                          </View>
+                          <View className="flex items-start">
+                            <Text className="text-xs text-gray-500 w-20 flex-shrink-0">送货:</Text>
+                            <Text className="text-xs text-gray-700 flex-1">
+                              {order.demand.delivery_address}
+                            </Text>
+                          </View>
+                          <View className="flex items-start">
+                            <Text className="text-xs text-gray-500 w-20 flex-shrink-0">规格:</Text>
+                            <Text className="text-xs text-gray-700 flex-1">
+                              {order.demand.weight}kg / {order.demand.volume}m³
+                            </Text>
+                          </View>
+                          <View className="flex items-start">
+                            <Text className="text-xs text-gray-500 w-20 flex-shrink-0">时间:</Text>
+                            <Text className="text-xs text-gray-700 flex-1">
+                              {new Date(order.demand.pickup_time).toLocaleString()}
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                      {order.merchant && (
                         <View className="flex items-start">
-                          <Text className="text-xs text-gray-500 w-20 flex-shrink-0">车辆ID:</Text>
+                          <Text className="text-xs text-gray-500 w-20 flex-shrink-0">需求方:</Text>
                           <Text className="text-xs text-gray-700 flex-1">
-                            {order.vehicle_id.slice(0, 12)}...
+                            {order.merchant.username} ({order.merchant.phone})
                           </Text>
                         </View>
                       )}
-                      {order.owner_id && (
+                      {order.owner && (
                         <View className="flex items-start">
-                          <Text className="text-xs text-gray-500 w-20 flex-shrink-0">车主ID:</Text>
+                          <Text className="text-xs text-gray-500 w-20 flex-shrink-0">车主:</Text>
                           <Text className="text-xs text-gray-700 flex-1">
-                            {order.owner_id.slice(0, 12)}...
+                            {order.owner.username} ({order.owner.phone})
                           </Text>
                         </View>
                       )}
-                      <View className="flex items-start">
-                        <Text className="text-xs text-gray-500 w-20 flex-shrink-0">需求方ID:</Text>
-                        <Text className="text-xs text-gray-700 flex-1">
-                          {order.merchant_id.slice(0, 12)}...
-                        </Text>
-                      </View>
+                      {order.vehicle && (
+                        <View className="flex items-start">
+                          <Text className="text-xs text-gray-500 w-20 flex-shrink-0">车辆:</Text>
+                          <Text className="text-xs text-gray-700 flex-1">
+                            {order.vehicle.vehicle_type} - {order.vehicle.license_plate || '未填写车牌'}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                     {order.accept_time && (
                       <View className="mt-2 pt-2 border-t border-gray-200">

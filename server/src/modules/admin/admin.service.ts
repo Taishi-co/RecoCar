@@ -77,6 +77,7 @@ export class AdminService {
   async getOrders(filters: { status?: string }) {
     const client = getSupabaseClient()
 
+    // 先查询订单列表
     let query = client
       .from('orders')
       .select('*')
@@ -86,16 +87,63 @@ export class AdminService {
       query = query.eq('status', filters.status)
     }
 
-    const { data: orders, error } = await query
+    const { data: orders, error: ordersError } = await query
 
-    if (error) {
-      throw new NotFoundException('查询订单列表失败')
+    if (ordersError) {
+      console.error('[AdminService] Query orders error:', ordersError)
+      throw new NotFoundException(`查询订单列表失败: ${ordersError.message}`)
     }
+
+    if (!orders || orders.length === 0) {
+      return {
+        code: 200,
+        message: '查询成功',
+        data: []
+      }
+    }
+
+    // 获取所有相关的需求ID、车辆ID、车主ID、需求方ID
+    const demandIds = orders.map(o => o.demand_id).filter(Boolean)
+    const vehicleIds = orders.map(o => o.vehicle_id).filter(Boolean)
+    const ownerIds = orders.map(o => o.owner_id).filter(Boolean)
+    const merchantIds = orders.map(o => o.merchant_id).filter(Boolean)
+
+    // 批量查询需求
+    const { data: demands } = await client
+      .from('demands')
+      .select('id, cargo_name, cargo_type, weight, volume, pickup_address, delivery_address, pickup_time')
+      .in('id', demandIds)
+
+    // 批量查询车辆
+    const { data: vehicles } = await client
+      .from('vehicles')
+      .select('id, vehicle_type, license_plate')
+      .in('id', vehicleIds)
+
+    // 批量查询车主和需求方
+    const { data: users } = await client
+      .from('users')
+      .select('id, username, phone')
+      .in('id', [...ownerIds, ...merchantIds])
+
+    // 创建查找映射
+    const demandMap = new Map(demands?.map(d => [d.id, d]) || [])
+    const vehicleMap = new Map(vehicles?.map(v => [v.id, v]) || [])
+    const userMap = new Map(users?.map(u => [u.id, u]) || [])
+
+    // 组装数据
+    const enrichedOrders = orders.map(order => ({
+      ...order,
+      demand: demandMap.get(order.demand_id) || null,
+      vehicle: order.vehicle_id ? vehicleMap.get(order.vehicle_id) : null,
+      owner: order.owner_id ? userMap.get(order.owner_id) : null,
+      merchant: order.merchant_id ? userMap.get(order.merchant_id) : null
+    }))
 
     return {
       code: 200,
       message: '查询成功',
-      data: orders || []
+      data: enrichedOrders
     }
   }
 
