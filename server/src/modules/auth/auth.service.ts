@@ -1,9 +1,24 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common'
-import { RegisterDto, LoginDto } from './dto/auth.dto'
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common'
+import { RegisterDto, LoginDto, UpdatePaymentQrDto } from './dto/auth.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
 import { UserInfo } from './auth.types'
 import * as bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
+import { S3Storage } from 'coze-coding-dev-sdk'
+
+const storage = new S3Storage({
+  endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
+  accessKey: "",
+  secretKey: "",
+  bucketName: process.env.COZE_BUCKET_NAME,
+  region: "cn-beijing",
+})
+
+interface UploadedFile {
+  buffer: Buffer
+  originalname: string
+  mimetype: string
+}
 
 @Injectable()
 export class AuthService {
@@ -113,6 +128,87 @@ export class AuthService {
       code: 200,
       message: '登录成功',
       data: userInfo
+    }
+  }
+
+  async getUserInfo(userId: string) {
+    const client = getSupabaseClient()
+
+    const { data: user, error } = await client
+      .from('users')
+      .select('id, phone, name, role, avatar, wechat_payment_qr, created_at')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (error) {
+      throw new BadRequestException(`查询失败: ${error.message}`)
+    }
+
+    if (!user) {
+      throw new NotFoundException('用户不存在')
+    }
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: user
+    }
+  }
+
+  async updatePaymentQr(updatePaymentQrDto: UpdatePaymentQrDto, file?: UploadedFile) {
+    const { userId } = updatePaymentQrDto
+
+    // 验证用户是否存在
+    const client = getSupabaseClient()
+    const { data: user, error: userError } = await client
+      .from('users')
+      .select('id, role')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (userError || !user) {
+      throw new NotFoundException('用户不存在')
+    }
+
+    // 只有车主可以上传收款码
+    if (user.role !== 'owner') {
+      throw new BadRequestException('只有车主可以上传收款码')
+    }
+
+    if (!file) {
+      throw new BadRequestException('请上传收款码图片')
+    }
+
+    // 上传图片到TOS
+    let fileKey: string
+    try {
+      fileKey = await storage.uploadFile({
+        fileContent: file.buffer,
+        fileName: `payment_qr/${userId}_${Date.now()}_${file.originalname}`,
+        contentType: file.mimetype,
+      })
+      console.log('[AuthService] 收款码上传成功:', fileKey)
+    } catch (error) {
+      console.error('[AuthService] 收款码上传失败:', error)
+      throw new BadRequestException('收款码上传失败')
+    }
+
+    // 更新用户收款码
+    const { data: updatedUser, error: updateError } = await client
+      .from('users')
+      .update({ wechat_payment_qr: fileKey })
+      .eq('id', userId)
+      .select('id, phone, name, role, wechat_payment_qr')
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`更新失败: ${updateError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '收款码上传成功',
+      data: updatedUser
     }
   }
 }
