@@ -3,9 +3,10 @@ import { View, Text, Image } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { Camera, Settings, MessageCircle, LogOut, CreditCard } from 'lucide-react-taro'
+import { Camera, Settings, MessageCircle, LogOut, CreditCard, Bell } from 'lucide-react-taro'
 
 interface UserInfo {
   id: string
@@ -20,10 +21,31 @@ interface UserInfo {
 export default function OwnerProfile() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     loadUserInfo()
+    loadUnreadCount()
   }, [])
+
+  const loadUnreadCount = async () => {
+    const savedUserInfo = Taro.getStorageSync('userInfo')
+    if (!savedUserInfo || !savedUserInfo.id) return
+
+    try {
+      const res = await Network.request({
+        url: '/api/notifications/unread-count',
+        method: 'GET',
+        data: { user_id: savedUserInfo.id }
+      })
+
+      if (res.data.code === 200) {
+        setUnreadCount(res.data.data.unreadCount || 0)
+      }
+    } catch (error) {
+      console.error('加载未读数量失败:', error)
+    }
+  }
 
   const loadUserInfo = async () => {
     try {
@@ -159,6 +181,12 @@ export default function OwnerProfile() {
     })
   }
 
+  const handleGoToNotifications = () => {
+    Taro.navigateTo({
+      url: '/pages/notifications/index'
+    })
+  }
+
   const maskPhone = (phone: string) => {
     if (!phone) return ''
     return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
@@ -233,6 +261,41 @@ export default function OwnerProfile() {
                 </Text>
               </View>
             )}
+          </CardContent>
+        </Card>
+
+        {/* 通知消息卡片 */}
+        <Card
+          className="bg-white rounded-lg shadow-sm mb-4"
+          onClick={handleGoToNotifications}
+        >
+          <CardContent className="p-4">
+            <View className="flex items-center justify-between">
+              <View className="flex items-center gap-3">
+                <View className="relative">
+                  <Bell size={24} color="#3b82f6" />
+                  {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-red-500 border-2 border-white rounded-full">
+                      <Text className="text-xs text-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </Text>
+                    </Badge>
+                  )}
+                </View>
+                <View>
+                  <Text className="block text-sm font-semibold text-gray-800">
+                    通知消息
+                  </Text>
+                  <Text className="block text-xs text-gray-500 mt-1">
+                    {unreadCount > 0
+                      ? `您有 ${unreadCount} 条未读消息`
+                      : '暂无未读消息'
+                    }
+                  </Text>
+                </View>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
+            </View>
           </CardContent>
         </Card>
 

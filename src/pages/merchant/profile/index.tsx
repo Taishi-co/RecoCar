@@ -1,80 +1,228 @@
+import { useEffect, useState } from 'react'
 import { View, Text } from '@tarojs/components'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
+import { Network } from '@/network'
+import { Bell, LogOut, FileText, Package, ChartArea } from 'lucide-react-taro'
+
+interface UserInfo {
+  id: string
+  phone: string
+  name: string
+  role: string
+  avatar?: string
+  created_at: string
+}
 
 export default function MerchantProfile() {
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
+
   const menuItems = [
     {
       id: 'publish',
       title: '发布需求',
-      icon: '📝',
+      icon: <FileText size={20} color="#3b82f6" />,
       onClick: () => Taro.navigateTo({ url: '/pages/merchant/demands/publish' })
     },
     {
       id: 'demands',
       title: '我的需求',
-      icon: '📋',
+      icon: <Package size={20} color="#3b82f6" />,
       onClick: () => Taro.navigateTo({ url: '/pages/merchant/demands/list' })
     },
     {
       id: 'orders',
       title: '订单管理',
-      icon: '📦',
+      icon: <Package size={20} color="#3b82f6" />,
       onClick: () => Taro.navigateTo({ url: '/pages/merchant/orders/index' })
     },
     {
       id: 'stats',
       title: '数据统计',
-      icon: '📊',
+      icon: <ChartArea size={20} color="#3b82f6" />,
       onClick: () => Taro.navigateTo({ url: '/pages/merchant/stats/index' })
     }
   ]
 
+  useEffect(() => {
+    loadUserInfo()
+    loadUnreadCount()
+  }, [])
+
+  const loadUserInfo = async () => {
+    try {
+      const savedUserInfo = Taro.getStorageSync('userInfo')
+      if (!savedUserInfo) {
+        Taro.showToast({
+          title: '请先登录',
+          icon: 'none'
+        })
+        return
+      }
+
+      const res = await Network.request({
+        url: '/api/auth/user-info',
+        method: 'GET',
+        data: { userId: savedUserInfo.id }
+      })
+
+      if (res.data.code === 200) {
+        setUserInfo(res.data.data)
+      }
+    } catch (error) {
+      console.error('加载用户信息失败:', error)
+    }
+  }
+
+  const loadUnreadCount = async () => {
+    const savedUserInfo = Taro.getStorageSync('userInfo')
+    if (!savedUserInfo || !savedUserInfo.id) return
+
+    try {
+      const res = await Network.request({
+        url: '/api/notifications/unread-count',
+        method: 'GET',
+        data: { user_id: savedUserInfo.id }
+      })
+
+      if (res.data.code === 200) {
+        setUnreadCount(res.data.data.unreadCount || 0)
+      }
+    } catch (error) {
+      console.error('加载未读数量失败:', error)
+    }
+  }
+
+  const handleGoToNotifications = () => {
+    Taro.navigateTo({
+      url: '/pages/notifications/index'
+    })
+  }
+
+  const handleLogout = () => {
+    Taro.showModal({
+      title: '确认退出',
+      content: '确定要退出登录吗？',
+      success: (res) => {
+        if (res.confirm) {
+          Taro.clearStorageSync()
+          Taro.redirectTo({
+            url: '/pages/index/index'
+          })
+        }
+      }
+    })
+  }
+
+  const maskPhone = (phone: string) => {
+    if (!phone) return ''
+    return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+  }
+
   return (
     <View className="min-h-screen bg-gray-100">
-      <View className="px-4 py-4">
-        <Card className="bg-white rounded-lg shadow-sm mb-4">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              功能菜单
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <View className="space-y-2">
-              {menuItems.map((item) => (
-                <View
-                  key={item.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg active:bg-gray-100"
-                  onClick={item.onClick}
-                >
-                  <View className="flex items-center">
-                    <Text className="text-2xl mr-3">{item.icon}</Text>
-                    <Text className="text-base font-medium">{item.title}</Text>
-                  </View>
-                  <Text className="text-gray-400">›</Text>
+      {/* 头部用户信息 */}
+      <View className="bg-green-500 pt-12 pb-8 px-4">
+        <View className="flex items-center gap-4">
+          <Avatar className="w-16 h-16 bg-white">
+            <AvatarFallback className="text-green-500 text-xl font-bold">
+              {userInfo?.name?.charAt(0) || '需'}
+            </AvatarFallback>
+          </Avatar>
+          <View className="flex-1">
+            <Text className="block text-xl font-bold text-white mb-1">
+              {userInfo?.name || '需求方'}
+            </Text>
+            <Text className="block text-sm text-green-100">
+              {maskPhone(userInfo?.phone || '')}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 内容区域 */}
+      <View className="px-4 -mt-4">
+        {/* 通知消息卡片 */}
+        <Card
+          className="bg-white rounded-lg shadow-sm mb-4"
+          onClick={handleGoToNotifications}
+        >
+          <CardContent className="p-4">
+            <View className="flex items-center justify-between">
+              <View className="flex items-center gap-3">
+                <View className="relative">
+                  <Bell size={24} color="#3b82f6" />
+                  {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-red-500 border-2 border-white rounded-full">
+                      <Text className="text-xs text-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </Text>
+                    </Badge>
+                  )}
                 </View>
-              ))}
+                <View>
+                  <Text className="block text-sm font-semibold text-gray-800">
+                    通知消息
+                  </Text>
+                  <Text className="block text-xs text-gray-500 mt-1">
+                    {unreadCount > 0
+                      ? `您有 ${unreadCount} 条未读消息`
+                      : '暂无未读消息'
+                    }
+                  </Text>
+                </View>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
             </View>
           </CardContent>
         </Card>
 
-        <Card className="bg-white rounded-lg shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              关于
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <View className="space-y-2">
-              <Text className="block text-sm text-gray-600">
-                版本：1.0.0
-              </Text>
-              <Text className="block text-sm text-gray-600">
-                无人车共享运营平台 - 需求方端
-              </Text>
+        {/* 功能菜单 */}
+        <Card className="bg-white rounded-lg shadow-sm mb-4">
+          <CardContent className="p-0">
+            {menuItems.map((item, index) => (
+              <View
+                key={item.id}
+                className={`flex items-center justify-between px-4 py-4 active:bg-gray-50 ${
+                  index < menuItems.length - 1 ? 'border-b border-gray-100' : ''
+                }`}
+                onClick={item.onClick}
+              >
+                <View className="flex items-center gap-3">
+                  {item.icon}
+                  <Text className="block text-sm">{item.title}</Text>
+                </View>
+                <Text className="block text-gray-400 text-sm">›</Text>
+              </View>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* 退出登录 */}
+        <Card className="bg-white rounded-lg shadow-sm mb-4">
+          <CardContent className="p-0">
+            <View
+              className="flex items-center justify-between px-4 py-4 active:bg-gray-50"
+              onClick={handleLogout}
+            >
+              <View className="flex items-center gap-3">
+                <LogOut size={20} color="#ef4444" />
+                <Text className="block text-sm text-red-500">退出登录</Text>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
             </View>
           </CardContent>
         </Card>
+
+        {/* 版本信息 */}
+        <View className="text-center py-4">
+          <Text className="block text-xs text-gray-400">
+            无人车共享运营平台 v1.0.0
+          </Text>
+        </View>
       </View>
     </View>
   )

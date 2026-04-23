@@ -15,6 +15,7 @@ export default typeof definePageConfig === 'function'
         'pages/merchant/payment/index',        // 需求方端-付款
         'pages/merchant/stats/index',          // 需求方端-统计
         'pages/merchant/profile/index',        // 需求方端-我的
+        'pages/notifications/index',           // 通知消息列表
         'pages/admin/users/index',             // 运营端-用户管理
         'pages/admin/vehicles/index',          // 运营端-车辆审核
         'pages/admin/orders/index',            // 运营端-订单管理
@@ -45,6 +46,7 @@ export default typeof definePageConfig === 'function'
         'pages/merchant/payment/index',        // 需求方端-付款
         'pages/merchant/stats/index',          // 需求方端-统计
         'pages/merchant/profile/index',        // 需求方端-我的
+        'pages/notifications/index',           // 通知消息列表
         'pages/admin/users/index',             // 运营端-用户管理
         'pages/admin/vehicles/index',          // 运营端-车辆审核
         'pages/admin/orders/index',            // 运营端-订单管理
