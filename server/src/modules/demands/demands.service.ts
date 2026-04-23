@@ -225,7 +225,7 @@ export class DemandsService {
     }
   }
 
-  async accept(id: string, ownerId: string, vehicleId: string, note?: string) {
+  async accept(id: string, ownerId: string, vehicleId: string, farePrice: number, note?: string) {
     const client = getSupabaseClient()
 
     // 验证车主是否存在
@@ -297,6 +297,8 @@ export class DemandsService {
         owner_id: ownerId,
         vehicle_id: vehicleId,
         status: 'accepted',
+        fare_price: farePrice,
+        merchant_confirmed: false,
         pickup_time: existingDemand.pickup_time,
         pickup_address: existingDemand.pickup_address,
         delivery_address: existingDemand.delivery_address,

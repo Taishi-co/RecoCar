@@ -41,4 +41,10 @@ export class OrdersController {
     console.log('[OrdersController] 完成订单请求:', id, pickupPhotoKey, deliveryPhotoKey)
     return this.ordersService.complete(id, pickupPhotoKey, deliveryPhotoKey)
   }
+
+  @Post(':id/confirm-fare')
+  async confirmFare(@Param('id') id: string) {
+    console.log('[OrdersController] 确认运费请求:', id)
+    return this.ordersService.confirmFare(id)
+  }
 }

@@ -19,6 +19,9 @@ interface Order {
   delivery_photo_key: string | null
   accept_time: string | null
   complete_time: string | null
+  fare_price: number | null
+  merchant_confirmed: boolean
+  confirm_time: string | null
   created_at: string
   demand?: {
     id: string
@@ -438,7 +441,12 @@ export default function OwnerOrders() {
                           </Badge>
                         </View>
                       </View>
-                      {order.status === 'accepted' && (
+                      {order.status === 'accepted' && !order.merchant_confirmed && (
+                        <View className="bg-gray-200 px-3 py-1 rounded-lg">
+                          <Text className="text-xs text-gray-600">等待确认运费</Text>
+                        </View>
+                      )}
+                      {order.status === 'accepted' && order.merchant_confirmed && (
                         <Button
                           size="sm"
                           className="bg-green-500"
@@ -492,6 +500,40 @@ export default function OwnerOrders() {
                               {order.demand.remarks}
                             </Text>
                           </View>
+                        )}
+                      </View>
+                    )}
+
+                    {/* 运费信息（仅已接单后显示） */}
+                    {order.status === 'accepted' && order.fare_price && (
+                      <View className="bg-yellow-50 rounded-lg p-3 mb-3">
+                        <View className="flex justify-between items-center">
+                          <View>
+                            <Text className="block text-xs text-gray-600 mb-1">运费报价</Text>
+                            <Text className="block text-lg font-bold text-orange-600">
+                              ¥{order.fare_price.toFixed(2)}
+                            </Text>
+                          </View>
+                          {!order.merchant_confirmed && (
+                            <View className="bg-gray-200 px-3 py-1 rounded-lg">
+                              <Text className="text-xs text-gray-600">待确认</Text>
+                            </View>
+                          )}
+                          {order.merchant_confirmed && (
+                            <View className="bg-green-500 px-3 py-1 rounded-lg">
+                              <Text className="text-xs text-white">已确认</Text>
+                            </View>
+                          )}
+                        </View>
+                        {order.confirm_time && (
+                          <Text className="text-xs text-gray-500 mt-2 block">
+                            确认时间: {new Date(order.confirm_time).toLocaleString()}
+                          </Text>
+                        )}
+                        {!order.merchant_confirmed && (
+                          <Text className="text-xs text-gray-500 mt-2 block">
+                            需求方确认后才能开始运输
+                          </Text>
                         )}
                       </View>
                     )}

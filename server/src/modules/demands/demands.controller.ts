@@ -44,10 +44,11 @@ export class DemandsController {
     @Param('id') id: string,
     @Body('ownerId') ownerId: string,
     @Body('vehicleId') vehicleId: string,
+    @Body('farePrice') farePrice: number,
     @Body('note') note?: string
   ) {
-    console.log('[DemandsController] 接单请求 - demandId:', id, 'ownerId:', ownerId, 'vehicleId:', vehicleId, 'note:', note)
-    return this.demandsService.accept(id, ownerId, vehicleId, note)
+    console.log('[DemandsController] 接单请求 - demandId:', id, 'ownerId:', ownerId, 'vehicleId:', vehicleId, 'farePrice:', farePrice, 'note:', note)
+    return this.demandsService.accept(id, ownerId, vehicleId, farePrice, note)
   }
 
   @Get('stats/merchant')

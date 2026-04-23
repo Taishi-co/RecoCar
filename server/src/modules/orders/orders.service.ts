@@ -140,6 +140,11 @@ export class OrdersService {
       throw new BadRequestException('只有已接单的订单可以开始运输')
     }
 
+    // 检查需求方是否已确认运费
+    if (!existingOrder.merchant_confirmed) {
+      throw new BadRequestException('需求方尚未确认运费，无法开始运输')
+    }
+
     // 更新订单状态为运输中
     const { data: order, error: updateError } = await client
       .from('orders')
@@ -214,6 +219,52 @@ export class OrdersService {
       code: 200,
       message: '订单已完成',
       data: order
+    }
+  }
+
+  async confirmFare(orderId: string) {
+    const client = getSupabaseClient()
+
+    // 检查订单是否存在
+    const { data: order, error: checkError } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle()
+
+    if (checkError || !order) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 检查订单状态
+    if (order.status !== 'accepted') {
+      throw new BadRequestException('只有已接单的订单可以确认运费')
+    }
+
+    // 检查是否已确认
+    if (order.merchant_confirmed) {
+      throw new BadRequestException('订单已确认运费')
+    }
+
+    // 更新订单确认状态
+    const { data: updatedOrder, error: updateError } = await client
+      .from('orders')
+      .update({
+        merchant_confirmed: true,
+        confirm_time: new Date().toISOString()
+      })
+      .eq('id', orderId)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`确认运费失败: ${updateError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '运费已确认',
+      data: updatedOrder
     }
   }
 }

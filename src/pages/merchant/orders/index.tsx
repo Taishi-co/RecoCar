@@ -18,6 +18,9 @@ interface Order {
   complete_time: string | null
   cancel_reason: string | null
   cancel_time: string | null
+  fare_price: number | null
+  merchant_confirmed: boolean
+  confirm_time: string | null
   created_at: string
   demand?: {
     id: string
@@ -148,6 +151,38 @@ export default function MerchantOrders() {
       cancelled: 'bg-red-500'
     }
     return colors[status] || 'bg-gray-500'
+  }
+
+  const handleConfirmFare = async (orderId: string) => {
+    try {
+      const res = await Network.request({
+        url: `/api/orders/${orderId}/confirm-fare?id=${orderId}`,
+        method: 'POST'
+      })
+
+      console.log('确认运费响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '运费已确认',
+          icon: 'success'
+        })
+
+        // 重新加载订单列表
+        loadOrders()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '确认失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('确认运费失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    }
   }
 
   const getCargoTypeText = (type: string) => {
@@ -376,6 +411,39 @@ export default function MerchantOrders() {
                               {order.owner.name} ({order.owner.phone})
                             </Text>
                           </View>
+                        )}
+                      </View>
+                    )}
+
+                    {/* 运费信息（仅已接单后显示） */}
+                    {order.status === 'accepted' && order.fare_price && (
+                      <View className="bg-yellow-50 rounded-lg p-3 mb-3">
+                        <View className="flex justify-between items-center">
+                          <View>
+                            <Text className="block text-xs text-gray-600 mb-1">运费报价</Text>
+                            <Text className="block text-lg font-bold text-orange-600">
+                              ¥{order.fare_price.toFixed(2)}
+                            </Text>
+                          </View>
+                          {!order.merchant_confirmed && (
+                            <Button
+                              size="sm"
+                              className="bg-orange-500"
+                              onClick={() => handleConfirmFare(order.id)}
+                            >
+                              <Text className="text-xs">确认运费</Text>
+                            </Button>
+                          )}
+                          {order.merchant_confirmed && (
+                            <View className="bg-green-500 px-3 py-1 rounded-lg">
+                              <Text className="text-xs text-white">已确认</Text>
+                            </View>
+                          )}
+                        </View>
+                        {order.confirm_time && (
+                          <Text className="text-xs text-gray-500 mt-2 block">
+                            确认时间: {new Date(order.confirm_time).toLocaleString()}
+                          </Text>
                         )}
                       </View>
                     )}

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import Taro from '@tarojs/taro'
@@ -46,6 +47,7 @@ export default function OwnerDemands() {
   const [showAcceptDialog, setShowAcceptDialog] = useState(false)
   const [selectedDemand, setSelectedDemand] = useState<Demand | null>(null)
   const [acceptNote, setAcceptNote] = useState('')
+  const [farePrice, setFarePrice] = useState('')
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('')
 
@@ -109,6 +111,7 @@ export default function OwnerDemands() {
     setSelectedDemand(demand)
     setShowAcceptDialog(true)
     setAcceptNote('')
+    setFarePrice('')
     setSelectedVehicleId('')
 
     // 加载车主的可用车辆
@@ -161,6 +164,15 @@ export default function OwnerDemands() {
       return
     }
 
+    // 验证是否设置了运费
+    if (!farePrice || parseFloat(farePrice) <= 0) {
+      Taro.showToast({
+        title: '请设置运费',
+        icon: 'none'
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -181,6 +193,7 @@ export default function OwnerDemands() {
         data: {
           ownerId: userInfo.id,
           vehicleId: selectedVehicleId,
+          farePrice: parseFloat(farePrice),
           note: acceptNote
         }
       })
@@ -189,13 +202,14 @@ export default function OwnerDemands() {
 
       if (res.data.code === 200) {
         Taro.showToast({
-          title: '接单成功',
+          title: '接单成功，等待需求方确认运费',
           icon: 'success'
         })
 
         setShowAcceptDialog(false)
         setSelectedDemand(null)
         setAcceptNote('')
+        setFarePrice('')
         setSelectedVehicleId('')
 
         // 重新加载需求列表
@@ -474,6 +488,30 @@ export default function OwnerDemands() {
                     ))}
                   </View>
                 )}
+              </View>
+
+              {/* 运费设置 */}
+              <View className="mb-4">
+                <Label className="block text-sm font-medium mb-2">
+                  <Text className="text-red-500">*</Text>运费设置
+                </Label>
+                <View className="bg-gray-50 rounded-lg px-4 py-3">
+                  <View className="flex items-center">
+                    <View className="flex-1">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="请输入运费价格"
+                        type="digit"
+                        value={farePrice}
+                        onInput={(e) => setFarePrice(e.detail.value)}
+                      />
+                    </View>
+                    <Text className="text-sm text-gray-600 ml-2">元</Text>
+                  </View>
+                </View>
+                <Text className="text-xs text-gray-400 mt-1">
+                  提示：设置运费后，需求方需要确认后才能开始运输
+                </Text>
               </View>
 
               <View>
