@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
 import { CreateOrderDto } from './dto/orders.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
+import { calculateDistance } from '@/utils/distance.util'
 
 @Injectable()
 export class OrdersService {
@@ -40,6 +41,21 @@ export class OrdersService {
       throw new BadRequestException('车辆不可用')
     }
 
+    // 计算运输距离（如果有经纬度信息）
+    let distance = 0
+    if (demand.pickup_latitude &&
+        demand.pickup_longitude &&
+        demand.delivery_latitude &&
+        demand.delivery_longitude) {
+      distance = calculateDistance(
+        demand.pickup_latitude,
+        demand.pickup_longitude,
+        demand.delivery_latitude,
+        demand.delivery_longitude
+      )
+      console.log('[OrdersService] 计算运输距离:', distance, '公里')
+    }
+
     // 创建订单
     const { data: order, error: insertError } = await client
       .from('orders')
@@ -49,7 +65,8 @@ export class OrdersService {
         merchant_id: demand.merchant_id,
         owner_id,
         status: 'accepted',
-        accept_time: new Date().toISOString()
+        accept_time: new Date().toISOString(),
+        distance: distance
       })
       .select()
       .single()
