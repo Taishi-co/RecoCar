@@ -3,6 +3,9 @@ import { View, Text } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
@@ -53,6 +56,9 @@ export default function MerchantOrders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState('')
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')
@@ -197,6 +203,81 @@ export default function MerchantOrders() {
     Taro.navigateTo({
       url: `/pages/merchant/payment/index?orderId=${order.id}`
     })
+  }
+
+  // 取消订单
+  const handleCancelOrder = (order: Order) => {
+    setSelectedOrder(order)
+    setShowCancelDialog(true)
+    setCancelReason('')
+  }
+
+  const handleCloseCancelDialog = () => {
+    setShowCancelDialog(false)
+    setSelectedOrder(null)
+    setCancelReason('')
+  }
+
+  const handleConfirmCancel = async () => {
+    if (!cancelReason.trim()) {
+      Taro.showToast({
+        title: '请输入取消原因',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (!selectedOrder) return
+
+    const userInfo = Taro.getStorageSync('userInfo')
+    if (!userInfo || userInfo.role !== 'merchant') {
+      Taro.showToast({
+        title: '请先登录',
+        icon: 'none'
+      })
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const res = await Network.request({
+        url: `/api/orders/${selectedOrder.id}/cancel?id=${selectedOrder.id}`,
+        method: 'POST',
+        data: {
+          reason: cancelReason,
+          merchant_id: userInfo.id
+        }
+      })
+
+      console.log('取消订单响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '订单已取消',
+          icon: 'success'
+        })
+
+        setShowCancelDialog(false)
+        setSelectedOrder(null)
+        setCancelReason('')
+
+        loadOrders()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '取消失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('取消订单失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getCargoTypeText = (type: string) => {
@@ -439,41 +520,54 @@ export default function MerchantOrders() {
                               ¥{order.fare_price.toFixed(2)}
                             </Text>
                           </View>
-                          {/* 旧版运费确认（保留兼容性） */}
-                          {order.status === 'accepted' && !order.merchant_confirmed && (
-                            <Button
-                              size="sm"
-                              className="bg-orange-500"
-                              onClick={() => handleConfirmFare(order.id)}
-                            >
-                              <Text className="text-xs">确认运费</Text>
-                            </Button>
-                          )}
-                          {order.status === 'accepted' && order.merchant_confirmed && (
-                            <View className="bg-green-500 px-3 py-1 rounded-lg">
-                              <Text className="text-xs text-white">已确认</Text>
-                            </View>
-                          )}
-                          {/* 新版付款流程 */}
-                          {order.status === 'transport_completed' && order.payment_status === 'unpaid' && (
-                            <Button
-                              size="sm"
-                              className="bg-green-500"
-                              onClick={() => handleGoToPayment(order)}
-                            >
-                              <Text className="text-xs">去付款</Text>
-                            </Button>
-                          )}
-                          {order.status === 'transport_completed' && order.payment_status === 'paid' && (
-                            <View className="bg-blue-500 px-3 py-1 rounded-lg">
-                              <Text className="text-xs text-white">已付款</Text>
-                            </View>
-                          )}
-                          {order.status === 'payment_confirmed' && (
-                            <View className="bg-purple-500 px-3 py-1 rounded-lg">
-                              <Text className="text-xs text-white">收款已确认</Text>
-                            </View>
-                          )}
+                          <View className="flex gap-2">
+                            {/* 取消订单按钮（仅已接单状态且未开始运输时显示） */}
+                            {order.status === 'accepted' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-500 border-red-500"
+                                onClick={() => handleCancelOrder(order)}
+                              >
+                                <Text className="text-xs">取消</Text>
+                              </Button>
+                            )}
+                            {/* 旧版运费确认（保留兼容性） */}
+                            {order.status === 'accepted' && !order.merchant_confirmed && (
+                              <Button
+                                size="sm"
+                                className="bg-orange-500"
+                                onClick={() => handleConfirmFare(order.id)}
+                              >
+                                <Text className="text-xs">确认运费</Text>
+                              </Button>
+                            )}
+                            {order.status === 'accepted' && order.merchant_confirmed && (
+                              <View className="bg-green-500 px-3 py-1 rounded-lg">
+                                <Text className="text-xs text-white">已确认</Text>
+                              </View>
+                            )}
+                            {/* 新版付款流程 */}
+                            {order.status === 'transport_completed' && order.payment_status === 'unpaid' && (
+                              <Button
+                                size="sm"
+                                className="bg-green-500"
+                                onClick={() => handleGoToPayment(order)}
+                              >
+                                <Text className="text-xs">去付款</Text>
+                              </Button>
+                            )}
+                            {order.status === 'transport_completed' && order.payment_status === 'paid' && (
+                              <View className="bg-blue-500 px-3 py-1 rounded-lg">
+                                <Text className="text-xs text-white">已付款</Text>
+                              </View>
+                            )}
+                            {order.status === 'payment_confirmed' && (
+                              <View className="bg-purple-500 px-3 py-1 rounded-lg">
+                                <Text className="text-xs text-white">收款已确认</Text>
+                              </View>
+                            )}
+                          </View>
                         </View>
                         {order.confirm_time && (
                           <Text className="text-xs text-gray-500 mt-2 block">
@@ -512,6 +606,55 @@ export default function MerchantOrders() {
           </CardContent>
         </Card>
       </View>
+
+      {/* 取消订单弹窗 */}
+      {showCancelDialog && selectedOrder && (
+        <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+          <DialogContent>
+            <View className="space-y-4">
+              <View>
+                <Text className="block text-base font-medium mb-2">
+                  取消订单
+                </Text>
+                <Text className="block text-sm text-gray-600 mb-2">
+                  确定要取消订单 &quot;{selectedOrder.demand?.cargo_name}&quot; 吗？
+                </Text>
+              </View>
+
+              <View>
+                <Label className="block text-sm font-medium mb-2">
+                  <Text className="text-red-500">*</Text>取消原因
+                </Label>
+                <View className="bg-gray-50 rounded-lg px-4 py-3">
+                  <Textarea
+                    className="w-full"
+                    placeholder="请输入取消原因"
+                    value={cancelReason}
+                    onInput={(e) => setCancelReason(e.detail.value)}
+                    maxlength={200}
+                  />
+                </View>
+              </View>
+
+              <View className="flex gap-3 pt-2">
+                <Button
+                  className="flex-1 bg-gray-200"
+                  onClick={handleCloseCancelDialog}
+                >
+                  <Text>取消</Text>
+                </Button>
+                <Button
+                  className="flex-1 bg-red-500"
+                  onClick={handleConfirmCancel}
+                  disabled={loading}
+                >
+                  <Text>{loading ? '处理中...' : '确认取消'}</Text>
+                </Button>
+              </View>
+            </View>
+          </DialogContent>
+        </Dialog>
+      )}
     </View>
   )
 }

@@ -173,6 +173,67 @@ export class OrdersService {
     }
   }
 
+  async cancelOrder(id: string, reason: string, merchantId: string) {
+    const client = getSupabaseClient()
+
+    // 检查订单是否存在
+    const { data: existingOrder, error: checkError } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingOrder) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 检查订单状态 - 只有已接单的订单可以取消
+    if (existingOrder.status !== 'accepted') {
+      throw new BadRequestException('只有已接单的订单可以取消')
+    }
+
+    // 检查是否是需求方的订单
+    if (existingOrder.merchant_id !== merchantId) {
+      throw new BadRequestException('无权取消此订单')
+    }
+
+    // 更新订单状态为已取消
+    const { data: order, error: updateError } = await client
+      .from('orders')
+      .update({
+        status: 'cancelled',
+        cancel_reason: reason,
+        cancel_time: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`取消订单失败: ${updateError.message}`)
+    }
+
+    // 更新需求状态为已取消
+    await client
+      .from('demands')
+      .update({ status: 'cancelled', remarks: reason || '需求方取消订单' })
+      .eq('id', existingOrder.demand_id)
+
+    // 恢复车辆状态为空闲
+    if (existingOrder.vehicle_id) {
+      await client
+        .from('vehicles')
+        .update({ trip_status: 'idle' })
+        .eq('id', existingOrder.vehicle_id)
+    }
+
+    return {
+      code: 200,
+      message: '订单已取消',
+      data: order
+    }
+  }
+
   async complete(id: string, pickupPhotoKey?: string, deliveryPhotoKey?: string) {
     const client = getSupabaseClient()
 

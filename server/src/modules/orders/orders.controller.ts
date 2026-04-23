@@ -47,6 +47,17 @@ export class OrdersController {
     return this.ordersService.findById(id)
   }
 
+  // 需求方取消订单（已接单状态）
+  @Post(':id/cancel')
+  async cancelOrder(
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+    @Body('merchant_id') merchantId: string
+  ) {
+    console.log('[OrdersController] 需求方取消订单:', id, 'reason:', reason, 'merchantId:', merchantId)
+    return this.ordersService.cancelOrder(id, reason, merchantId)
+  }
+
   @Post(':id/start-transport')
   async startTransport(@Param('id') id: string) {
     console.log('[OrdersController] 开始运输请求:', id)
