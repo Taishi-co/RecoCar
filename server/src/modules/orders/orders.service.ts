@@ -427,6 +427,23 @@ export class OrdersService {
       .update({ status: 'payment_confirmed' })
       .eq('id', order.demand_id)
 
+    // 给需求方发送通知
+    if (order.merchant_id) {
+      try {
+        await this.notificationsService.create({
+          userId: order.merchant_id,
+          type: 'payment_received',
+          title: '车主已确认收款',
+          content: `车主已确认收到运费¥${order.fare_price?.toFixed(2) || '0.00'}，订单运输已完成`,
+          relatedOrderId: order.id,
+          relatedDemandId: order.demand_id
+        })
+      } catch (notificationError) {
+        console.error('[OrdersService] 创建通知失败:', notificationError)
+        // 通知创建失败不影响确认收款流程
+      }
+    }
+
     return {
       code: 200,
       message: '收款已确认，请向平台支付撮合佣金',
@@ -678,6 +695,40 @@ export class OrdersService {
         .eq('id', order.vehicle_id)
     }
 
+    // 给车主发送通知
+    if (order.owner_id) {
+      try {
+        await this.notificationsService.create({
+          userId: order.owner_id,
+          type: 'commission_confirmed',
+          title: '佣金已审核通过',
+          content: `您支付的佣金¥${order.commission_amount?.toFixed(2) || '0.00'}已审核通过，订单已完成，车辆已恢复空闲状态`,
+          relatedOrderId: order.id,
+          relatedDemandId: order.demand_id
+        })
+      } catch (notificationError) {
+        console.error('[OrdersService] 创建通知失败:', notificationError)
+        // 通知创建失败不影响确认佣金流程
+      }
+    }
+
+    // 给需求方发送通知
+    if (order.merchant_id) {
+      try {
+        await this.notificationsService.create({
+          userId: order.merchant_id,
+          type: 'order_completed',
+          title: '订单已完成',
+          content: `您的订单已完成，感谢使用本平台`,
+          relatedOrderId: order.id,
+          relatedDemandId: order.demand_id
+        })
+      } catch (notificationError) {
+        console.error('[OrdersService] 创建通知失败:', notificationError)
+        // 通知创建失败不影响确认佣金流程
+      }
+    }
+
     return {
       code: 200,
       message: '佣金已确认，订单完成',
@@ -722,6 +773,23 @@ export class OrdersService {
 
     if (updateError) {
       throw new BadRequestException(`确认运费失败: ${updateError.message}`)
+    }
+
+    // 给车主发送通知
+    if (order.owner_id) {
+      try {
+        await this.notificationsService.create({
+          userId: order.owner_id,
+          type: 'fare_confirmed',
+          title: '运费已确认',
+          content: `需求方已确认运费¥${order.fare_price?.toFixed(2) || '0.00'}，请开始运输`,
+          relatedOrderId: order.id,
+          relatedDemandId: order.demand_id
+        })
+      } catch (notificationError) {
+        console.error('[OrdersService] 创建通知失败:', notificationError)
+        // 通知创建失败不影响确认运费流程
+      }
     }
 
     return {

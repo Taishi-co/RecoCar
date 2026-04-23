@@ -4,7 +4,7 @@ import { View, Text, ScrollView } from '@tarojs/components'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Bell, CircleX, DollarSign, ShieldCheck } from 'lucide-react-taro'
+import { Bell, CircleX, DollarSign, ShieldCheck, CircleCheck } from 'lucide-react-taro'
 import { Network } from '@/network'
 
 interface Notification {
@@ -193,10 +193,14 @@ export default function Notifications() {
         return { icon: DollarSign, color: '#22c55e', bgColor: '#dcfce7' }
       case 'order_cancelled':
         return { icon: CircleX, color: '#ef4444', bgColor: '#fee2e2' }
-      case 'payment_confirmed':
+      case 'fare_confirmed':
+        return { icon: DollarSign, color: '#22c55e', bgColor: '#dcfce7' }
+      case 'payment_received':
         return { icon: DollarSign, color: '#3b82f6', bgColor: '#dbeafe' }
       case 'commission_confirmed':
         return { icon: ShieldCheck, color: '#8b5cf6', bgColor: '#ede9fe' }
+      case 'order_completed':
+        return { icon: CircleCheck, color: '#10b981', bgColor: '#d1fae5' }
       default:
         return { icon: Bell, color: '#6b7280', bgColor: '#f3f4f6' }
     }
