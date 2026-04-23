@@ -51,13 +51,28 @@ export default function MerchantPayment() {
         method: 'GET'
       })
 
-      console.log('付款信息响应:', res.data)
+      console.log('付款接口响应:', res)
+      console.log('响应statusCode:', res.statusCode)
+      console.log('响应data:', res.data)
 
-      if (res.data.code === 200) {
-        setPaymentInfo(res.data.data)
+      if (res.statusCode === 200 && res.data) {
+        // 如果res.data是字符串，需要解析
+        let data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+
+        console.log('解析后的数据:', data)
+
+        if (data.code === 200) {
+          setPaymentInfo(data.data)
+          console.log('设置的paymentInfo:', data.data)
+        } else {
+          Taro.showToast({
+            title: data.message || '加载失败',
+            icon: 'none'
+          })
+        }
       } else {
         Taro.showToast({
-          title: res.data.message || '加载失败',
+          title: '请求失败',
           icon: 'none'
         })
       }

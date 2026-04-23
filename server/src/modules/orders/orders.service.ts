@@ -339,35 +339,50 @@ export class OrdersService {
 
   // 获取付款信息（需求方查看）
   async getPaymentInfo(orderId: string) {
+    console.log('[OrdersService] 获取付款信息，订单ID:', orderId)
     const client = getSupabaseClient()
 
-    const { data: order, error } = await client
+    // 先查询订单基本信息
+    const { data: order, error: orderError } = await client
       .from('orders')
-      .select(`
-        *,
-        demands!inner (
-          merchant_id,
-          pickup_address,
-          delivery_address,
-          cargo_name
-        ),
-        users!orders_owner_id_fkey (
-          id,
-          name,
-          phone,
-          wechat_payment_qr
-        )
-      `)
+      .select('*')
       .eq('id', orderId)
       .maybeSingle()
 
-    if (error || !order) {
+    console.log('[OrdersService] 订单基础查询结果:', { order, orderError })
+
+    if (orderError || !order) {
+      console.error('[OrdersService] 订单不存在:', orderError)
       throw new NotFoundException('订单不存在')
     }
 
+    // 查询需求信息
+    const { data: demand, error: demandError } = await client
+      .from('demands')
+      .select('merchant_id, pickup_address, delivery_address, cargo_name')
+      .eq('id', order.demand_id)
+      .maybeSingle()
+
+    if (demandError) {
+      console.error('[OrdersService] 需求信息查询失败:', demandError)
+    }
+
+    // 查询车主信息
+    const { data: owner, error: ownerError } = await client
+      .from('users')
+      .select('id, name, phone, wechat_payment_qr')
+      .eq('id', order.owner_id)
+      .maybeSingle()
+
+    if (ownerError) {
+      console.error('[OrdersService] 车主信息查询失败:', ownerError)
+    }
+
+    console.log('[OrdersService] 关联数据:', { demand, owner })
+
     // 如果车主有收款码，生成签名URL
     let paymentQrUrl: string | null = null
-    if (order.users?.wechat_payment_qr) {
+    if (owner?.wechat_payment_qr) {
       try {
         const { S3Storage } = await import('coze-coding-dev-sdk')
         const storage = new S3Storage({
@@ -378,30 +393,35 @@ export class OrdersService {
           region: 'cn-beijing',
         })
         paymentQrUrl = await storage.generatePresignedUrl({
-          key: order.users.wechat_payment_qr,
+          key: owner.wechat_payment_qr,
           expireTime: 86400
         })
+        console.log('[OrdersService] 收款码URL生成成功:', paymentQrUrl)
       } catch (err) {
         console.error('[OrdersService] 生成收款码URL失败:', err)
       }
     }
 
+    const result = {
+      orderId: order.id,
+      farePrice: order.fare_price,
+      commissionAmount: order.commission_amount,
+      ownerName: owner?.name,
+      ownerPhone: owner?.phone,
+      paymentQr: paymentQrUrl,
+      paymentStatus: order.payment_status,
+      status: order.status,
+      pickupAddress: demand?.pickup_address,
+      deliveryAddress: demand?.delivery_address,
+      cargoName: demand?.cargo_name
+    }
+
+    console.log('[OrdersService] 返回结果:', result)
+
     return {
       code: 200,
       message: '查询成功',
-      data: {
-        orderId: order.id,
-        farePrice: order.fare_price,
-        commissionAmount: order.commission_amount,
-        ownerName: order.users?.name,
-        ownerPhone: order.users?.phone,
-        paymentQr: paymentQrUrl,
-        paymentStatus: order.payment_status,
-        status: order.status,
-        pickupAddress: order.demands?.pickup_address,
-        deliveryAddress: order.demands?.delivery_address,
-        cargoName: order.demands?.cargo_name
-      }
+      data: result
     }
   }
 
