@@ -71,7 +71,7 @@ export class OrdersService {
     }
   }
 
-  async findByUserId(ownerId?: string, merchantId?: string, status?: string, commissionPaymentStatus?: string) {
+  async findByUserId(ownerId?: string, merchantId?: string, status?: string) {
     const client = getSupabaseClient()
 
     let query = client.from('orders').select('*')
@@ -86,10 +86,6 @@ export class OrdersService {
 
     if (status) {
       query = query.eq('status', status)
-    }
-
-    if (commissionPaymentStatus) {
-      query = query.eq('commission_payment_status', commissionPaymentStatus)
     }
 
     const { data: orders, error } = await query.order('created_at', { ascending: false })
@@ -731,7 +727,6 @@ export class OrdersService {
       .from('orders')
       .select(`
         id,
-        status,
         fare_price,
         commission_amount,
         payment_status,
@@ -776,23 +771,15 @@ export class OrdersService {
       totalOrders: orders?.length || 0
     }
 
-    // 构建佣金订单列表并计算汇总
+    // 构建佣金订单列表
     const commissionOrders = (orders || []).map((order: any) => {
       // 累加佣金
-      // commission_payment_status='paid' 且 status='commission_pending'：待审核佣金
-      // commission_payment_status='paid' 且 status='completed'：已确认佣金
       if (order.commission_payment_status === 'paid') {
-        if (order.status === 'commission_pending') {
-          // 运力方已支付，待管理员确认
-          console.log('[OrdersService] 待审核佣金:', order.id, order.commission_amount)
-          summary.pendingCommission += order.commission_amount || 0
-          summary.totalCommission += order.commission_amount || 0
-        } else if (order.status === 'completed') {
-          // 管理员已确认，订单真正完成
-          console.log('[OrdersService] 已确认佣金:', order.id, order.commission_amount)
-          summary.confirmedCommission += order.commission_amount || 0
-          summary.totalCommission += order.commission_amount || 0
-        }
+        summary.confirmedCommission += order.commission_amount || 0
+        summary.totalCommission += order.commission_amount || 0
+      } else if (order.commission_payment_status === 'unpaid' && order.status === 'commission_pending') {
+        summary.pendingCommission += order.commission_amount || 0
+        summary.totalCommission += order.commission_amount || 0
       }
 
       return {

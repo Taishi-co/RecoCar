@@ -16,10 +16,9 @@ export class OrdersController {
   async getOrders(
     @Query('owner_id') ownerId?: string,
     @Query('merchant_id') merchantId?: string,
-    @Query('status') status?: string,
-    @Query('commission_payment_status') commissionPaymentStatus?: string
+    @Query('status') status?: string
   ) {
-    return this.ordersService.findByUserId(ownerId, merchantId, status, commissionPaymentStatus)
+    return this.ordersService.findByUserId(ownerId, merchantId, status)
   }
 
   // 获取运力方收益统计 - 必须放在 :id 路由之前
