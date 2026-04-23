@@ -122,10 +122,7 @@ export default function OwnerStats() {
             >
               <Text className="text-xs">车辆管理</Text>
             </Button>
-            <Button
-              size="sm"
-              className="bg-blue-500"
-            >
+            <Button size="sm" className="bg-blue-500">
               <Text className="text-xs">收益统计</Text>
             </Button>
             <Button
@@ -144,15 +141,8 @@ export default function OwnerStats() {
           <Card className="bg-white rounded-lg shadow-sm mb-4">
             <CardHeader>
               <View className="flex justify-between items-center">
-                <CardTitle className="text-lg font-semibold">
-                  收益概览
-                </CardTitle>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={loadRevenueStats}
-                  disabled={loading}
-                >
+                <CardTitle className="text-lg font-semibold">收益概览</CardTitle>
+                <Button size="sm" variant="outline" onClick={loadRevenueStats} disabled={loading}>
                   <Text className="text-xs">刷新</Text>
                 </Button>
               </View>
@@ -168,9 +158,10 @@ export default function OwnerStats() {
                 </View>
               ) : (
                 <View className="space-y-4">
-                  {/* 收益统计卡片 */}
+                  {/* 收益统计 */}
                   <Card className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border-blue-200">
                     <CardContent className="p-4">
+                      <Text className="block text-sm font-semibold text-gray-700 mb-3">收入统计</Text>
                       <View className="grid grid-cols-3 gap-4">
                         <View className="text-center">
                           <View className="flex items-center justify-center mb-1">
@@ -179,9 +170,7 @@ export default function OwnerStats() {
                           <Text className="block text-lg font-bold text-blue-600">
                             ¥{(revenueData.summary.totalFare || 0).toFixed(2)}
                           </Text>
-                          <Text className="block text-xs text-gray-600">
-                            总运费
-                          </Text>
+                          <Text className="block text-xs text-gray-600">总运费</Text>
                         </View>
                         <View className="text-center">
                           <View className="flex items-center justify-center mb-1">
@@ -190,9 +179,7 @@ export default function OwnerStats() {
                           <Text className="block text-lg font-bold text-red-600">
                             ¥{(revenueData.summary.totalCommission || 0).toFixed(2)}
                           </Text>
-                          <Text className="block text-xs text-gray-600">
-                            佣金支出
-                          </Text>
+                          <Text className="block text-xs text-gray-600">佣金支出</Text>
                         </View>
                         <View className="text-center">
                           <View className="flex items-center justify-center mb-1">
@@ -201,9 +188,7 @@ export default function OwnerStats() {
                           <Text className="block text-lg font-bold text-green-600">
                             ¥{(revenueData.summary.netRevenue || 0).toFixed(2)}
                           </Text>
-                          <Text className="block text-xs text-gray-600">
-                            净收益
-                          </Text>
+                          <Text className="block text-xs text-gray-600">净收益</Text>
                         </View>
                       </View>
                     </CardContent>
@@ -212,6 +197,7 @@ export default function OwnerStats() {
                   {/* 订单统计 */}
                   <Card className="bg-green-50 rounded-lg border-green-200">
                     <CardContent className="p-4">
+                      <Text className="block text-sm font-semibold text-gray-700 mb-3">订单统计</Text>
                       <View className="grid grid-cols-3 gap-4">
                         <View className="text-center">
                           <View className="flex items-center justify-center mb-1">
@@ -220,43 +206,35 @@ export default function OwnerStats() {
                           <Text className="block text-2xl font-bold text-green-600 mb-1">
                             {revenueData.summary.totalOrders}
                           </Text>
-                          <Text className="block text-xs text-gray-600">
-                            完成订单
-                          </Text>
+                          <Text className="block text-xs text-gray-600">完成订单</Text>
                         </View>
                         <View className="text-center">
                           <Text className="block text-2xl font-bold text-blue-600 mb-1">
                             {revenueData.summary.paidOrders}
                           </Text>
-                          <Text className="block text-xs text-gray-600">
-                            已收款
-                          </Text>
+                          <Text className="block text-xs text-gray-600">已收款</Text>
                         </View>
                         <View className="text-center">
                           <Text className="block text-2xl font-bold text-orange-600 mb-1">
                             {revenueData.summary.pendingPaymentOrders}
                           </Text>
-                          <Text className="block text-xs text-gray-600">
-                            待收款
-                          </Text>
+                          <Text className="block text-xs text-gray-600">待收款</Text>
                         </View>
                       </View>
+
+                      {/* 待收款提醒 */}
+                      {revenueData.summary.pendingPaymentOrders > 0 && (
+                        <View className="mt-3 pt-3 border-t border-yellow-200">
+                          <View className="flex items-center justify-center">
+                            <CircleAlert size={14} color="#ca8a04" />
+                            <Text className="text-xs text-yellow-700 ml-2">
+                              有 {revenueData.summary.pendingPaymentOrders} 个订单待收款
+                            </Text>
+                          </View>
+                        </View>
+                      )}
                     </CardContent>
                   </Card>
-
-                  {/* 提示信息 */}
-                  {revenueData.summary.pendingPaymentOrders > 0 && (
-                    <Card className="bg-yellow-50 rounded-lg border-yellow-200">
-                      <CardContent className="p-3">
-                        <View className="flex items-center">
-                          <CircleAlert size={14} color="#ca8a04" />
-                          <Text className="text-xs text-yellow-700 ml-2">
-                            有 {revenueData.summary.pendingPaymentOrders} 个订单待收款，请联系需求方完成付款
-                          </Text>
-                        </View>
-                      </CardContent>
-                    </Card>
-                  )}
                 </View>
               )}
             </CardContent>
@@ -266,17 +244,12 @@ export default function OwnerStats() {
           {revenueData?.revenueList && revenueData.revenueList.length > 0 && (
             <Card className="bg-white rounded-lg shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">
-                  收益明细
-                </CardTitle>
+                <CardTitle className="text-base font-semibold">收益明细</CardTitle>
               </CardHeader>
               <CardContent>
                 <View className="space-y-3">
                   {revenueData.revenueList.map((item) => (
-                    <Card
-                      key={item.id}
-                      className="bg-gray-50 rounded-lg border border-gray-200"
-                    >
+                    <Card key={item.id} className="bg-gray-50 rounded-lg border border-gray-200">
                       <CardContent className="p-3">
                         <View className="flex justify-between items-start mb-2">
                           <View className="flex-1">
