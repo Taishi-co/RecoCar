@@ -429,8 +429,8 @@ export default function MerchantOrders() {
                       </View>
                     )}
 
-                    {/* 运费信息（仅已接单后显示） */}
-                    {order.status === 'accepted' && order.fare_price && (
+                    {/* 运费信息（已接单后显示） */}
+                    {(order.status === 'accepted' || order.status === 'transport_completed' || order.status === 'payment_confirmed') && order.fare_price && (
                       <View className="bg-yellow-50 rounded-lg p-3 mb-3">
                         <View className="flex justify-between items-center">
                           <View>
@@ -455,28 +455,24 @@ export default function MerchantOrders() {
                             </View>
                           )}
                           {/* 新版付款流程 */}
-                          {order.status !== 'accepted' && (
-                            <>
-                              {order.status === 'transport_completed' && order.payment_status === 'unpaid' && (
-                                <Button
-                                  size="sm"
-                                  className="bg-green-500"
-                                  onClick={() => handleGoToPayment(order)}
-                                >
-                                  <Text className="text-xs">去付款</Text>
-                                </Button>
-                              )}
-                              {order.status === 'transport_completed' && order.payment_status === 'paid' && (
-                                <View className="bg-blue-500 px-3 py-1 rounded-lg">
-                                  <Text className="text-xs text-white">已付款</Text>
-                                </View>
-                              )}
-                              {order.status === 'payment_confirmed' && (
-                                <View className="bg-purple-500 px-3 py-1 rounded-lg">
-                                  <Text className="text-xs text-white">收款已确认</Text>
-                                </View>
-                              )}
-                            </>
+                          {order.status === 'transport_completed' && order.payment_status === 'unpaid' && (
+                            <Button
+                              size="sm"
+                              className="bg-green-500"
+                              onClick={() => handleGoToPayment(order)}
+                            >
+                              <Text className="text-xs">去付款</Text>
+                            </Button>
+                          )}
+                          {order.status === 'transport_completed' && order.payment_status === 'paid' && (
+                            <View className="bg-blue-500 px-3 py-1 rounded-lg">
+                              <Text className="text-xs text-white">已付款</Text>
+                            </View>
+                          )}
+                          {order.status === 'payment_confirmed' && (
+                            <View className="bg-purple-500 px-3 py-1 rounded-lg">
+                              <Text className="text-xs text-white">收款已确认</Text>
+                            </View>
                           )}
                         </View>
                         {order.confirm_time && (
