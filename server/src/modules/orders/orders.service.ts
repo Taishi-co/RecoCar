@@ -1,9 +1,13 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, Inject } from '@nestjs/common'
 import { CreateOrderDto } from './dto/orders.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
+import { NotificationsService } from '../notifications/notification.service'
 
 @Injectable()
 export class OrdersService {
+  constructor(
+    private readonly notificationsService: NotificationsService
+  ) {}
   async create(createOrderDto: CreateOrderDto) {
     const { demand_id, vehicle_id, owner_id } = createOrderDto
 
@@ -213,10 +217,10 @@ export class OrdersService {
       throw new BadRequestException(`取消订单失败: ${updateError.message}`)
     }
 
-    // 更新需求状态为已取消
+    // 更新需求状态为待接单（不是已取消，让其他车主可以继续接单）
     await client
       .from('demands')
-      .update({ status: 'cancelled', remarks: reason || '需求方取消订单' })
+      .update({ status: 'pending', owner_id: null })
       .eq('id', existingOrder.demand_id)
 
     // 恢复车辆状态为空闲
@@ -227,9 +231,26 @@ export class OrdersService {
         .eq('id', existingOrder.vehicle_id)
     }
 
+    // 给车主发送通知
+    if (existingOrder.owner_id) {
+      try {
+        await this.notificationsService.create({
+          userId: existingOrder.owner_id,
+          type: 'order_cancelled',
+          title: '订单已被取消',
+          content: `您接的订单"${existingOrder.remarks || '订单'}"已被需求方取消，取消原因：${reason}`,
+          relatedOrderId: existingOrder.id,
+          relatedDemandId: existingOrder.demand_id
+        })
+      } catch (notificationError) {
+        console.error('[OrdersService] 创建通知失败:', notificationError)
+        // 通知创建失败不影响取消订单流程
+      }
+    }
+
     return {
       code: 200,
-      message: '订单已取消',
+      message: '订单已取消，需求已恢复待接单状态',
       data: order
     }
   }
