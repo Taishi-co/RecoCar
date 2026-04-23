@@ -272,9 +272,7 @@ export default function OwnerVehicles() {
     }
   }
 
-  const handleToggleAvailability = async (vehicleId: string, currentAvailability: boolean) => {
-    const newAvailability = !currentAvailability
-
+  const handleToggleAvailability = async (vehicleId: string, newAvailability: boolean) => {
     try {
       const res = await Network.request({
         url: `/api/vehicles/${vehicleId}/availability?id=${vehicleId}`,
@@ -466,12 +464,13 @@ export default function OwnerVehicles() {
                           </>
                         )}
                         {vehicle.status === 'active' && (
-                          <View onClick={() => handleToggleAvailability(vehicle.id, vehicle.is_available)}>
+                          <View>
                             <Text className="text-xs text-gray-500 mb-1 block">
                               {vehicle.is_available ? '出车中' : '已出车'}
                             </Text>
                             <Switch
                               checked={vehicle.is_available}
+                              onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
                             />
                           </View>
                         )}
