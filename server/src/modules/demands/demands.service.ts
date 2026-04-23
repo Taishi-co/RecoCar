@@ -273,7 +273,12 @@ export class DemandsService {
       throw new BadRequestException('所选车辆不存在或不可用')
     }
 
-    // 开始事务：更新需求状态并创建订单
+    // 检查车辆是否已在运输中
+    if (vehicle.trip_status === 'in_transit') {
+      throw new BadRequestException('该车辆正在运输中，无法接单')
+    }
+
+    // 开始事务：更新需求状态、创建订单、更新车辆状态
     const { data: demand, error: updateError } = await client
       .from('demands')
       .update({
@@ -314,6 +319,17 @@ export class DemandsService {
         .update({ status: 'pending', owner_id: null })
         .eq('id', id)
       throw new BadRequestException(`创建订单失败: ${orderError.message}`)
+    }
+
+    // 更新车辆状态为运输中
+    const { error: vehicleUpdateError } = await client
+      .from('vehicles')
+      .update({ trip_status: 'in_transit' })
+      .eq('id', vehicleId)
+
+    if (vehicleUpdateError) {
+      console.error('[DemandsService] 更新车辆状态失败:', vehicleUpdateError)
+      // 不影响接单流程，仅记录日志
     }
 
     return {

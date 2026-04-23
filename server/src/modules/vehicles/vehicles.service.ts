@@ -377,6 +377,11 @@ export class VehiclesService {
       throw new BadRequestException('只有审核通过的车辆可以切换运营状态')
     }
 
+    // 检查车辆是否在运输中，已接单的车辆不能切换出车状态
+    if (existingVehicle.trip_status === 'in_transit' && !isAvailable) {
+      throw new BadRequestException('车辆正在运输中，无法设置为不出车状态')
+    }
+
     // 更新运营状态
     const { data: vehicle, error: updateError } = await client
       .from('vehicles')

@@ -215,6 +215,14 @@ export class OrdersService {
       .update({ status: 'completed' })
       .eq('id', existingOrder.demand_id)
 
+    // 恢复车辆状态为空闲
+    if (existingOrder.vehicle_id) {
+      await client
+        .from('vehicles')
+        .update({ trip_status: 'idle' })
+        .eq('id', existingOrder.vehicle_id)
+    }
+
     return {
       code: 200,
       message: '订单已完成',

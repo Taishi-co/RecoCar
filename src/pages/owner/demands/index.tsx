@@ -20,6 +20,7 @@ interface Vehicle {
   has_cold_chain: boolean
   status: string
   is_available: boolean
+  trip_status: string
 }
 
 interface Demand {
@@ -125,9 +126,9 @@ export default function OwnerDemands() {
 
       if (res.data.code === 200) {
         const vehicleList = res.data.data || []
-        // 只显示状态为 active 且 is_available 为 true 的车辆
+        // 只显示状态为 active、is_available 为 true 且 trip_status 为 idle 的车辆
         const availableVehicles = vehicleList.filter((v: Vehicle) =>
-          v.status === 'active' && v.is_available === true
+          v.status === 'active' && v.is_available === true && v.trip_status === 'idle'
         )
         setVehicles(availableVehicles)
       } else {
