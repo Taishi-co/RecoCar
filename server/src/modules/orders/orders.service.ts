@@ -897,6 +897,7 @@ export class OrdersService {
       .from('orders')
       .select(`
         id,
+        status,
         fare_price,
         commission_amount,
         payment_status,
@@ -917,8 +918,6 @@ export class OrdersService {
       console.error('[OrdersService] 查询订单失败:', ordersError)
       throw new BadRequestException(`查询订单失败: ${ordersError.message}`)
     }
-
-    console.log('[OrdersService] 查询到的订单数:', orders?.length || 0)
 
     // 获取车主和车辆信息
     const ownerIds = orders?.map((o: any) => o.owner_id).filter(Boolean) || []
@@ -944,12 +943,17 @@ export class OrdersService {
     // 构建佣金订单列表
     const commissionOrders = (orders || []).map((order: any) => {
       // 累加佣金
-      if (order.commission_payment_status === 'paid') {
-        summary.confirmedCommission += order.commission_amount || 0
-        summary.totalCommission += order.commission_amount || 0
-      } else if (order.commission_payment_status === 'unpaid' && order.status === 'commission_pending') {
-        summary.pendingCommission += order.commission_amount || 0
-        summary.totalCommission += order.commission_amount || 0
+      // 已确认佣金：佣金已支付且平台已确认（订单状态为 completed）
+      if (order.commission_payment_status === 'paid' && order.status === 'completed') {
+        const amount = Number(order.commission_amount) || 0
+        summary.confirmedCommission += amount
+        summary.totalCommission += amount
+      }
+      // 待审核佣金：佣金已支付但平台未确认（订单状态为 commission_pending）
+      else if (order.commission_payment_status === 'paid' && order.status === 'commission_pending') {
+        const amount = Number(order.commission_amount) || 0
+        summary.pendingCommission += amount
+        summary.totalCommission += amount
       }
 
       return {
