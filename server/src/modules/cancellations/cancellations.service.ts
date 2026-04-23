@@ -127,10 +127,19 @@ export class CancellationsService {
     if (action === 'approve') {
       // 同意取消
       // 扣除需求方信用积分10分
+      const { data: user } = await client
+        .from('users')
+        .select('credit_score')
+        .eq('id', request.requestor_id)
+        .single()
+
+      const currentScore = user?.credit_score || 100
+      const newScore = Math.max(0, currentScore - 10)
+
       await client
         .from('users')
         .update({
-          credit_score: client.raw('GREATEST(0, credit_score - 10)')
+          credit_score: newScore
         })
         .eq('id', request.requestor_id)
 
@@ -227,23 +236,10 @@ export class CancellationsService {
   async getPendingRequests(ownerId: string) {
     const client = getSupabaseClient()
 
+    // 先查询待处理的取消申请
     const { data: requests, error } = await client
       .from('cancellation_requests')
-      .select(`
-        *,
-        orders!inner(
-          id,
-          demand_id,
-          fare_price,
-          merchant_confirmed
-        ),
-        demands!inner(
-          id,
-          cargo_name,
-          pickup_address,
-          delivery_address
-        )
-      `)
+      .select('*')
       .eq('responder_id', ownerId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
@@ -252,10 +248,49 @@ export class CancellationsService {
       throw new BadRequestException(`查询失败: ${error.message}`)
     }
 
+    if (!requests || requests.length === 0) {
+      return {
+        code: 200,
+        message: '查询成功',
+        data: []
+      }
+    }
+
+    // 获取所有相关的订单ID和需求ID
+    const orderIds = requests.map(r => r.order_id)
+    const demandIds = requests.map(r => {
+      // 从 order_id 反查 demand_id
+      return null // 将在下面查询订单后获取
+    })
+
+    // 查询订单信息
+    const { data: orders } = await client
+      .from('orders')
+      .select('id, demand_id, fare_price, merchant_confirmed')
+      .in('id', orderIds)
+
+    // 查询需求信息
+    const demandIdsFromOrders = orders?.map(o => o.demand_id) || []
+    const { data: demands } = await client
+      .from('demands')
+      .select('id, cargo_name, pickup_address, delivery_address')
+      .in('id', demandIdsFromOrders)
+
+    // 组合数据
+    const enrichedRequests = requests.map(request => {
+      const order = orders?.find(o => o.id === request.order_id)
+      const demand = demands?.find(d => d.id === order?.demand_id)
+      return {
+        ...request,
+        orders: order || {},
+        demands: demand || {}
+      }
+    })
+
     return {
       code: 200,
       message: '查询成功',
-      data: requests || []
+      data: enrichedRequests
     }
   }
 
