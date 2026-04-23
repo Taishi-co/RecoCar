@@ -14,6 +14,9 @@ interface PaymentInfo {
   paymentQr: string
   paymentStatus: string
   status: string
+  pickupAddress?: string
+  deliveryAddress?: string
+  cargoName?: string
 }
 
 export default function MerchantPayment() {
@@ -138,7 +141,7 @@ export default function MerchantPayment() {
 
       {/* 内容区域 */}
       <View className="px-4 -mt-4">
-        {/* 金额信息卡片 */}
+        {/* 订单信息卡片 */}
         <Card className="bg-white rounded-lg shadow-sm mb-4">
           <CardHeader>
             <CardTitle className="text-base font-semibold">
@@ -147,45 +150,67 @@ export default function MerchantPayment() {
           </CardHeader>
           <CardContent>
             <View className="space-y-3">
+              {paymentInfo?.cargoName && (
+                <View className="flex items-center py-2 border-b border-gray-100">
+                  <Text className="text-sm text-gray-600 w-16 flex-shrink-0">货物：</Text>
+                  <Text className="text-sm text-gray-800 flex-1">
+                    {paymentInfo.cargoName}
+                  </Text>
+                </View>
+              )}
+              {paymentInfo?.pickupAddress && paymentInfo?.deliveryAddress && (
+                <View className="flex items-start py-2 border-b border-gray-100">
+                  <Text className="text-sm text-gray-600 w-16 flex-shrink-0 pt-1">
+                    路线：
+                  </Text>
+                  <Text className="text-sm text-gray-800 flex-1">
+                    {paymentInfo.pickupAddress}
+                    {' → '}
+                    {paymentInfo.deliveryAddress}
+                  </Text>
+                </View>
+              )}
               <View className="flex justify-between items-center py-2 border-b border-gray-100">
+                <Text className="text-sm text-gray-600">订单号</Text>
+                <Text className="text-sm text-gray-500">
+                  {paymentInfo?.orderId}
+                </Text>
+              </View>
+              <View className="flex justify-between items-center py-2">
                 <Text className="text-sm text-gray-600">运费金额</Text>
                 <Text className="text-lg font-bold text-green-500">
                   ¥{paymentInfo?.farePrice || 0}
                 </Text>
               </View>
-              <View className="flex justify-between items-center py-2">
-                <Text className="text-sm text-gray-600">佣金金额</Text>
-                <Text className="text-sm text-gray-500">
-                  ¥{paymentInfo?.commissionAmount || 0}
-                </Text>
-              </View>
             </View>
           </CardContent>
         </Card>
 
-        {/* 车主信息卡片 */}
-        <Card className="bg-white rounded-lg shadow-sm mb-4">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">
-              运力方信息
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <View className="space-y-2">
-              <View className="flex items-center">
-                <Text className="text-sm text-gray-600 w-16">姓名：</Text>
-                <Text className="text-sm text-gray-800">{paymentInfo?.ownerName}</Text>
+        {/* 运力方信息卡片 */}
+        {paymentInfo?.ownerName && (
+          <Card className="bg-white rounded-lg shadow-sm mb-4">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">
+                运力方信息
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <View className="space-y-2">
+                <View className="flex items-center">
+                  <Text className="text-sm text-gray-600 w-16">姓名：</Text>
+                  <Text className="text-sm text-gray-800">{paymentInfo.ownerName}</Text>
+                </View>
+                <View className="flex items-center">
+                  <Text className="text-sm text-gray-600 w-16">电话：</Text>
+                  <Text className="text-sm text-gray-800">{paymentInfo.ownerPhone}</Text>
+                </View>
               </View>
-              <View className="flex items-center">
-                <Text className="text-sm text-gray-600 w-16">电话：</Text>
-                <Text className="text-sm text-gray-800">{paymentInfo?.ownerPhone}</Text>
-              </View>
-            </View>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 收款码卡片 */}
-        {paymentInfo?.paymentQr && (
+        {paymentInfo?.paymentQr ? (
           <Card className="bg-white rounded-lg shadow-sm mb-4">
             <CardHeader>
               <CardTitle className="text-base font-semibold">
@@ -199,10 +224,37 @@ export default function MerchantPayment() {
                     src={paymentInfo.paymentQr}
                     className="w-full h-full"
                     mode="aspectFit"
+                    lazyLoad
+                    onLoad={() => {
+                      console.log('收款码加载成功')
+                    }}
+                    onError={() => {
+                      console.error('收款码加载失败')
+                      Taro.showToast({
+                        title: '收款码加载失败',
+                        icon: 'none'
+                      })
+                    }}
                   />
                 </View>
-                <Text className="block text-xs text-gray-500 text-center">
+                <Text className="block text-sm text-gray-600 text-center mb-2">
                   请使用微信扫描上方二维码支付
+                </Text>
+                <Text className="block text-xs text-gray-500 text-center">
+                  支付金额：¥{paymentInfo.farePrice}
+                </Text>
+              </View>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-white rounded-lg shadow-sm mb-4">
+            <CardContent className="p-4">
+              <View className="text-center py-4">
+                <Text className="block text-sm text-orange-600 mb-2">
+                  ⚠️ 运力方暂未上传收款码
+                </Text>
+                <Text className="block text-xs text-gray-500">
+                  请联系运力方获取收款方式
                 </Text>
               </View>
             </CardContent>
@@ -210,7 +262,7 @@ export default function MerchantPayment() {
         )}
 
         {/* 操作按钮 */}
-        {paymentInfo?.status === 'transport_completed' && paymentInfo.paymentStatus !== 'paid' && (
+        {paymentInfo?.status === 'transport_completed' && paymentInfo.paymentStatus === 'unpaid' && (
           <Card className="bg-white rounded-lg shadow-sm mb-4">
             <CardContent className="p-4">
               <Button
@@ -231,8 +283,14 @@ export default function MerchantPayment() {
           <Card className="bg-white rounded-lg shadow-sm mb-4">
             <CardContent className="p-4">
               <View className="text-center py-2">
+                <View className="flex items-center justify-center mb-2">
+                  <Text className="block text-3xl mr-2">✓</Text>
+                  <Text className="block text-base font-semibold text-blue-600">
+                    已标记为已付款
+                  </Text>
+                </View>
                 <Text className="block text-sm text-gray-600">
-                  已标记为已付款，等待运力方确认
+                  等待运力方确认收款
                 </Text>
               </View>
             </CardContent>
@@ -258,6 +316,13 @@ export default function MerchantPayment() {
               • 如有疑问，请及时联系运力方
             </Text>
           </View>
+        </View>
+
+        {/* 联系客服 */}
+        <View className="text-center">
+          <Text className="block text-xs text-gray-400">
+            如有疑问，请联系客服
+          </Text>
         </View>
       </View>
     </View>

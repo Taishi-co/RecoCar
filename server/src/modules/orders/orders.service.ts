@@ -348,7 +348,8 @@ export class OrdersService {
         demands!inner (
           merchant_id,
           pickup_address,
-          delivery_address
+          delivery_address,
+          cargo_name
         ),
         users!orders_owner_id_fkey (
           id,
@@ -396,7 +397,10 @@ export class OrdersService {
         ownerPhone: order.users?.phone,
         paymentQr: paymentQrUrl,
         paymentStatus: order.payment_status,
-        status: order.status
+        status: order.status,
+        pickupAddress: order.demands?.pickup_address,
+        deliveryAddress: order.demands?.delivery_address,
+        cargoName: order.demands?.cargo_name
       }
     }
   }
