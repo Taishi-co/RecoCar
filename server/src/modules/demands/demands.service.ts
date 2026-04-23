@@ -1,9 +1,13 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, Inject } from '@nestjs/common'
 import { CreateDemandDto, UpdateDemandDto } from './dto/demands.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
+import { NotificationsService } from '../notifications/notification.service'
 
 @Injectable()
 export class DemandsService {
+  constructor(
+    private readonly notificationsService: NotificationsService
+  ) {}
   async create(createDemandDto: CreateDemandDto) {
     const {
       merchant_id,
@@ -309,6 +313,21 @@ export class DemandsService {
         .update({ status: 'pending', owner_id: null })
         .eq('id', id)
       throw new BadRequestException(`创建订单失败: ${orderError.message}`)
+    }
+
+    // 给需求方发送通知
+    try {
+      await this.notificationsService.create({
+        userId: existingDemand.merchant_id,
+        type: 'order_accepted',
+        title: '您的需求已被接单',
+        content: `您发布的"${existingDemand.cargo_name}"需求已被接单，运费：¥${farePrice.toFixed(2)}，请确认运费后车主将开始运输`,
+        relatedOrderId: order.id,
+        relatedDemandId: id
+      })
+    } catch (notificationError) {
+      console.error('[DemandsService] 创建通知失败:', notificationError)
+      // 通知创建失败不影响接单流程
     }
 
     // 更新车辆状态为运输中

@@ -68,6 +68,21 @@ export class OrdersService {
       .update({ status: 'accepted' })
       .eq('id', demand_id)
 
+    // 给需求方发送通知
+    try {
+      await this.notificationsService.create({
+        userId: demand.merchant_id,
+        type: 'order_accepted',
+        title: '您的需求已被接单',
+        content: `您发布的"${demand.cargo_name}"需求已被接单，请关注订单状态`,
+        relatedOrderId: order.id,
+        relatedDemandId: demand.id
+      })
+    } catch (notificationError) {
+      console.error('[OrdersService] 创建通知失败:', notificationError)
+      // 通知创建失败不影响接单流程
+    }
+
     return {
       code: 200,
       message: '接单成功',
