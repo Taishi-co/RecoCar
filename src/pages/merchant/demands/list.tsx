@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
+import { useNotificationPolling } from '@/hooks/useNotificationPolling'
 
 interface Demand {
   id: string
@@ -29,6 +30,9 @@ export default function DemandsList() {
   const [selectedDemand, setSelectedDemand] = useState<Demand | null>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // 启用通知轮询
+  useNotificationPolling(30000) // 每30秒检查一次新通知
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')

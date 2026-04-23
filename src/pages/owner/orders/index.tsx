@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
+import { useNotificationPolling } from '@/hooks/useNotificationPolling'
 
 interface Order {
   id: string
@@ -56,6 +57,9 @@ export default function OwnerOrders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [pickupImage, setPickupImage] = useState('')
   const [deliveryImage, setDeliveryImage] = useState('')
+
+  // 启用通知轮询
+  useNotificationPolling(30000) // 每30秒检查一次新通知
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')

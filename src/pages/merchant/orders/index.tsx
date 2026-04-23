@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
+import { useNotificationPolling } from '@/hooks/useNotificationPolling'
 
 interface Order {
   id: string
@@ -59,6 +60,9 @@ export default function MerchantOrders() {
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [cancelReason, setCancelReason] = useState('')
+
+  // 启用通知轮询
+  useNotificationPolling(30000) // 每30秒检查一次新通知
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')
