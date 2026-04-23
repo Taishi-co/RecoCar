@@ -22,6 +22,7 @@ export default function OwnerProfile() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [uploading, setUploading] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [creditScore, setCreditScore] = useState(100)
 
   useEffect(() => {
     loadUserInfo()
@@ -71,6 +72,21 @@ export default function OwnerProfile() {
           title: res.data.message || '加载失败',
           icon: 'none'
         })
+      }
+
+      // 加载信用积分
+      try {
+        const creditRes = await Network.request({
+          url: '/api/cancellations/credit-score',
+          method: 'GET',
+          data: { user_id: savedUserInfo.id }
+        })
+
+        if (creditRes.data.code === 200) {
+          setCreditScore(creditRes.data.data.credit_score || 100)
+        }
+      } catch (error) {
+        console.error('加载信用积分失败:', error)
       }
     } catch (error) {
       console.error('加载用户信息失败:', error)
@@ -206,9 +222,12 @@ export default function OwnerProfile() {
             <Text className="block text-xl font-bold text-white mb-1">
               {userInfo?.name || '车主'}
             </Text>
-            <Text className="block text-sm text-blue-100">
+            <Text className="block text-sm text-blue-100 mb-2">
               {maskPhone(userInfo?.phone || '')}
             </Text>
+            <Badge className="bg-white bg-opacity-20 text-white px-2 py-1">
+              <Text className="text-xs">信用积分：{creditScore}分</Text>
+            </Badge>
           </View>
         </View>
       </View>

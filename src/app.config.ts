@@ -5,6 +5,7 @@ export default typeof definePageConfig === 'function'
         'pages/owner/vehicles/index',          // 车主端-车辆管理
         'pages/owner/demands/index',           // 车主端-需求列表
         'pages/owner/orders/index',            // 车主端-订单管理
+        'pages/owner/cancellations/index',    // 车主端-处理取消申请
         'pages/owner/commission-payment/index',// 车主端-佣金支付
         'pages/owner/stats/index',             // 车主端-统计
         'pages/owner/profile/index',           // 车主端-我的
@@ -36,6 +37,7 @@ export default typeof definePageConfig === 'function'
         'pages/owner/vehicles/index',          // 车主端-车辆管理
         'pages/owner/demands/index',           // 车主端-需求列表
         'pages/owner/orders/index',            // 车主端-订单管理
+        'pages/owner/cancellations/index',    // 车主端-处理取消申请
         'pages/owner/commission-payment/index',// 车主端-佣金支付
         'pages/owner/stats/index',             // 车主端-统计
         'pages/owner/profile/index',           // 车主端-我的

@@ -58,6 +58,7 @@ export default function MerchantOrders() {
   const [loading, setLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState('')
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [showRequestCancelDialog, setShowRequestCancelDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [cancelReason, setCancelReason] = useState('')
 
@@ -275,6 +276,82 @@ export default function MerchantOrders() {
       }
     } catch (error) {
       console.error('取消订单失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 申请取消订单
+  const handleRequestCancel = (order: Order) => {
+    setSelectedOrder(order)
+    setShowRequestCancelDialog(true)
+    setCancelReason('')
+  }
+
+  const handleCloseRequestCancelDialog = () => {
+    setShowRequestCancelDialog(false)
+    setSelectedOrder(null)
+    setCancelReason('')
+  }
+
+  const handleConfirmRequestCancel = async () => {
+    if (!cancelReason.trim()) {
+      Taro.showToast({
+        title: '请输入取消原因',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (!selectedOrder) return
+
+    const userInfo = Taro.getStorageSync('userInfo')
+    if (!userInfo || userInfo.role !== 'merchant') {
+      Taro.showToast({
+        title: '请先登录',
+        icon: 'none'
+      })
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const res = await Network.request({
+        url: '/api/cancellations/request',
+        method: 'POST',
+        data: {
+          order_id: selectedOrder.id,
+          reason: cancelReason,
+          merchant_id: userInfo.id
+        }
+      })
+
+      console.log('申请取消订单响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '取消申请已提交，等待车主处理',
+          icon: 'success'
+        })
+
+        setShowRequestCancelDialog(false)
+        setSelectedOrder(null)
+        setCancelReason('')
+
+        loadOrders()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '申请失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('申请取消失败:', error)
       Taro.showToast({
         title: '网络错误，请重试',
         icon: 'none'
@@ -527,14 +604,29 @@ export default function MerchantOrders() {
                           <View className="flex gap-2">
                             {/* 取消订单按钮（仅已接单状态且未开始运输时显示） */}
                             {order.status === 'accepted' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-500 border-red-500"
-                                onClick={() => handleCancelOrder(order)}
-                              >
-                                <Text className="text-xs">取消</Text>
-                              </Button>
+                              <>
+                                {order.merchant_confirmed ? (
+                                  // 运费已确认，需要申请取消
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-orange-500 border-orange-500"
+                                    onClick={() => handleRequestCancel(order)}
+                                  >
+                                    <Text className="text-xs">申请取消</Text>
+                                  </Button>
+                                ) : (
+                                  // 运费未确认，可以直接取消
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-500 border-red-500"
+                                    onClick={() => handleCancelOrder(order)}
+                                  >
+                                    <Text className="text-xs">取消</Text>
+                                  </Button>
+                                )}
+                              </>
                             )}
                             {/* 旧版运费确认（保留兼容性） */}
                             {order.status === 'accepted' && !order.merchant_confirmed && (
@@ -653,6 +745,58 @@ export default function MerchantOrders() {
                   disabled={loading}
                 >
                   <Text>{loading ? '处理中...' : '确认取消'}</Text>
+                </Button>
+              </View>
+            </View>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 申请取消订单弹窗 */}
+      {showRequestCancelDialog && selectedOrder && (
+        <Dialog open={showRequestCancelDialog} onOpenChange={setShowRequestCancelDialog}>
+          <DialogContent>
+            <View className="space-y-4">
+              <View>
+                <Text className="block text-base font-medium mb-2">
+                  申请取消订单
+                </Text>
+                <Text className="block text-sm text-gray-600 mb-2">
+                  订单 &quot;{selectedOrder.demand?.cargo_name}&quot; 运费已确认，需要向车主申请取消
+                </Text>
+                <Text className="block text-sm text-orange-500 mb-2">
+                  注意：若车主同意，将扣除您10分信用积分
+                </Text>
+              </View>
+
+              <View>
+                <Label className="block text-sm font-medium mb-2">
+                  <Text className="text-red-500">*</Text>取消原因
+                </Label>
+                <View className="bg-gray-50 rounded-lg px-4 py-3">
+                  <Textarea
+                    className="w-full"
+                    placeholder="请输入取消原因，将发送给车主审核"
+                    value={cancelReason}
+                    onInput={(e) => setCancelReason(e.detail.value)}
+                    maxlength={200}
+                  />
+                </View>
+              </View>
+
+              <View className="flex gap-3 pt-2">
+                <Button
+                  className="flex-1 bg-gray-200"
+                  onClick={handleCloseRequestCancelDialog}
+                >
+                  <Text>取消</Text>
+                </Button>
+                <Button
+                  className="flex-1 bg-orange-500"
+                  onClick={handleConfirmRequestCancel}
+                  disabled={loading}
+                >
+                  <Text>{loading ? '提交中...' : '提交申请'}</Text>
                 </Button>
               </View>
             </View>

@@ -460,6 +460,21 @@ export default function OwnerOrders() {
               </Button>
             </View>
 
+            {/* 取消申请提示 */}
+            <View
+              className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 mb-4"
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/cancellations/index' })}
+            >
+              <View className="flex items-center justify-between">
+                <View className="flex items-center">
+                  <Text className="text-xs text-orange-600">
+                    📋 有需求方申请取消订单，请及时处理
+                  </Text>
+                </View>
+                <Text className="text-xs text-orange-500">查看处理 ›</Text>
+              </View>
+            </View>
+
             {loading ? (
               <View className="text-center py-8">
                 <Text className="block text-gray-500 text-sm">加载中...</Text>
