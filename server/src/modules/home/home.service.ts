@@ -175,7 +175,7 @@ export class HomeService {
           pickup_address,
           delivery_address
         ),
-        users!inner (
+        users!orders_owner_id_users_id_fk (
           name
         )
       `)
