@@ -108,29 +108,37 @@ export default function PublishDemand() {
 
       // 处理常用模板参数
       if (routeParams?.template_id) {
-        console.log('[PublishDemand] 从常用模板跳转:', routeParams)
+        console.log('[PublishDemand] 从常用模板跳转 - 原始参数:', routeParams)
+
+        // 手动解码所有参数
+        const decodedParams: any = {}
+        Object.keys(routeParams).forEach(key => {
+          decodedParams[key] = decodeURIComponent(routeParams[key])
+        })
+
+        console.log('[PublishDemand] 从常用模板跳转 - 解码后参数:', decodedParams)
 
         setFormData((prev) => ({
           ...prev,
-          cargo_name: routeParams.cargo_name || '',
-          cargo_type: routeParams.cargo_type || 'normal',
-          weight: routeParams.weight || '',
-          volume: routeParams.volume || '',
-          pickup_address: routeParams.pickup_address || '',
-          pickup_location: routeParams.pickup_lat && routeParams.pickup_lng
+          cargo_name: decodedParams.cargo_name || '',
+          cargo_type: decodedParams.cargo_type || 'normal',
+          weight: decodedParams.weight || '',
+          volume: decodedParams.volume || '',
+          pickup_address: decodedParams.pickup_address || '',
+          pickup_location: decodedParams.pickup_lat && decodedParams.pickup_lng
             ? {
-                latitude: parseFloat(routeParams.pickup_lat),
-                longitude: parseFloat(routeParams.pickup_lng)
+                latitude: parseFloat(decodedParams.pickup_lat),
+                longitude: parseFloat(decodedParams.pickup_lng)
               }
             : null,
-          delivery_address: routeParams.delivery_address || '',
-          delivery_location: routeParams.delivery_lat && routeParams.delivery_lng
+          delivery_address: decodedParams.delivery_address || '',
+          delivery_location: decodedParams.delivery_lat && decodedParams.delivery_lng
             ? {
-                latitude: parseFloat(routeParams.delivery_lat),
-                longitude: parseFloat(routeParams.delivery_lng)
+                latitude: parseFloat(decodedParams.delivery_lat),
+                longitude: parseFloat(decodedParams.delivery_lng)
               }
             : null,
-          remarks: routeParams.remarks || ''
+          remarks: decodedParams.remarks || ''
         }))
 
         // 显示提示信息
