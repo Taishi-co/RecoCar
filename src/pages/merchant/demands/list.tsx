@@ -3,9 +3,11 @@ import { View, Text } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Plus, Edit, Save, FileText } from 'lucide-react-taro'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 import { useNotificationPolling } from '@/hooks/useNotificationPolling'
@@ -22,13 +24,17 @@ interface Demand {
   remarks: string | null
   status: string
   created_at: string
+  template_id?: string | null
+  is_from_schedule?: boolean
 }
 
 export default function DemandsList() {
   const [demands, setDemands] = useState<Demand[]>([])
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
   const [selectedDemand, setSelectedDemand] = useState<Demand | null>(null)
   const [cancelReason, setCancelReason] = useState('')
+  const [templateName, setTemplateName] = useState('')
   const [loading, setLoading] = useState(false)
 
   // 启用通知轮询
@@ -46,7 +52,15 @@ export default function DemandsList() {
       }, 1500)
       return
     }
+
+    // 监听页面显示事件，刷新列表
+    Taro.eventCenter.on('demandListRefresh', loadDemands)
+
     loadDemands()
+
+    return () => {
+      Taro.eventCenter.off('demandListRefresh', loadDemands)
+    }
   }, [])
 
   const loadDemands = async () => {
@@ -71,6 +85,12 @@ export default function DemandsList() {
     setSelectedDemand(demand)
     setShowCancelDialog(true)
     setCancelReason('')
+  }
+
+  const handleEditDemand = (demand: Demand) => {
+    Taro.navigateTo({
+      url: `/pages/merchant/demands/edit?id=${demand.id}`
+    })
   }
 
   const handleCloseCancelDialog = () => {
@@ -129,6 +149,66 @@ export default function DemandsList() {
     }
   }
 
+  const handleSaveAsTemplate = (demand: Demand) => {
+    setSelectedDemand(demand)
+    setShowTemplateDialog(true)
+    setTemplateName('')
+  }
+
+  const handleCloseTemplateDialog = () => {
+    setShowTemplateDialog(false)
+    setSelectedDemand(null)
+    setTemplateName('')
+  }
+
+  const handleConfirmSaveTemplate = async () => {
+    if (!templateName.trim()) {
+      Taro.showToast({
+        title: '请输入模板名称',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (!selectedDemand) return
+
+    setLoading(true)
+
+    try {
+      const res = await Network.request({
+        url: `/api/demands/${selectedDemand.id}/save-as-template`,
+        method: 'POST',
+        data: { template_name: templateName }
+      })
+
+      console.log('保存模板响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '模板保存成功',
+          icon: 'success'
+        })
+
+        setShowTemplateDialog(false)
+        setSelectedDemand(null)
+        setTemplateName('')
+      } else {
+        Taro.showToast({
+          title: res.data.message || '保存失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('保存模板失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getCargoTypeText = (type: string) => {
     switch (type) {
       case 'normal':
@@ -158,13 +238,13 @@ export default function DemandsList() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-500'
-      case 'accepted':
         return 'bg-blue-500'
-      case 'in_transit':
-        return 'bg-purple-500'
-      case 'completed':
+      case 'accepted':
         return 'bg-green-500'
+      case 'in_transit':
+        return 'bg-orange-500'
+      case 'completed':
+        return 'bg-gray-400'
       case 'cancelled':
         return 'bg-red-500'
       default:
@@ -205,16 +285,23 @@ export default function DemandsList() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => Taro.navigateTo({ url: '/pages/merchant/orders/index' })}
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/templates' })}
             >
-              <Text className="text-xs">订单管理</Text>
+              <Text className="text-xs">常用模板</Text>
             </Button>
             <Button
               size="sm"
               variant="outline"
-              onClick={() => Taro.navigateTo({ url: '/pages/merchant/stats/index' })}
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/schedules' })}
             >
-              <Text className="text-xs">数据统计</Text>
+              <Text className="text-xs">定时计划</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/orders/index' })}
+            >
+              <Text className="text-xs">订单管理</Text>
             </Button>
             <Button
               size="sm"
@@ -238,7 +325,8 @@ export default function DemandsList() {
               className="bg-blue-500"
               onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/publish' })}
             >
-              <Text>发布需求</Text>
+              <Plus size={16} color="#fff" />
+              <Text className="ml-1">发布需求</Text>
             </Button>
           </CardHeader>
           <CardContent>
@@ -251,7 +339,8 @@ export default function DemandsList() {
                   className="bg-blue-500"
                   onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/publish' })}
                 >
-                  <Text>发布需求</Text>
+                  <Plus size={16} color="#fff" />
+                  <Text className="ml-1">发布需求</Text>
                 </Button>
               </View>
             ) : (
@@ -260,10 +349,17 @@ export default function DemandsList() {
                   <View key={demand.id} className="bg-gray-50 rounded-lg p-4">
                     <View className="flex justify-between items-start mb-3">
                       <View className="flex-1">
-                        <Text className="block font-medium text-base mb-1">
-                          {demand.cargo_name}
-                        </Text>
-                        <View className="flex items-center gap-2 mb-2">
+                        <View className="flex items-center gap-2 mb-1">
+                          <Text className="block font-medium text-base">
+                            {demand.cargo_name}
+                          </Text>
+                          {demand.is_from_schedule && (
+                            <Badge className="bg-purple-500">
+                              <Text className="text-white text-xs">定时</Text>
+                            </Badge>
+                          )}
+                        </View>
+                        <View className="flex items-center gap-2">
                           <Badge className={getCargoTypeColor(demand.cargo_type)}>
                             <Text className="text-white text-xs">
                               {getCargoTypeText(demand.cargo_type)}
@@ -276,17 +372,36 @@ export default function DemandsList() {
                           </Badge>
                         </View>
                       </View>
+
+                      {/* 待接单状态的操作按钮 */}
                       {demand.status === 'pending' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-500 border-red-500"
-                          onClick={() => handleCancelDemand(demand)}
-                        >
-                          <Text className="text-xs">取消</Text>
-                        </Button>
+                        <View className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditDemand(demand)}
+                          >
+                            <Edit size={14} color="#6b7280" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSaveAsTemplate(demand)}
+                          >
+                            <Save size={14} color="#6b7280" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-red-500 text-red-500"
+                            onClick={() => handleCancelDemand(demand)}
+                          >
+                            <Text className="text-xs">取消</Text>
+                          </Button>
+                        </View>
                       )}
                     </View>
+
                     <View className="space-y-2 mb-3">
                       <View className="flex items-start">
                         <Text className="text-xs text-gray-500 w-16 flex-shrink-0">取货:</Text>
@@ -333,53 +448,114 @@ export default function DemandsList() {
       </View>
 
       {/* 取消需求弹窗 */}
-      {showCancelDialog && selectedDemand && (
-        <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-          <DialogContent>
-            <View className="space-y-4">
-              <View>
-                <Text className="block text-base font-medium mb-2">
-                  取消需求
-                </Text>
-                <Text className="block text-sm text-gray-600 mb-2">
-                  确定要取消需求 &quot;{selectedDemand.cargo_name}&quot; 吗？
-                </Text>
-              </View>
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <View className="space-y-4">
+            <View>
+              <Text className="block text-base font-medium mb-2">
+                取消需求
+              </Text>
+              <Text className="block text-sm text-gray-600 mb-2">
+                确定要取消需求 "{selectedDemand?.cargo_name}" 吗？
+              </Text>
+            </View>
 
-              <View>
-                <Label className="block text-sm font-medium mb-2">
-                  <Text className="text-red-500">*</Text>取消原因
-                </Label>
-                <View className="bg-gray-50 rounded-lg px-4 py-3">
-                  <Textarea
-                    className="w-full"
-                    placeholder="请输入取消原因"
-                    value={cancelReason}
-                    onInput={(e) => setCancelReason(e.detail.value)}
-                    maxlength={200}
-                  />
-                </View>
-              </View>
-
-              <View className="flex gap-3 pt-2">
-                <Button
-                  className="flex-1 bg-gray-200"
-                  onClick={handleCloseCancelDialog}
-                >
-                  <Text>取消</Text>
-                </Button>
-                <Button
-                  className="flex-1 bg-red-500"
-                  onClick={handleConfirmCancel}
-                  disabled={loading}
-                >
-                  <Text>{loading ? '处理中...' : '确认取消'}</Text>
-                </Button>
+            <View>
+              <Label className="block text-sm font-medium mb-2">
+                <Text className="text-red-500">*</Text>取消原因
+              </Label>
+              <View className="bg-gray-50 rounded-lg px-4 py-3">
+                <Textarea
+                  className="w-full"
+                  placeholder="请输入取消原因"
+                  value={cancelReason}
+                  onInput={(e) => setCancelReason(e.detail.value)}
+                  maxlength={200}
+                />
               </View>
             </View>
-          </DialogContent>
-        </Dialog>
-      )}
+
+            <View className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleCloseCancelDialog}
+              >
+                <Text>取消</Text>
+              </Button>
+              <Button
+                className="flex-1 bg-red-500"
+                onClick={handleConfirmCancel}
+                disabled={loading}
+              >
+                <Text>{loading ? '处理中...' : '确认取消'}</Text>
+              </Button>
+            </View>
+          </View>
+        </DialogContent>
+      </Dialog>
+
+      {/* 保存为模板弹窗 */}
+      <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+        <DialogContent>
+          <View className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>
+                <View className="flex items-center gap-2">
+                  <FileText size={18} color="#6b7280" />
+                  <Text>保存为常用模板</Text>
+                </View>
+              </DialogTitle>
+            </DialogHeader>
+
+            <View>
+              <Label className="block text-sm font-medium mb-2">
+                <Text className="text-red-500">*</Text>模板名称
+              </Label>
+              <View className="bg-gray-50 rounded-lg px-4 py-3">
+                <Input
+                  className="w-full bg-transparent"
+                  placeholder="请输入模板名称（如：日常配送）"
+                  value={templateName}
+                  onInput={(e) => setTemplateName(e.detail.value)}
+                  maxlength={50}
+                />
+              </View>
+            </View>
+
+            <View className="bg-gray-50 rounded-lg p-3">
+              <Text className="block text-xs text-gray-600 mb-2">
+                需求信息：
+              </Text>
+              <Text className="block text-xs text-gray-700 mb-1">
+                {selectedDemand?.cargo_name}
+              </Text>
+              <Text className="block text-xs text-gray-700">
+                {selectedDemand?.pickup_address} → {selectedDemand?.delivery_address}
+              </Text>
+              <Text className="block text-xs text-gray-500 mt-2">
+                注：取货时间将不会被保存到模板中
+              </Text>
+            </View>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={handleCloseTemplateDialog}
+              >
+                <Text>取消</Text>
+              </Button>
+              <Button
+                className="bg-blue-500"
+                onClick={handleConfirmSaveTemplate}
+                disabled={loading}
+              >
+                <Text>{loading ? '保存中...' : '保存'}</Text>
+              </Button>
+            </DialogFooter>
+          </View>
+        </DialogContent>
+      </Dialog>
     </View>
   )
 }

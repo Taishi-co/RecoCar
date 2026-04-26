@@ -1,8 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, Inject } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef } from '@nestjs/common'
 import { CreateDemandDto, UpdateDemandDto } from './dto/demands.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
 import { NotificationsService } from '../notifications/notification.service'
 import { FareCalculationService, FareCalculationDetail } from '../fare-calculation/fare-calculation.service'
+import { DemandTemplatesService } from '../demand-templates/demand-templates.service'
 
 // 距离计算缓存接口
 interface DistanceCache {
@@ -18,7 +19,9 @@ interface DistanceCache {
 export class DemandsService {
   constructor(
     private readonly notificationsService: NotificationsService,
-    private readonly fareCalculationService: FareCalculationService
+    private readonly fareCalculationService: FareCalculationService,
+    @Inject(forwardRef(() => DemandTemplatesService))
+    private readonly demandTemplatesService: DemandTemplatesService
   ) {}
 
   // 内存缓存（基于起止点坐标）
@@ -750,5 +753,50 @@ export class DemandsService {
         recent_demands: recentDemands || []
       }
     }
+  }
+
+  async saveAsTemplate(id: string, templateName: string) {
+    const client = getSupabaseClient()
+
+    // 查询需求详情
+    const { data: demand, error: demandError } = await client
+      .from('demands')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (demandError || !demand) {
+      throw new NotFoundException('需求不存在')
+    }
+
+    // 解析地址坐标
+    const pickupLocation = typeof demand.pickup_location === 'string'
+      ? JSON.parse(demand.pickup_location)
+      : demand.pickup_location
+    const deliveryLocation = typeof demand.delivery_location === 'string'
+      ? JSON.parse(demand.delivery_location)
+      : demand.delivery_location
+
+    // 创建模板
+    const templateData = {
+      user_id: demand.merchant_id,
+      template_name: templateName,
+      cargo_name: demand.cargo_name,
+      cargo_type: demand.cargo_type,
+      weight: demand.weight,
+      volume: demand.volume,
+      pickup_address: demand.pickup_address,
+      pickup_lat: pickupLocation.latitude,
+      pickup_lng: pickupLocation.longitude,
+      delivery_address: demand.delivery_address,
+      delivery_lat: deliveryLocation.latitude,
+      delivery_lng: deliveryLocation.longitude,
+      remarks: demand.remarks,
+      estimated_distance: demand.estimated_distance,
+      estimated_fare: demand.estimated_fare,
+      is_default: false
+    }
+
+    return this.demandTemplatesService.create(templateData)
   }
 }

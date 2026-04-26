@@ -69,4 +69,13 @@ export class DemandsController {
     console.log('[DemandsController] 获取需求方统计 - merchantId:', merchantId)
     return this.demandsService.getMerchantStats(merchantId)
   }
+
+  @Post(':id/save-as-template')
+  async saveAsTemplate(
+    @Param('id') id: string,
+    @Body('template_name') templateName: string
+  ) {
+    console.log('[DemandsController] 保存为模板请求 - demandId:', id, 'templateName:', templateName)
+    return this.demandsService.saveAsTemplate(id, templateName)
+  }
 }

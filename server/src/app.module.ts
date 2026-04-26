@@ -14,9 +14,12 @@ import { AddressBooksModule } from '@/modules/address-books/address-books.module
 import { FavoriteRoutesModule } from '@/modules/favorite-routes/favorite-routes.module';
 import { AccountSettingsModule } from '@/modules/account-settings/account-settings.module';
 import { FareCalculationModule } from '@/modules/fare-calculation/fare-calculation.module';
+import { DemandTemplatesModule } from '@/modules/demand-templates/demand-templates.module';
+import { DemandSchedulesModule } from '@/modules/demand-schedules/demand-schedules.module';
+import { ScheduleServiceModule } from '@/modules/schedule-service/schedule-service.module';
 
 @Module({
-  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule, AddressBooksModule, FavoriteRoutesModule, AccountSettingsModule, FareCalculationModule],
+  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule, AddressBooksModule, FavoriteRoutesModule, AccountSettingsModule, FareCalculationModule, DemandTemplatesModule, DemandSchedulesModule, ScheduleServiceModule],
   controllers: [AppController],
   providers: [AppService],
 })
