@@ -87,6 +87,66 @@ export default function FavoriteRoutes() {
     }
   }
 
+  // 自动计算距离和运费
+  useEffect(() => {
+    const calculateDistance = async () => {
+      if (!formData.pickup_address_id || !formData.delivery_address_id) {
+        return
+      }
+
+      const pickupAddress = addresses.find(a => a.id === formData.pickup_address_id)
+      const deliveryAddress = addresses.find(a => a.id === formData.delivery_address_id)
+
+      if (!pickupAddress?.latitude || !pickupAddress?.longitude ||
+          !deliveryAddress?.latitude || !deliveryAddress?.longitude) {
+        console.log('[FavoriteRoutes] 地址坐标不完整，无法计算距离')
+        return
+      }
+
+      try {
+        console.log('[FavoriteRoutes] 开始计算距离:', {
+          pickup: { lat: pickupAddress.latitude, lng: pickupAddress.longitude },
+          delivery: { lat: deliveryAddress.latitude, lng: deliveryAddress.longitude }
+        })
+
+        const res = await Network.request({
+          url: '/api/demands/calculate-distance',
+          method: 'POST',
+          data: {
+            pickup_address: pickupAddress.address,
+            pickup_lat: pickupAddress.latitude,
+            pickup_lng: pickupAddress.longitude,
+            delivery_address: deliveryAddress.address,
+            delivery_lat: deliveryAddress.latitude,
+            delivery_lng: deliveryAddress.longitude
+          }
+        })
+
+        console.log('[FavoriteRoutes] 距离计算响应:', res.data)
+
+        if (res.data.code === 200 && res.data.data) {
+          const { distance, fare } = res.data.data
+          setFormData(prev => ({
+            ...prev,
+            estimated_distance: distance?.toFixed(1) || '',
+            estimated_fare: fare?.toFixed(2) || ''
+          }))
+
+          Taro.showToast({
+            title: `距离 ${distance} 公里，运费 ¥${fare}`,
+            icon: 'none',
+            duration: 2000
+          })
+        }
+      } catch (error) {
+        console.error('[FavoriteRoutes] 计算距离失败:', error)
+        // 计算失败时不影响用户继续操作
+      }
+    }
+
+    calculateDistance()
+  }, [formData.pickup_address_id, formData.delivery_address_id, addresses])
+
   const handleAddRoute = async () => {
     if (!formData.route_name || !formData.pickup_address_id || !formData.delivery_address_id) {
       Taro.showToast({
@@ -438,7 +498,8 @@ export default function FavoriteRoutes() {
                 </View>
               </View>
 
-              {(route.estimated_distance || route.estimated_fare) && (
+              {/* 显示距离、运费和使用次数 */}
+              {(route.estimated_distance || route.estimated_fare || route.use_count > 0) && (
                 <View className="flex gap-4 pt-2 border-t">
                   {route.estimated_distance && (
                     <Text className="text-sm text-gray-600">
@@ -453,6 +514,11 @@ export default function FavoriteRoutes() {
                   {route.use_count > 0 && (
                     <Text className="text-sm text-gray-600">
                       使用 {route.use_count} 次
+                    </Text>
+                  )}
+                  {!route.estimated_distance && !route.estimated_fare && route.use_count === 0 && (
+                    <Text className="text-sm text-gray-400">
+                      暂无运距信息
                     </Text>
                   )}
                 </View>
