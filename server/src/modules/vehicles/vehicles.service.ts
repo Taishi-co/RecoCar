@@ -24,7 +24,10 @@ export class VehiclesService {
       has_cold_chain,
       operation_area,
       available_hours,
-      photoUrls
+      photoUrls,
+      base_price = 20,
+      base_distance = 3,
+      price_per_km = 2
     } = createVehicleDto
 
     console.log('[VehiclesService] 创建车辆，photoUrls:', photoUrls)
@@ -53,7 +56,7 @@ export class VehiclesService {
       console.log('[VehiclesService] 使用前端传递的照片 URL:', photoKeys)
     }
 
-    // 创建车辆记录
+    // 创建车辆记录（包含定价信息）
     const { data: vehicle, error: insertError } = await client
       .from('vehicles')
       .insert({
@@ -68,6 +71,11 @@ export class VehiclesService {
         available_hours: available_hours ? JSON.parse(available_hours) : null,
         status: 'pending', // 默认待审核状态，需要后台审核通过才能使用
         photos: photoKeys.length > 0 ? JSON.stringify(photoKeys) : null,
+        // 定价信息
+        base_price: base_price,
+        base_distance: base_distance,
+        price_per_km: price_per_km,
+        price_updated_at: new Date().toISOString()
       })
       .select()
       .single()
@@ -152,7 +160,10 @@ export class VehiclesService {
       has_cold_chain,
       operation_area,
       available_hours,
-      photoUrls
+      photoUrls,
+      base_price,
+      base_distance,
+      price_per_km
     } = updateVehicleDto
 
     console.log('[VehiclesService] 更新车辆，photoUrls:', photoUrls)
@@ -192,6 +203,22 @@ export class VehiclesService {
         : existingVehicle.has_cold_chain,
       operation_area: updateVehicleDto.operation_area ? JSON.parse(updateVehicleDto.operation_area) : existingVehicle.operation_area,
       available_hours: updateVehicleDto.available_hours ? JSON.parse(updateVehicleDto.available_hours) : existingVehicle.available_hours,
+    }
+
+    // 添加定价参数（如果提供）
+    if (base_price !== undefined) {
+      updateData.base_price = base_price
+    }
+    if (base_distance !== undefined) {
+      updateData.base_distance = base_distance
+    }
+    if (price_per_km !== undefined) {
+      updateData.price_per_km = price_per_km
+    }
+
+    // 如果修改了定价，更新定价时间
+    if (base_price !== undefined || base_distance !== undefined || price_per_km !== undefined) {
+      updateData.price_updated_at = new Date().toISOString()
     }
 
     if (photoKeys.length > 0) {

@@ -12,6 +12,10 @@ export const createVehicleSchema = z.object({
   operation_area: z.string().optional(), // JSON 字符串
   available_hours: z.string().optional(), // JSON 字符串
   photoUrls: z.array(z.string()).optional(), // 车辆照片URL数组
+  // 定价参数
+  base_price: z.number().min(10).max(500).default(20), // 起步价
+  base_distance: z.number().min(1).max(10).default(3), // 起步公里数
+  price_per_km: z.number().min(0.5).max(20).default(2), // 每公里运价
 })
 
 export type CreateVehicleDto = z.infer<typeof createVehicleSchema>
@@ -27,6 +31,10 @@ export const updateVehicleSchema = z.object({
   operation_area: z.string().optional(),
   available_hours: z.string().optional(),
   photoUrls: z.array(z.string()).optional(), // 车辆照片URL数组
+  // 定价参数
+  base_price: z.number().min(10).max(500).optional(), // 起步价
+  base_distance: z.number().min(1).max(10).optional(), // 起步公里数
+  price_per_km: z.number().min(0.5).max(20).optional(), // 每公里运价
 })
 
 export type UpdateVehicleDto = z.infer<typeof updateVehicleSchema>

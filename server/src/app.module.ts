@@ -13,9 +13,10 @@ import { CancellationsModule } from '@/modules/cancellations/cancellations.modul
 import { AddressBooksModule } from '@/modules/address-books/address-books.module';
 import { FavoriteRoutesModule } from '@/modules/favorite-routes/favorite-routes.module';
 import { AccountSettingsModule } from '@/modules/account-settings/account-settings.module';
+import { FareCalculationModule } from '@/modules/fare-calculation/fare-calculation.module';
 
 @Module({
-  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule, AddressBooksModule, FavoriteRoutesModule, AccountSettingsModule],
+  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule, AddressBooksModule, FavoriteRoutesModule, AccountSettingsModule, FareCalculationModule],
   controllers: [AppController],
   providers: [AppService],
 })

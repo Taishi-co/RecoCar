@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, Inject } from '@nes
 import { CreateDemandDto, UpdateDemandDto } from './dto/demands.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
 import { NotificationsService } from '../notifications/notification.service'
+import { FareCalculationService, FareCalculationDetail } from '../fare-calculation/fare-calculation.service'
 
 // 距离计算缓存接口
 interface DistanceCache {
@@ -16,7 +17,8 @@ interface DistanceCache {
 @Injectable()
 export class DemandsService {
   constructor(
-    private readonly notificationsService: NotificationsService
+    private readonly notificationsService: NotificationsService,
+    private readonly fareCalculationService: FareCalculationService
   ) {}
 
   // 内存缓存（基于起止点坐标）
@@ -557,6 +559,40 @@ export class DemandsService {
       throw new BadRequestException('该车辆正在运输中，无法接单')
     }
 
+    // 获取需求距离
+    let totalDistance = 0
+    if (existingDemand.estimated_distance) {
+      totalDistance = parseFloat(existingDemand.estimated_distance as any)
+    } else if (existingDemand.pickup_lat && existingDemand.pickup_lng &&
+               existingDemand.delivery_lat && existingDemand.delivery_lng) {
+      // 如果没有预设距离，计算直线距离
+      totalDistance = this.calculateStraightDistance(
+        parseFloat(existingDemand.pickup_lat as any),
+        parseFloat(existingDemand.pickup_lng as any),
+        parseFloat(existingDemand.delivery_lat as any),
+        parseFloat(existingDemand.delivery_lng as any)
+      )
+    }
+
+    // 如果车主没有传入运费，则根据车辆定价自动计算
+    let finalFarePrice = farePrice
+    let calculationDetail: FareCalculationDetail | null = null
+    let isCustomFare = true
+
+    if (farePrice === undefined || farePrice === null) {
+      try {
+        const fareResult = await this.fareCalculationService.calculateFare(vehicleId, totalDistance)
+        finalFarePrice = fareResult.total_fare
+        calculationDetail = fareResult.calculation_detail
+        isCustomFare = false
+        console.log('[DemandsService] 自动计算运费:', fareResult)
+      } catch (error) {
+        console.error('[DemandsService] 自动计算运费失败，使用默认运费:', error)
+        // 使用默认运费：距离 × 1
+        finalFarePrice = totalDistance * 1
+      }
+    }
+
     // 开始事务：更新需求状态、创建订单、更新车辆状态
     const { data: demand, error: updateError } = await client
       .from('demands')
@@ -581,7 +617,10 @@ export class DemandsService {
         owner_id: ownerId,
         vehicle_id: vehicleId,
         status: 'accepted',
-        fare_price: farePrice,
+        fare_price: finalFarePrice,
+        calculated_fare: finalFarePrice,
+        fare_calculation_detail: calculationDetail ? JSON.stringify(calculationDetail) : null,
+        is_custom_fare: isCustomFare,
         merchant_confirmed: false,
         pickup_time: existingDemand.pickup_time,
         pickup_address: existingDemand.pickup_address,
