@@ -32,6 +32,7 @@ interface DemandTemplate {
 
 interface FormData {
   template_id: string
+  schedule_name: string
   schedule_type: string
   interval_days: string
   start_time: string
@@ -46,6 +47,7 @@ export default function DemandSchedules() {
   const [editingSchedule, setEditingSchedule] = useState<DemandSchedule | null>(null)
   const [formData, setFormData] = useState<FormData>({
     template_id: '',
+    schedule_name: '',
     schedule_type: 'day',
     interval_days: '1',
     start_time: '',
@@ -117,6 +119,7 @@ export default function DemandSchedules() {
     setEditingSchedule(null)
     setFormData({
       template_id: '',
+      schedule_name: '',
       schedule_type: 'day',
       interval_days: '1',
       start_time: '',
@@ -129,6 +132,7 @@ export default function DemandSchedules() {
     setEditingSchedule(schedule)
     setFormData({
       template_id: schedule.template_id,
+      schedule_name: schedule.template_name || '',
       schedule_type: schedule.schedule_type,
       interval_days: schedule.interval_days?.toString() || '1',
       start_time: schedule.start_time,
@@ -228,12 +232,18 @@ export default function DemandSchedules() {
         return
       }
 
+      // 将 start_time 拆分成 base_date 和 base_time
+      const startTimeParts = formData.start_time.split(' ')
+      const base_date = startTimeParts[0] // 日期部分：2026-04-26
+      const base_time = startTimeParts[1] // 时间部分：10:00:00
+
       const submitData: any = {
         user_id: userInfo.id,
         template_id: formData.template_id,
+        schedule_name: formData.schedule_name || `定时计划-${new Date().toLocaleDateString()}`,
         schedule_type: formData.schedule_type,
-        start_time: formData.start_time,
-        end_time: formData.end_time || null
+        base_date: base_date,
+        base_time: base_time
       }
 
       if (formData.schedule_type === 'interval') {
@@ -445,6 +455,18 @@ export default function DemandSchedules() {
           </DialogHeader>
 
           <View className="space-y-4">
+            <View>
+              <Text className="block text-sm font-medium mb-1">计划名称 *</Text>
+              <View className="bg-gray-50 rounded-lg px-4 py-3">
+                <Input
+                  className="w-full bg-transparent"
+                  placeholder="如：每日定时发布"
+                  value={formData.schedule_name}
+                  onInput={(e) => setFormData({ ...formData, schedule_name: e.detail.value })}
+                />
+              </View>
+            </View>
+
             <View>
               <Text className="block text-sm font-medium mb-1">选择模板 *</Text>
               {templates.length === 0 ? (
