@@ -358,6 +358,9 @@ export default function PublishDemand() {
           icon: 'success'
         })
 
+        // 触发需求列表刷新事件
+        Taro.eventCenter.trigger('demandListRefresh')
+
         setTimeout(() => {
           Taro.navigateBack()
         }, 1500)

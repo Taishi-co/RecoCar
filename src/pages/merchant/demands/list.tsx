@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { View, Text } from '@tarojs/components'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -8,7 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Plus, Pencil, Save, FileText } from 'lucide-react-taro'
-import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 // import { useNotificationPolling } from '@/hooks/useNotificationPolling'
 
@@ -39,6 +39,11 @@ export default function DemandsList() {
 
   // 启用通知轮询（暂时注释，避免白屏问题）
   // useNotificationPolling(30000) // 每30秒检查一次新通知
+
+  // 页面显示时刷新列表
+  useDidShow(() => {
+    loadDemands()
+  })
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')
