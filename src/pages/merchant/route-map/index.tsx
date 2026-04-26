@@ -4,6 +4,7 @@ import { View, Text, Map } from '@tarojs/components'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Navigation, MapPin, CircleCheck } from 'lucide-react-taro'
+import { Network } from '@/network'
 
 interface RouteInfo {
   id: string
@@ -32,6 +33,7 @@ export default function RouteMap() {
   const [markers, setMarkers] = useState<any[]>([])
   const [polyline, setPolyline] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingRoute, setLoadingRoute] = useState(false)
 
   useEffect(() => {
     try {
@@ -80,26 +82,8 @@ export default function RouteMap() {
         ]
         setMarkers(newMarkers)
 
-        // 创建路线（直线连接，实际项目中应该调用地图API获取实际路线）
-        const newPolyline = [
-          {
-            points: [
-              {
-                latitude: data.pickup_address.latitude,
-                longitude: data.pickup_address.longitude
-              },
-              {
-                latitude: data.delivery_address.latitude,
-                longitude: data.delivery_address.longitude
-              }
-            ],
-            color: '#3b82f6',
-            width: 4,
-            dottedLine: false,
-            arrowLine: true
-          }
-        ]
-        setPolyline(newPolyline)
+        // 加载实际驾车路线
+        loadRouteData(data.pickup_address, data.delivery_address)
 
         setLoading(false)
       }
@@ -112,6 +96,94 @@ export default function RouteMap() {
       setLoading(false)
     }
   }, [])
+
+  const loadRouteData = async (pickupAddr: any, deliveryAddr: any) => {
+    setLoadingRoute(true)
+    try {
+      const res = await Network.request({
+        url: '/api/demands/calculate-distance',
+        method: 'POST',
+        data: {
+          pickup_address: pickupAddr.address,
+          pickup_lat: pickupAddr.latitude,
+          pickup_lng: pickupAddr.longitude,
+          delivery_address: deliveryAddr.address,
+          delivery_lat: deliveryAddr.latitude,
+          delivery_lng: deliveryAddr.longitude
+        }
+      })
+
+      console.log('[RouteMap] 路线数据响应:', res.data)
+
+      if (res.data.code === 200 && res.data.data) {
+        const { polyline: routePolyline } = res.data.data
+
+        if (routePolyline && routePolyline.length > 0) {
+          // 使用实际路线坐标点
+          const newPolyline = [
+            {
+              points: routePolyline.map((point: any) => ({
+                latitude: point.latitude,
+                longitude: point.longitude
+              })),
+              color: '#3b82f6',
+              width: 4,
+              dottedLine: false,
+              arrowLine: true
+            }
+          ]
+          setPolyline(newPolyline)
+          console.log('[RouteMap] 使用实际驾车路线，坐标点数:', routePolyline.length)
+        } else {
+          // 如果没有路线坐标，使用直线连接
+          const newPolyline = [
+            {
+              points: [
+                {
+                  latitude: pickupAddr.latitude,
+                  longitude: pickupAddr.longitude
+                },
+                {
+                  latitude: deliveryAddr.latitude,
+                  longitude: deliveryAddr.longitude
+                }
+              ],
+              color: '#3b82f6',
+              width: 4,
+              dottedLine: true, // 虚线表示估算路线
+              arrowLine: true
+            }
+          ]
+          setPolyline(newPolyline)
+          console.log('[RouteMap] 使用直线连接（估算路线）')
+        }
+      }
+    } catch (error) {
+      console.error('[RouteMap] 加载路线失败:', error)
+      // 失败时使用直线连接
+      const newPolyline = [
+        {
+          points: [
+            {
+              latitude: pickupAddr.latitude,
+              longitude: pickupAddr.longitude
+            },
+            {
+              latitude: deliveryAddr.latitude,
+              longitude: deliveryAddr.longitude
+            }
+          ],
+          color: '#3b82f6',
+          width: 4,
+          dottedLine: true,
+          arrowLine: true
+        }
+      ]
+      setPolyline(newPolyline)
+    } finally {
+      setLoadingRoute(false)
+    }
+  }
 
   const handleNavigation = () => {
     if (!routeInfo) return
@@ -207,6 +279,15 @@ export default function RouteMap() {
             <Text className="text-sm text-gray-500">使用 {routeInfo.use_count} 次</Text>
           </View>
 
+          {/* 路线加载提示 */}
+          {loadingRoute && (
+            <View className="bg-blue-50 p-3 rounded-lg">
+              <Text className="block text-sm text-blue-600 text-center">
+                正在加载实际驾车路线...
+              </Text>
+            </View>
+          )}
+
           <View>
             <View className="flex items-start gap-2 mb-3">
               <MapPin size={16} color="#3b82f6" />
@@ -245,6 +326,15 @@ export default function RouteMap() {
                   💰 ¥{Number(routeInfo.estimated_fare).toFixed(2)}
                 </Text>
               )}
+            </View>
+          )}
+
+          {/* 路线类型提示 */}
+          {polyline.length > 0 && polyline[0].points && polyline[0].points.length > 2 && (
+            <View className="bg-green-50 p-2 rounded-lg mt-2">
+              <Text className="block text-xs text-green-600 text-center">
+                ✓ 已显示实际驾车路线（不走高速）
+              </Text>
             </View>
           )}
         </CardContent>

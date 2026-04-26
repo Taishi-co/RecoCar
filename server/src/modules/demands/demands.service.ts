@@ -3,13 +3,27 @@ import { CreateDemandDto, UpdateDemandDto } from './dto/demands.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
 import { NotificationsService } from '../notifications/notification.service'
 
+// 距离计算缓存接口
+interface DistanceCache {
+  distance: number
+  estimated_fare: number
+  route_type: 'non_highway' | 'estimated'
+  route_duration: number
+  polyline?: Array<{ latitude: number; longitude: number }>
+  timestamp: number
+}
+
 @Injectable()
 export class DemandsService {
   constructor(
     private readonly notificationsService: NotificationsService
   ) {}
 
-  // 计算两地距离（使用高德地图API）
+  // 内存缓存（基于起止点坐标）
+  private distanceCache = new Map<string, DistanceCache>()
+  private readonly CACHE_TTL = 3600000 // 缓存1小时
+
+  // 计算两地距离（使用高德地图API，带缓存和重试）
   async calculateDistance(params: {
     pickup_lat: number
     pickup_lng: number
@@ -23,83 +37,184 @@ export class DemandsService {
       throw new BadRequestException('请提供完整的经纬度坐标')
     }
 
-    try {
-      // 调用高德地图驾车路径规划API
-      const apiKey = process.env.AMAP_API_KEY || 'demo' // 使用环境变量中的API Key
+    // 生成缓存键（考虑起止点顺序）
+    const cacheKey = `${pickup_lat.toFixed(6)},${pickup_lng.toFixed(6)}-${delivery_lat.toFixed(6)},${delivery_lng.toFixed(6)}`
 
-      const origin = `${pickup_lng},${pickup_lat}`
-      const destination = `${delivery_lng},${delivery_lat}`
-
-      const url = `https://restapi.amap.com/v3/direction/driving?origin=${origin}&destination=${destination}&strategy=10&extensions=all&key=${apiKey}`
-
-      console.log('[DemandsService] 调用高德地图API:', url)
-
-      const response = await fetch(url)
-      const data = await response.json()
-
-      console.log('[DemandsService] 高德地图API响应:', data)
-
-      // 检查响应状态
-      if (data.status !== '1') {
-        throw new BadRequestException(`地图API错误: ${data.info}`)
-      }
-
-      // 获取路线距离
-      if (!data.route || !data.route.paths || data.route.paths.length === 0) {
-        throw new BadRequestException('无法获取路线信息')
-      }
-
-      const path = data.route.paths[0]
-      const distanceMeters = parseInt(path.distance) // 距离（米）
-      const durationSeconds = parseInt(path.duration) // 时间（秒）
-
-      // 转换为公里
-      const distanceKm = distanceMeters / 1000
-
-      // 计算运费：每公里1元
-      const estimatedFare = distanceKm * 1
-
+    // 检查缓存
+    const cached = this.getCachedDistance(cacheKey)
+    if (cached) {
+      console.log('[DemandsService] 使用缓存数据:', cached)
       return {
         code: 200,
         message: '计算成功',
         data: {
-          distance: distanceKm,
-          distance_text: `${distanceKm.toFixed(2)}公里`,
-          estimated_fare: estimatedFare,
-          route_type: 'non_highway',
-          route_duration: durationSeconds,
-          duration_text: `约${Math.floor(durationSeconds / 60)}分钟`
+          distance: cached.distance,
+          distance_text: `${cached.distance.toFixed(2)}公里`,
+          estimated_fare: cached.estimated_fare,
+          route_type: cached.route_type,
+          route_duration: cached.route_duration,
+          duration_text: `约${Math.floor(cached.route_duration / 60)}分钟`,
+          polyline: cached.polyline // 返回缓存的路线坐标点
         }
       }
-    } catch (error) {
-      console.error('[DemandsService] 距离计算失败:', error)
+    }
 
-      // 降级方案：使用直线距离估算
-      const straightDistance = this.calculateStraightDistance(pickup_lat, pickup_lng, delivery_lat, delivery_lng)
+    try {
+      // 带重试的API调用
+      const result = await this.callAmapApiWithRetry(pickup_lat, pickup_lng, delivery_lat, delivery_lng, 2)
 
-      // 直线距离 × 1.3 ≈ 实际距离
-      const estimatedDistance = straightDistance * 1.3
-      const estimatedFare = estimatedDistance * 1
-
-      console.log('[DemandsService] 使用降级方案计算距离:', {
-        straight_distance: straightDistance,
-        estimated_distance: estimatedDistance,
-        estimated_fare: estimatedFare
+      // 缓存结果
+      this.setCachedDistance(cacheKey, {
+        distance: result.distance,
+        estimated_fare: result.estimated_fare,
+        route_type: 'non_highway',
+        route_duration: result.route_duration,
+        polyline: result.polyline,
+        timestamp: Date.now()
       })
 
       return {
         code: 200,
-        message: '计算成功（估算）',
+        message: '计算成功',
+        data: result
+      }
+    } catch (error) {
+      console.error('[DemandsService] 距离计算失败，使用降级方案:', error)
+
+      // 降级方案：使用直线距离估算
+      const fallbackResult = this.calculateFallbackDistance(pickup_lat, pickup_lng, delivery_lat, delivery_lng)
+
+      // 缓存降级结果（缓存时间较短，30分钟）
+      this.setCachedDistance(cacheKey, {
+        distance: fallbackResult.distance,
+        estimated_fare: fallbackResult.estimated_fare,
+        route_type: 'estimated',
+        route_duration: fallbackResult.route_duration,
+        polyline: fallbackResult.polyline,
+        timestamp: Date.now()
+      }, 1800000) // 30分钟
+
+      return {
+        code: 200,
+        message: '计算成功（基于估算）',
         data: {
-          distance: estimatedDistance,
-          distance_text: `${estimatedDistance.toFixed(2)}公里`,
-          estimated_fare: estimatedFare,
-          route_type: 'estimated',
-          route_duration: Math.floor(estimatedDistance * 60 / 30), // 假设时速30公里
-          duration_text: `约${Math.floor(estimatedDistance * 60 / 30)}分钟`,
+          ...fallbackResult,
           is_estimate: true
         }
       }
+    }
+  }
+
+  // 带重试的高德地图API调用
+  private async callAmapApiWithRetry(
+    pickup_lat: number,
+    pickup_lng: number,
+    delivery_lat: number,
+    delivery_lng: number,
+    maxRetries: number
+  ): Promise<any> {
+    const apiKey = process.env.AMAP_API_KEY || 'demo'
+
+    // 检测是否使用demo key
+    if (apiKey === 'demo') {
+      console.warn('[DemandsService] 警告：使用demo API key，建议配置AMAP_API_KEY环境变量')
+    }
+
+    const origin = `${pickup_lng},${pickup_lat}`
+    const destination = `${delivery_lng},${delivery_lat}`
+
+    // 优化API参数：strategy=10不走高速，避免拥堵
+    const url = `https://restapi.amap.com/v3/direction/driving?origin=${origin}&destination=${destination}&strategy=10&extensions=all&key=${apiKey}`
+
+    console.log(`[DemandsService] 调用高德地图API (重试次数: ${maxRetries}):`, url)
+
+    let lastError: any = null
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          signal: AbortSignal.timeout(10000) // 10秒超时
+        })
+        const data = await response.json()
+
+        console.log('[DemandsService] 高德地图API响应:', data)
+
+        // 检查响应状态
+        if (data.status !== '1') {
+          throw new BadRequestException(`地图API错误: ${data.info}`)
+        }
+
+        // 获取路线距离
+        if (!data.route || !data.route.paths || data.route.paths.length === 0) {
+          throw new BadRequestException('无法获取路线信息')
+        }
+
+        const path = data.route.paths[0]
+        const distanceMeters = parseInt(path.distance) // 距离（米）
+        const durationSeconds = parseInt(path.duration) // 时间（秒）
+
+        // 异常检测：如果距离过大（超过1000公里），可能存在错误
+        const distanceKm = distanceMeters / 1000
+        if (distanceKm > 1000) {
+          console.warn('[DemandsService] 警告：计算距离过大，可能存在异常:', distanceKm)
+        }
+
+        // 提取路线坐标点（用于地图绘制）
+        const polylinePoints = this.extractPolylinePoints(path.steps || [])
+
+        return {
+          distance: distanceKm,
+          distance_text: `${distanceKm.toFixed(2)}公里`,
+          estimated_fare: distanceKm * 1,
+          route_type: 'non_highway',
+          route_duration: durationSeconds,
+          duration_text: `约${Math.floor(durationSeconds / 60)}分钟`,
+          polyline: polylinePoints // 新增：返回路线坐标点
+        }
+      } catch (error) {
+        lastError = error
+        console.error(`[DemandsService] API调用失败 (尝试 ${attempt + 1}/${maxRetries + 1}):`, error)
+
+        // 如果是最后一次尝试，抛出错误
+        if (attempt === maxRetries) {
+          throw error
+        }
+
+        // 等待1秒后重试
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    }
+
+    throw lastError
+  }
+
+  // 降级方案：直线距离估算
+  private calculateFallbackDistance(pickup_lat: number, pickup_lng: number, delivery_lat: number, delivery_lng: number) {
+    const straightDistance = this.calculateStraightDistance(pickup_lat, pickup_lng, delivery_lat, delivery_lng)
+
+    // 直线距离 × 1.5 ≈ 城市道路实际距离（考虑道路曲折度）
+    const estimatedDistance = straightDistance * 1.5
+    const estimatedFare = estimatedDistance * 1
+
+    // 改进时间估算：城市道路平均时速20-25公里/小时
+    const avgSpeed = 22.5 // km/h
+    const estimatedTime = Math.floor(estimatedDistance / avgSpeed * 60)
+
+    console.log('[DemandsService] 使用降级方案计算距离:', {
+      straight_distance: straightDistance.toFixed(2),
+      estimated_distance: estimatedDistance.toFixed(2),
+      estimated_fare: estimatedFare.toFixed(2),
+      estimated_time_minutes: estimatedTime
+    })
+
+    return {
+      distance: estimatedDistance,
+      distance_text: `${estimatedDistance.toFixed(2)}公里`,
+      estimated_fare: estimatedFare,
+      route_type: 'estimated',
+      route_duration: estimatedTime,
+      duration_text: `约${estimatedTime}分钟`,
+      polyline: [] // 降级方案没有实际路线，返回空数组
     }
   }
 
@@ -114,6 +229,55 @@ export class DemandsService {
       Math.sin(dLon / 2) * Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
+  }
+
+  // 提取路线坐标点（从高德地图API响应中）
+  private extractPolylinePoints(steps: any[]): Array<{ latitude: number; longitude: number }> {
+    const points: Array<{ latitude: number; longitude: number }> = []
+
+    for (const step of steps) {
+      if (step.polyline) {
+        // 高德地图polyline格式：经度,纬度;经度,纬度;...
+        const coords = step.polyline.split(';').map((coord: string) => {
+          const [lng, lat] = coord.split(',').map(Number)
+          return { latitude: lat, longitude: lng }
+        })
+        points.push(...coords)
+      }
+    }
+
+    // 如果没有提取到点，返回空数组
+    return points
+  }
+
+  // 获取缓存
+  private getCachedDistance(key: string): DistanceCache | null {
+    const cached = this.distanceCache.get(key)
+    if (!cached) {
+      return null
+    }
+
+    // 检查是否过期
+    if (Date.now() - cached.timestamp > this.CACHE_TTL) {
+      this.distanceCache.delete(key)
+      return null
+    }
+
+    return cached
+  }
+
+  // 设置缓存
+  private setCachedDistance(key: string, data: DistanceCache, ttl?: number) {
+    this.distanceCache.set(key, {
+      ...data,
+      timestamp: Date.now()
+    })
+
+    // 设置过期清理
+    const cacheTTL = ttl || this.CACHE_TTL
+    setTimeout(() => {
+      this.distanceCache.delete(key)
+    }, cacheTTL)
   }
 
   async create(createDemandDto: CreateDemandDto) {
