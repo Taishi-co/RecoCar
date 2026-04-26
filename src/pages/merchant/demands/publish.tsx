@@ -67,12 +67,13 @@ export default function PublishDemand() {
   const [showAddressPicker, setShowAddressPicker] = useState<'pickup' | 'delivery' | undefined>(undefined)
   const [showRoutePicker, setShowRoutePicker] = useState(false)
 
-  // 检查是否从常用线路跳转过来，自动填充地址信息
+  // 检查是否从常用线路或常用模板跳转过来，自动填充信息
   useEffect(() => {
     try {
       const instance = Taro.getCurrentInstance()
       const routeParams = instance.router?.params
 
+      // 处理常用线路参数
       if (routeParams?.route) {
         const routeData = JSON.parse(decodeURIComponent(routeParams.route))
 
@@ -97,7 +98,6 @@ export default function PublishDemand() {
             : null,
         }))
 
-
         // 显示提示信息
         Taro.showToast({
           title: `已自动填充: ${routeData.route_name}`,
@@ -105,8 +105,43 @@ export default function PublishDemand() {
           duration: 2000
         })
       }
+
+      // 处理常用模板参数
+      if (routeParams?.template_id) {
+        console.log('[PublishDemand] 从常用模板跳转:', routeParams)
+
+        setFormData((prev) => ({
+          ...prev,
+          cargo_name: routeParams.cargo_name || '',
+          cargo_type: routeParams.cargo_type || 'normal',
+          weight: routeParams.weight || '',
+          volume: routeParams.volume || '',
+          pickup_address: routeParams.pickup_address || '',
+          pickup_location: routeParams.pickup_lat && routeParams.pickup_lng
+            ? {
+                latitude: parseFloat(routeParams.pickup_lat),
+                longitude: parseFloat(routeParams.pickup_lng)
+              }
+            : null,
+          delivery_address: routeParams.delivery_address || '',
+          delivery_location: routeParams.delivery_lat && routeParams.delivery_lng
+            ? {
+                latitude: parseFloat(routeParams.delivery_lat),
+                longitude: parseFloat(routeParams.delivery_lng)
+              }
+            : null,
+          remarks: routeParams.remarks || ''
+        }))
+
+        // 显示提示信息
+        Taro.showToast({
+          title: '已加载模板信息',
+          icon: 'success',
+          duration: 2000
+        })
+      }
     } catch (error) {
-      console.error('[PublishDemand] 解析线路参数失败:', error)
+      console.error('[PublishDemand] 解析参数失败:', error)
     }
   }, [])
 

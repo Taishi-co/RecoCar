@@ -17,6 +17,8 @@ export default typeof definePageConfig === 'function'
         'pages/merchant/demands/publish',      // 需求方端-发布需求表单
         'pages/merchant/demands/list',         // 需求方端-需求列表
         'pages/merchant/demands/edit',         // 需求方端-编辑需求
+        'pages/merchant/demands/templates',   // 需求方端-常用模板
+        'pages/merchant/demands/schedules',   // 需求方端-定时计划
         'pages/merchant/orders/index',         // 需求方端-订单管理
         'pages/merchant/payment/index',        // 需求方端-付款
         'pages/merchant/address-books/index',  // 需求方端-地址簿
@@ -57,6 +59,8 @@ export default typeof definePageConfig === 'function'
         'pages/merchant/demands/publish',      // 需求方端-发布需求表单
         'pages/merchant/demands/list',         // 需求方端-需求列表
         'pages/merchant/demands/edit',         // 需求方端-编辑需求
+        'pages/merchant/demands/templates',   // 需求方端-常用模板
+        'pages/merchant/demands/schedules',   // 需求方端-定时计划
         'pages/merchant/orders/index',         // 需求方端-订单管理
         'pages/merchant/payment/index',        // 需求方端-付款
         'pages/merchant/address-books/index',  // 需求方端-地址簿

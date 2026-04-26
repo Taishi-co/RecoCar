@@ -1,0 +1,608 @@
+import { useState, useEffect } from 'react'
+import { View, Text, Picker } from '@tarojs/components'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Plus, Pencil, Trash2, Clock, Play, Pause } from 'lucide-react-taro'
+import Taro from '@tarojs/taro'
+import { Network } from '@/network'
+
+interface DemandSchedule {
+  id: string
+  user_id: string
+  template_id: string
+  template_name: string
+  schedule_type: 'half_day' | 'day' | 'week' | 'month' | 'interval'
+  interval_days?: number
+  start_time: string
+  end_time: string | null
+  is_active: boolean
+  last_published_at: string | null
+  next_publish_at: string | null
+  use_count: number
+  created_at: string
+  updated_at: string
+}
+
+interface DemandTemplate {
+  id: string
+  template_name: string
+}
+
+interface FormData {
+  template_id: string
+  schedule_type: string
+  interval_days: string
+  start_time: string
+  end_time: string
+}
+
+export default function DemandSchedules() {
+  const [schedules, setSchedules] = useState<DemandSchedule[]>([])
+  const [templates, setTemplates] = useState<DemandTemplate[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showDialog, setShowDialog] = useState(false)
+  const [editingSchedule, setEditingSchedule] = useState<DemandSchedule | null>(null)
+  const [formData, setFormData] = useState<FormData>({
+    template_id: '',
+    schedule_type: 'day',
+    interval_days: '1',
+    start_time: '',
+    end_time: ''
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletingSchedule, setDeletingSchedule] = useState<DemandSchedule | null>(null)
+
+  useEffect(() => {
+    loadSchedules()
+    loadTemplates()
+  }, [])
+
+  const loadSchedules = async () => {
+    setLoading(true)
+    try {
+      const userInfo = Taro.getStorageSync('userInfo')
+      if (!userInfo || !userInfo.id) {
+        Taro.showToast({
+          title: '请先登录',
+          icon: 'none'
+        })
+        return
+      }
+
+      const res = await Network.request({
+        url: '/api/demand-schedules',
+        method: 'GET',
+        data: { userId: userInfo.id }
+      })
+
+      console.log('定时计划响应:', res.data)
+
+      if (res.data.code === 200) {
+        setSchedules(res.data.data || [])
+      }
+    } catch (err) {
+      console.error('加载定时计划失败:', err)
+      Taro.showToast({
+        title: '加载失败',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadTemplates = async () => {
+    try {
+      const userInfo = Taro.getStorageSync('userInfo')
+      if (!userInfo || !userInfo.id) return
+
+      const res = await Network.request({
+        url: '/api/demand-templates',
+        method: 'GET',
+        data: { userId: userInfo.id }
+      })
+
+      if (res.data.code === 200) {
+        setTemplates(res.data.data || [])
+      }
+    } catch (err) {
+      console.error('加载常用模板失败:', err)
+    }
+  }
+
+  const handleCreateSchedule = () => {
+    setEditingSchedule(null)
+    setFormData({
+      template_id: '',
+      schedule_type: 'day',
+      interval_days: '1',
+      start_time: '',
+      end_time: ''
+    })
+    setShowDialog(true)
+  }
+
+  const handleEditSchedule = (schedule: DemandSchedule) => {
+    setEditingSchedule(schedule)
+    setFormData({
+      template_id: schedule.template_id,
+      schedule_type: schedule.schedule_type,
+      interval_days: schedule.interval_days?.toString() || '1',
+      start_time: schedule.start_time,
+      end_time: schedule.end_time || ''
+    })
+    setShowDialog(true)
+  }
+
+  const handleDeleteSchedule = (schedule: DemandSchedule) => {
+    setDeletingSchedule(schedule)
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDeleteSchedule = async () => {
+    if (!deletingSchedule) return
+
+    try {
+      const res = await Network.request({
+        url: `/api/demand-schedules/${deletingSchedule.id}`,
+        method: 'DELETE'
+      })
+
+      console.log('删除计划响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '删除成功',
+          icon: 'success'
+        })
+        loadSchedules()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '删除失败',
+          icon: 'none'
+        })
+      }
+    } catch (err) {
+      console.error('删除计划失败:', err)
+      Taro.showToast({
+        title: '删除失败',
+        icon: 'none'
+      })
+    } finally {
+      setShowDeleteDialog(false)
+      setDeletingSchedule(null)
+    }
+  }
+
+  const handleToggleActive = async (schedule: DemandSchedule) => {
+    try {
+      const res = await Network.request({
+        url: `/api/demand-schedules/${schedule.id}/toggle`,
+        method: 'PUT'
+      })
+
+      console.log('切换计划状态响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: schedule.is_active ? '已暂停' : '已启动',
+          icon: 'success'
+        })
+        loadSchedules()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '操作失败',
+          icon: 'none'
+        })
+      }
+    } catch (err) {
+      console.error('切换计划状态失败:', err)
+      Taro.showToast({
+        title: '操作失败',
+        icon: 'none'
+      })
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!formData.template_id || !formData.start_time) {
+      Taro.showToast({
+        title: '请填写完整信息',
+        icon: 'none'
+      })
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      const userInfo = Taro.getStorageSync('userInfo')
+      if (!userInfo || !userInfo.id) {
+        Taro.showToast({
+          title: '请先登录',
+          icon: 'none'
+        })
+        return
+      }
+
+      const submitData: any = {
+        user_id: userInfo.id,
+        template_id: formData.template_id,
+        schedule_type: formData.schedule_type,
+        start_time: formData.start_time,
+        end_time: formData.end_time || null
+      }
+
+      if (formData.schedule_type === 'interval') {
+        submitData.interval_days = parseInt(formData.interval_days)
+      }
+
+      const res = editingSchedule
+        ? await Network.request({
+            url: `/api/demand-schedules/${editingSchedule.id}`,
+            method: 'PUT',
+            data: submitData
+          })
+        : await Network.request({
+            url: '/api/demand-schedules',
+            method: 'POST',
+            data: submitData
+          })
+
+      console.log('保存计划响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: editingSchedule ? '更新成功' : '创建成功',
+          icon: 'success'
+        })
+        setShowDialog(false)
+        loadSchedules()
+      } else {
+        Taro.showToast({
+          title: res.data.message || '保存失败',
+          icon: 'none'
+        })
+      }
+    } catch (err) {
+      console.error('保存计划失败:', err)
+      Taro.showToast({
+        title: '保存失败',
+        icon: 'none'
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const getScheduleTypeText = (type: string, intervalDays?: number) => {
+    const typeMap: Record<string, string> = {
+      half_day: '每半天',
+      day: '每天',
+      week: '每周',
+      month: '每月',
+      interval: `每${intervalDays}天`
+    }
+    return typeMap[type] || type
+  }
+
+  return (
+    <View className="min-h-screen bg-gray-100">
+      {/* 导航菜单 */}
+      <View className="bg-white shadow-sm">
+        <View className="px-4 py-3">
+          <View className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateBack()}
+            >
+              <Text className="text-xs">返回</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/list' })}
+            >
+              <Text className="text-xs">我的需求</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/orders/index' })}
+            >
+              <Text className="text-xs">订单管理</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/profile/index' })}
+            >
+              <Text className="text-xs">我的</Text>
+            </Button>
+          </View>
+        </View>
+      </View>
+
+      {/* 标题栏 */}
+      <View className="bg-white px-4 py-3 mb-2">
+        <View className="flex items-center justify-between">
+          <Text className="block text-lg font-semibold text-gray-900">
+            定时计划
+          </Text>
+          <Button
+            size="sm"
+            className="bg-blue-500"
+            onClick={handleCreateSchedule}
+          >
+            <Plus size={16} color="#ffffff" />
+            <Text className="ml-1 text-xs text-white">新建计划</Text>
+          </Button>
+        </View>
+      </View>
+
+      {/* 计划列表 */}
+      {loading ? (
+        <View className="flex items-center justify-center py-8">
+          <Text className="block text-gray-500 text-sm">加载中...</Text>
+        </View>
+      ) : schedules.length === 0 ? (
+        <View className="flex flex-col items-center justify-center py-16 px-4">
+          <Clock size={64} color="#d1d5db" />
+          <Text className="block text-gray-500 text-sm mt-4 text-center">
+            暂无定时计划
+          </Text>
+          <Text className="block text-gray-400 text-xs mt-2 text-center">
+            点击&quot;新建计划&quot;创建您的第一个定时发布计划
+          </Text>
+        </View>
+      ) : (
+        <View className="px-4 space-y-3 pb-4">
+          {schedules.map((schedule) => (
+            <Card key={schedule.id} className="bg-white rounded-lg shadow-sm">
+              <CardContent className="p-4">
+                <View className="flex items-start gap-3">
+                  <View className="flex-1">
+                    <View className="flex items-center gap-2 mb-2">
+                      <Text className="block text-base font-semibold text-gray-900">
+                        {schedule.template_name}
+                      </Text>
+                      {schedule.is_active ? (
+                        <Text className="text-xs text-green-500">运行中</Text>
+                      ) : (
+                        <Text className="text-xs text-gray-500">已暂停</Text>
+                      )}
+                    </View>
+
+                    <View className="space-y-1">
+                      <Text className="block text-sm text-gray-600">
+                        重复：{getScheduleTypeText(schedule.schedule_type, schedule.interval_days)}
+                      </Text>
+                      <Text className="block text-sm text-gray-600">
+                        开始时间：{schedule.start_time}
+                      </Text>
+                      {schedule.end_time && (
+                        <Text className="block text-sm text-gray-600">
+                          结束时间：{schedule.end_time}
+                        </Text>
+                      )}
+                      {schedule.next_publish_at && (
+                        <Text className="block text-sm text-blue-600">
+                          下次发布：{schedule.next_publish_at}
+                        </Text>
+                      )}
+                      <Text className="block text-xs text-gray-400 mt-2">
+                        已发布次数：{schedule.use_count} 次
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="flex flex-col gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleToggleActive(schedule)}
+                    >
+                      {schedule.is_active ? (
+                        <Pause size={14} color="#6b7280" />
+                      ) : (
+                        <Play size={14} color="#6b7280" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditSchedule(schedule)}
+                    >
+                      <Pencil size={14} color="#6b7280" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-500 text-red-500"
+                      onClick={() => handleDeleteSchedule(schedule)}
+                    >
+                      <Trash2 size={14} color="#ef4444" />
+                    </Button>
+                  </View>
+                </View>
+              </CardContent>
+            </Card>
+          ))}
+        </View>
+      )}
+
+      {/* 创建/编辑计划对话框 */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingSchedule ? '编辑计划' : '新建计划'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <View className="space-y-4">
+            <View>
+              <Text className="block text-sm font-medium mb-1">选择模板 *</Text>
+              {templates.length === 0 ? (
+                <Text className="block text-sm text-gray-500">
+                  暂无可用模板，请先创建常用模板
+                </Text>
+              ) : (
+                <Picker
+                  mode="selector"
+                  range={templates.map(t => t.template_name)}
+                  value={templates.findIndex(t => t.id === formData.template_id)}
+                  onChange={(e) => {
+                    const template = templates[e.detail.value]
+                    setFormData({ ...formData, template_id: template.id })
+                  }}
+                >
+                  <Input
+                    value={templates.find(t => t.id === formData.template_id)?.template_name || '请选择模板'}
+                    placeholder="请选择模板"
+                    disabled
+                  />
+                </Picker>
+              )}
+            </View>
+
+            <View>
+              <Text className="block text-sm font-medium mb-1">重复类型 *</Text>
+              <Picker
+                mode="selector"
+                range={['每半天', '每天', '每周', '每月', '每隔几天']}
+                value={['half_day', 'day', 'week', 'month', 'interval'].indexOf(formData.schedule_type)}
+                onChange={(e) => {
+                  const types = ['half_day', 'day', 'week', 'month', 'interval']
+                  setFormData({ ...formData, schedule_type: types[e.detail.value] })
+                }}
+              >
+                <Input
+                  value={['每半天', '每天', '每周', '每月', '每隔几天'][['half_day', 'day', 'week', 'month', 'interval'].indexOf(formData.schedule_type)]}
+                  placeholder="请选择重复类型"
+                  disabled
+                />
+              </Picker>
+            </View>
+
+            {formData.schedule_type === 'interval' && (
+              <View>
+                <Text className="block text-sm font-medium mb-1">间隔天数 *</Text>
+                <Input
+                  type="number"
+                  value={formData.interval_days}
+                  placeholder="请输入间隔天数"
+                  onInput={(e) => setFormData({ ...formData, interval_days: e.detail.value })}
+                />
+              </View>
+            )}
+
+            <View>
+              <Text className="block text-sm font-medium mb-1">开始时间 *</Text>
+              <Picker
+                mode="date"
+                value={formData.start_time}
+                onChange={(e) => {
+                  const time = formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[1] : '00:00:00'
+                  setFormData({ ...formData, start_time: `${e.detail.value} ${time}` })
+                }}
+              >
+                <Input
+                  value={formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[0] : '请选择日期'}
+                  placeholder="请选择日期"
+                  disabled
+                />
+              </Picker>
+              <Picker
+                mode="time"
+                value={formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[1].slice(0, 5) : '00:00'}
+                onChange={(e) => {
+                  const date = formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[0] : new Date().toISOString().slice(0, 10)
+                  setFormData({ ...formData, start_time: `${date} ${e.detail.value}:00` })
+                }}
+              >
+                <Input
+                  value={formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[1].slice(0, 5) : '请选择时间'}
+                  placeholder="请选择时间"
+                  disabled
+                />
+              </Picker>
+            </View>
+
+            <View>
+              <Text className="block text-sm font-medium mb-1">结束时间（选填）</Text>
+              <Picker
+                mode="date"
+                value={formData.end_time && formData.end_time.includes(' ') ? formData.end_time.split(' ')[0] : ''}
+                onChange={(e) => {
+                  if (!formData.end_time) {
+                    setFormData({ ...formData, end_time: `${e.detail.value} 00:00:00` })
+                  } else {
+                    const time = formData.end_time.includes(' ') ? formData.end_time.split(' ')[1] : '00:00:00'
+                    setFormData({ ...formData, end_time: `${e.detail.value} ${time}` })
+                  }
+                }}
+              >
+                <Input
+                  value={formData.end_time && formData.end_time.includes(' ') ? formData.end_time.split(' ')[0] : '请选择日期'}
+                  placeholder="请选择日期"
+                  disabled
+                />
+              </Picker>
+            </View>
+          </View>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDialog(false)}
+            >
+              <Text className="text-xs">取消</Text>
+            </Button>
+            <Button
+              className="bg-blue-500"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              <Text className="text-xs text-white">
+                {submitting ? '保存中...' : '保存'}
+              </Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认对话框 */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+          </DialogHeader>
+          <View className="py-4">
+            <Text className="block text-sm text-gray-700 text-center">
+              确定要删除定时计划&quot;{deletingSchedule?.template_name}&quot;吗？
+            </Text>
+          </View>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              <Text className="text-xs">取消</Text>
+            </Button>
+            <Button
+              className="bg-red-500"
+              onClick={confirmDeleteSchedule}
+            >
+              <Text className="text-xs text-white">删除</Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </View>
+  )
+}
