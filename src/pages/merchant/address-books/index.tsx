@@ -5,7 +5,7 @@ import Taro from '@tarojs/taro'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { MapPin, Plus, Trash2, Building2, Star } from 'lucide-react-taro'
+import { MapPin, Plus, Trash2, Building2, Star, House } from 'lucide-react-taro'
 
 interface Address {
   id: string
@@ -388,7 +388,7 @@ export default function AddressBooks() {
                   className={`flex-1 ${formData.address_type === 'home' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                   onClick={() => setFormData({ ...formData, address_type: 'home' })}
                 >
-                  <Building2 size={16} color={formData.address_type === 'home' ? '#ffffff' : '#6b7280'} />
+                  <House size={16} color={formData.address_type === 'home' ? '#ffffff' : '#6b7280'} />
                 </Button>
                 <Button
                   size="sm"
