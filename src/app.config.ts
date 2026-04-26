@@ -14,6 +14,8 @@ export default typeof definePageConfig === 'function'
         'pages/merchant/demands/list',         // 需求方端-需求列表
         'pages/merchant/orders/index',         // 需求方端-订单管理
         'pages/merchant/payment/index',        // 需求方端-付款
+        'pages/merchant/address-books/index',  // 需求方端-地址簿
+        'pages/merchant/favorite-routes/index',// 需求方端-常用线路
         'pages/merchant/stats/index',          // 需求方端-统计
         'pages/merchant/profile/index',        // 需求方端-我的
         'pages/notifications/index',           // 通知消息列表
@@ -46,6 +48,8 @@ export default typeof definePageConfig === 'function'
         'pages/merchant/demands/list',         // 需求方端-需求列表
         'pages/merchant/orders/index',         // 需求方端-订单管理
         'pages/merchant/payment/index',        // 需求方端-付款
+        'pages/merchant/address-books/index',  // 需求方端-地址簿
+        'pages/merchant/favorite-routes/index',// 需求方端-常用线路
         'pages/merchant/stats/index',          // 需求方端-统计
         'pages/merchant/profile/index',        // 需求方端-我的
         'pages/notifications/index',           // 通知消息列表
