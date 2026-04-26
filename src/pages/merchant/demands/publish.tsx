@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Route, BookOpen } from 'lucide-react-taro'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Route, BookOpen, MapPin, Check } from 'lucide-react-taro'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
@@ -22,9 +23,30 @@ interface FormData {
   estimated_distance: number | null
   estimated_fare: number | null
   is_calculating: boolean
-  manualInputMode: 'pickup' | 'delivery' | null
-  manualLat: string
-  manualLng: string
+}
+
+interface AddressBook {
+  id: string
+  user_id: string
+  address_name: string
+  address: string
+  latitude: number
+  longitude: number
+  address_type: string
+  is_default: boolean
+}
+
+interface FavoriteRoute {
+  id: string
+  user_id: string
+  route_name: string
+  pickup_address_id: string | null
+  delivery_address_id: string | null
+  estimated_distance: number | null
+  estimated_fare: number | null
+  use_count: number
+  pickup_address?: AddressBook
+  delivery_address?: AddressBook
 }
 
 export default function PublishDemand() {
@@ -42,11 +64,14 @@ export default function PublishDemand() {
     remarks: '',
     estimated_distance: null,
     estimated_fare: null,
-    is_calculating: false,
-    manualInputMode: null,
-    manualLat: '',
-    manualLng: ''
+    is_calculating: false
   })
+
+  // 地址簿和线路数据
+  const [addressBooks, setAddressBooks] = useState<AddressBook[]>([])
+  const [favoriteRoutes, setFavoriteRoutes] = useState<FavoriteRoute[]>([])
+  const [showAddressPicker, setShowAddressPicker] = useState<'pickup' | 'delivery' | undefined>(undefined)
+  const [showRoutePicker, setShowRoutePicker] = useState(false)
 
   // 检查是否从常用线路跳转过来，自动填充地址信息
   useEffect(() => {
@@ -92,6 +117,45 @@ export default function PublishDemand() {
     }
   }, [])
 
+  // 加载地址簿和常用线路
+  useEffect(() => {
+    loadAddressData()
+  }, [])
+
+  const loadAddressData = async () => {
+    try {
+      const userInfo = Taro.getStorageSync('userInfo')
+
+      if (!userInfo || !userInfo.id) {
+        return
+      }
+
+      // 并行加载地址簿和常用线路
+      const [addressRes, routeRes] = await Promise.all([
+        Network.request({
+          url: '/api/address-books',
+          method: 'GET',
+          data: { user_id: userInfo.id }
+        }),
+        Network.request({
+          url: '/api/favorite-routes',
+          method: 'GET',
+          data: { user_id: userInfo.id }
+        })
+      ])
+
+      if (addressRes.data.code === 200) {
+        setAddressBooks(addressRes.data.data || [])
+      }
+
+      if (routeRes.data.code === 200) {
+        setFavoriteRoutes(routeRes.data.data || [])
+      }
+    } catch (error) {
+      console.error('[PublishDemand] 加载地址数据失败:', error)
+    }
+  }
+
   const handlePickupDateSelect = (e) => {
     const date = e.detail.value
     const currentDate = formData.pickup_time ? new Date(formData.pickup_time) : new Date()
@@ -107,111 +171,26 @@ export default function PublishDemand() {
     setFormData({ ...formData, pickup_time: newPickupTime })
   }
 
-  const handleChooseLocation = async (type: 'pickup' | 'delivery') => {
-    try {
-      const env = Taro.getEnv()
-      const isMiniApp = env === Taro.ENV_TYPE.WEAPP || env === Taro.ENV_TYPE.TT
+  // 选择地址簿地址
+  const handleSelectAddress = (address: AddressBook) => {
+    const newFormData = { ...formData }
 
-      if (!isMiniApp) {
-        // H5 环境：切换到手动输入模式
-        if (type === 'pickup') {
-          setFormData({
-            ...formData,
-            manualInputMode: type
-          })
-        } else {
-          setFormData({
-            ...formData,
-            manualInputMode: type
-          })
-        }
-        return
+    if (showAddressPicker === 'pickup') {
+      newFormData.pickup_address = address.address
+      newFormData.pickup_location = {
+        latitude: address.latitude,
+        longitude: address.longitude
       }
-
-      // 小程序环境：使用 Taro.chooseLocation
-      const location = await Taro.chooseLocation({
-        latitude: 39.90469,
-        longitude: 116.40717
-      })
-
-      console.log('选择位置:', location)
-
-      if (location) {
-        const locationData = {
-          latitude: location.latitude,
-          longitude: location.longitude
-        }
-
-        let newFormData = { ...formData }
-
-        if (type === 'pickup') {
-          newFormData.pickup_address = location.name || location.address
-          newFormData.pickup_location = locationData
-        } else {
-          newFormData.delivery_address = location.name || location.address
-          newFormData.delivery_location = locationData
-        }
-
-        setFormData(newFormData)
-
-        // 如果两个位置都有，触发距离计算
-        if (newFormData.pickup_location && newFormData.delivery_location) {
-          await calculateDistance(newFormData)
-        }
-      }
-    } catch (error) {
-      console.error('选择位置失败:', error)
-      if (error.errMsg && error.errMsg.includes('cancel')) {
-        return
-      }
-      Taro.showToast({
-        title: '选择位置失败',
-        icon: 'none'
-      })
-    }
-  }
-
-  const handleManualLocationConfirm = (type: 'pickup' | 'delivery', lat: number, lng: number) => {
-    console.log('[handleManualLocationConfirm] type:', type, 'lat:', lat, 'lng:', lng, 'isNaN(lat):', Number.isNaN(lat), 'isNaN(lng):', Number.isNaN(lng))
-
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      Taro.showToast({
-        title: '请输入有效的坐标',
-        icon: 'none'
-      })
-      return
-    }
-
-    if (lat < -90 || lat > 90) {
-      Taro.showToast({
-        title: '纬度范围错误（-90到90）',
-        icon: 'none'
-      })
-      return
-    }
-
-    if (lng < -180 || lng > 180) {
-      Taro.showToast({
-        title: '经度范围错误（-180到180）',
-        icon: 'none'
-      })
-      return
-    }
-
-    const locationData = { latitude: lat, longitude: lng }
-
-    let newFormData = { ...formData }
-
-    if (type === 'pickup') {
-      newFormData.pickup_address = `(${lat.toFixed(6)}, ${lng.toFixed(6)})`
-      newFormData.pickup_location = locationData
     } else {
-      newFormData.delivery_address = `(${lat.toFixed(6)}, ${lng.toFixed(6)})`
-      newFormData.delivery_location = locationData
+      newFormData.delivery_address = address.address
+      newFormData.delivery_location = {
+        latitude: address.latitude,
+        longitude: address.longitude
+      }
     }
 
-    newFormData.manualInputMode = null
     setFormData(newFormData)
+    setShowAddressPicker(undefined)
 
     // 如果两个位置都有，触发距离计算
     if (newFormData.pickup_location && newFormData.delivery_location) {
@@ -219,9 +198,56 @@ export default function PublishDemand() {
     }
 
     Taro.showToast({
-      title: '位置设置成功',
+      title: '地址选择成功',
       icon: 'success'
     })
+  }
+
+  // 选择常用线路
+  const handleSelectRoute = (route: FavoriteRoute) => {
+    const newFormData = { ...formData }
+
+    if (route.pickup_address) {
+      newFormData.pickup_address = route.pickup_address.address
+      newFormData.pickup_location = {
+        latitude: route.pickup_address.latitude,
+        longitude: route.pickup_address.longitude
+      }
+    }
+
+    if (route.delivery_address) {
+      newFormData.delivery_address = route.delivery_address.address
+      newFormData.delivery_location = {
+        latitude: route.delivery_address.latitude,
+        longitude: route.delivery_address.longitude
+      }
+    }
+
+    newFormData.estimated_distance = route.estimated_distance
+    newFormData.estimated_fare = route.estimated_fare
+
+    setFormData(newFormData)
+    setShowRoutePicker(false)
+
+    // 增加使用次数
+    incrementRouteUseCount(route.id)
+
+    Taro.showToast({
+      title: `已选择线路: ${route.route_name}`,
+      icon: 'success'
+    })
+  }
+
+  // 增加线路使用次数
+  const incrementRouteUseCount = async (routeId: string) => {
+    try {
+      await Network.request({
+        url: `/api/favorite-routes/${routeId}/increment-use-count`,
+        method: 'POST'
+      })
+    } catch (error) {
+      console.error('[PublishDemand] 增加线路使用次数失败:', error)
+    }
   }
 
   // 计算距离和运费
@@ -529,6 +555,30 @@ export default function PublishDemand() {
               </View>
             </View>
 
+            {/* 快捷选择区域 */}
+            <View className="bg-blue-50 rounded-lg p-3">
+              <Text className="block text-sm font-medium text-blue-900 mb-2">快捷选择</Text>
+              <View className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 bg-blue-500"
+                  onClick={() => setShowRoutePicker(true)}
+                  disabled={favoriteRoutes.length === 0}
+                >
+                  <Route size={14} color="#fff" />
+                  <Text className="text-xs ml-1">常用线路</Text>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => Taro.navigateTo({ url: '/pages/merchant/favorite-routes/index' })}
+                >
+                  <Text className="text-xs">管理线路</Text>
+                </Button>
+              </View>
+            </View>
+
             <View>
               <Label className="block text-sm font-medium mb-2">
                 <Text className="text-red-500">*</Text>取货地址
@@ -537,110 +587,34 @@ export default function PublishDemand() {
                 <View className="flex-1 bg-gray-50 rounded-lg px-4 py-3">
                   <Input
                     className="w-full bg-transparent"
-                    placeholder="请输入取货地址或点击定位"
+                    placeholder="请选择取货地址"
                     value={formData.pickup_address}
-                    onInput={(e) => setFormData({ ...formData, pickup_address: e.detail.value })}
+                    disabled
                   />
                 </View>
                 <Button
                   size="sm"
                   className="bg-blue-500 px-4"
-                  onClick={() => handleChooseLocation('pickup')}
+                  onClick={() => setShowAddressPicker('pickup')}
+                  disabled={addressBooks.length === 0}
                 >
-                  <Text className="text-xs">定位</Text>
+                  <MapPin size={14} color="#fff" />
+                  <Text className="text-xs ml-1">选择</Text>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => Taro.navigateTo({ url: '/pages/merchant/address-books/index' })}
+                >
+                  <BookOpen size={14} color="#6b7280" />
                 </Button>
               </View>
 
-              {/* H5 手动输入坐标 */}
-              {formData.manualInputMode === 'pickup' && (
-                <View className="mt-2 p-3 bg-blue-50 rounded-lg">
-                  <Text className="block text-sm font-medium text-blue-900 mb-2">手动输入坐标（H5环境）</Text>
-                  <View className="flex gap-2 mb-2">
-                    <View className="flex-1">
-                      <Text className="block text-xs text-gray-600 mb-1">纬度（-90到90）</Text>
-                      <View className="bg-white rounded px-3 py-2">
-                        <Input
-                          className="w-full bg-transparent"
-                          placeholder="例：39.908822"
-                          type="digit"
-                          value={formData.manualLat}
-                          onInput={(e) => setFormData({ ...formData, manualLat: e.detail.value })}
-                        />
-                      </View>
-                    </View>
-                    <View className="flex-1">
-                      <Text className="block text-xs text-gray-600 mb-1">经度（-180到180）</Text>
-                      <View className="bg-white rounded px-3 py-2">
-                        <Input
-                          className="w-full bg-transparent"
-                          placeholder="例：116.397499"
-                          type="digit"
-                          value={formData.manualLng}
-                          onInput={(e) => setFormData({ ...formData, manualLng: e.detail.value })}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                  <Text className="block text-xs text-gray-500 mb-2">
-                    💡 提示：点击下方示例可直接复制
-                  </Text>
-                  <View className="flex gap-1 mb-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-gray-200"
-                      variant="ghost"
-                      onClick={() => setFormData({ ...formData, manualLat: '39.908822', manualLng: '116.397499' })}
-                    >
-                      <Text className="text-xs">北京朝阳</Text>
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-gray-200"
-                      variant="ghost"
-                      onClick={() => setFormData({ ...formData, manualLat: '31.230416', manualLng: '121.473701' })}
-                    >
-                      <Text className="text-xs">上海黄浦</Text>
-                    </Button>
-                  </View>
-                  <View className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-green-500"
-                      onClick={() => {
-                        const lat = parseFloat(formData.manualLat)
-                        const lng = parseFloat(formData.manualLng)
-                        if (formData.manualLat && formData.manualLng && !Number.isNaN(lat) && !Number.isNaN(lng)) {
-                          handleManualLocationConfirm('pickup', lat, lng)
-                        } else {
-                          Taro.showToast({
-                            title: '请先输入坐标',
-                            icon: 'none'
-                          })
-                        }
-                      }}
-                    >
-                      <Text className="text-xs">确认</Text>
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      variant="outline"
-                      onClick={() => setFormData({ ...formData, manualInputMode: null, manualLat: '', manualLng: '' })}
-                    >
-                      <Text className="text-xs">取消</Text>
-                    </Button>
-                  </View>
-                </View>
-              )}
-
               {formData.pickup_location && (
                 <Text className="block text-xs text-gray-400 mt-1">
-                  已选择位置：{formData.pickup_location.latitude.toFixed(6)}, {formData.pickup_location.longitude.toFixed(6)}
+                  已选择：{formData.pickup_location.latitude.toFixed(6)}, {formData.pickup_location.longitude.toFixed(6)}
                 </Text>
               )}
-              <Text className="block text-xs text-gray-400 mt-1">
-                提示：小程序可地图选择，H5点击&ldquo;定位&rdquo;后手动输入坐标
-              </Text>
             </View>
 
             <View>
@@ -651,178 +625,200 @@ export default function PublishDemand() {
                 <View className="flex-1 bg-gray-50 rounded-lg px-4 py-3">
                   <Input
                     className="w-full bg-transparent"
-                    placeholder="请输入送货地址或点击定位"
+                    placeholder="请选择送货地址"
                     value={formData.delivery_address}
-                    onInput={(e) => setFormData({ ...formData, delivery_address: e.detail.value })}
+                    disabled
                   />
                 </View>
                 <Button
                   size="sm"
                   className="bg-blue-500 px-4"
-                  onClick={() => handleChooseLocation('delivery')}
+                  onClick={() => setShowAddressPicker('delivery')}
+                  disabled={addressBooks.length === 0}
                 >
-                  <Text className="text-xs">定位</Text>
+                  <MapPin size={14} color="#fff" />
+                  <Text className="text-xs ml-1">选择</Text>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => Taro.navigateTo({ url: '/pages/merchant/address-books/index' })}
+                >
+                  <BookOpen size={14} color="#6b7280" />
                 </Button>
               </View>
 
-              {/* H5 手动输入坐标 */}
-              {formData.manualInputMode === 'delivery' && (
-                <View className="mt-2 p-3 bg-blue-50 rounded-lg">
-                  <Text className="block text-sm font-medium text-blue-900 mb-2">手动输入坐标（H5环境）</Text>
-                  <View className="flex gap-2 mb-2">
-                    <View className="flex-1">
-                      <Text className="block text-xs text-gray-600 mb-1">纬度（-90到90）</Text>
-                      <View className="bg-white rounded px-3 py-2">
-                        <Input
-                          className="w-full bg-transparent"
-                          placeholder="例：39.918822"
-                          type="digit"
-                          value={formData.manualLat}
-                          onInput={(e) => setFormData({ ...formData, manualLat: e.detail.value })}
-                        />
-                      </View>
-                    </View>
-                    <View className="flex-1">
-                      <Text className="block text-xs text-gray-600 mb-1">经度（-180到180）</Text>
-                      <View className="bg-white rounded px-3 py-2">
-                        <Input
-                          className="w-full bg-transparent"
-                          placeholder="例：116.407499"
-                          type="digit"
-                          value={formData.manualLng}
-                          onInput={(e) => setFormData({ ...formData, manualLng: e.detail.value })}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                  <Text className="block text-xs text-gray-500 mb-2">
-                    💡 提示：点击下方示例可直接复制
-                  </Text>
-                  <View className="flex gap-1 mb-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-gray-200"
-                      variant="ghost"
-                      onClick={() => setFormData({ ...formData, manualLat: '39.918822', manualLng: '116.407499' })}
-                    >
-                      <Text className="text-xs">北京海淀</Text>
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-gray-200"
-                      variant="ghost"
-                      onClick={() => setFormData({ ...formData, manualLat: '31.229553', manualLng: '121.469321' })}
-                    >
-                      <Text className="text-xs">上海静安</Text>
-                    </Button>
-                  </View>
-                  <View className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-green-500"
-                      onClick={() => {
-                        const lat = parseFloat(formData.manualLat)
-                        const lng = parseFloat(formData.manualLng)
-                        if (formData.manualLat && formData.manualLng && !Number.isNaN(lat) && !Number.isNaN(lng)) {
-                          handleManualLocationConfirm('delivery', lat, lng)
-                        } else {
-                          Taro.showToast({
-                            title: '请先输入坐标',
-                            icon: 'none'
-                          })
-                        }
-                      }}
-                    >
-                      <Text className="text-xs">确认</Text>
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      variant="outline"
-                      onClick={() => setFormData({ ...formData, manualInputMode: null, manualLat: '', manualLng: '' })}
-                    >
-                      <Text className="text-xs">取消</Text>
-                    </Button>
-                  </View>
-                </View>
-              )}
-
               {formData.delivery_location && (
                 <Text className="block text-xs text-gray-400 mt-1">
-                  已选择位置：{formData.delivery_location.latitude.toFixed(6)}, {formData.delivery_location.longitude.toFixed(6)}
+                  已选择：{formData.delivery_location.latitude.toFixed(6)}, {formData.delivery_location.longitude.toFixed(6)}
                 </Text>
               )}
-              <Text className="block text-xs text-gray-400 mt-1">
-                提示：小程序可地图选择，H5点击&ldquo;定位&rdquo;后手动输入坐标
-              </Text>
             </View>
 
-            {/* 距离测算卡片 */}
-            {formData.is_calculating && (
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-4">
-                  <View className="flex items-center justify-center">
-                    <Text className="text-sm text-blue-600">🔄 正在计算距离...</Text>
-                  </View>
-                </CardContent>
-              </Card>
-            )}
-
-            {formData.estimated_distance !== null && formData.estimated_fare !== null && !formData.is_calculating && (
-              <Card className="bg-green-50 border-green-200">
-                <CardContent className="p-4">
-                  <View className="space-y-2">
-                    <View className="flex items-center justify-between">
-                      <Text className="text-sm font-medium text-green-800">📊 距离测算</Text>
-                    </View>
-                    <View className="flex items-center justify-between">
-                      <Text className="text-sm text-green-700">📏 预估距离</Text>
-                      <Text className="text-sm font-bold text-green-700">{formData.estimated_distance.toFixed(2)} 公里</Text>
-                    </View>
-                    <View className="flex items-center justify-between">
-                      <Text className="text-sm text-green-700">💰 预估运费</Text>
-                      <Text className="text-lg font-bold text-green-600">¥{formData.estimated_fare.toFixed(2)}</Text>
-                    </View>
-                    <Text className="block text-xs text-green-600 text-center mt-2">
-                      📝 注：按非高速路线计算，每公里1元
-                    </Text>
-                  </View>
-                </CardContent>
-              </Card>
+            {formData.estimated_distance && (
+              <View className="bg-green-50 rounded-lg p-3">
+                <Text className="block text-sm font-medium text-green-900 mb-2">
+                  距离估算：{formData.estimated_distance.toFixed(2)} 公里
+                </Text>
+                {formData.estimated_fare && (
+                  <Text className="block text-sm text-green-700">
+                    预估运费：¥{formData.estimated_fare.toFixed(2)}
+                  </Text>
+                )}
+              </View>
             )}
 
             <View>
               <Label className="block text-sm font-medium mb-2">
-                备注（可选）
+                备注（选填）
               </Label>
               <View className="bg-gray-50 rounded-lg px-4 py-3">
                 <Input
                   className="w-full bg-transparent"
-                  placeholder="如：需要冷藏"
+                  placeholder="如：请提前10分钟联系"
                   value={formData.remarks}
                   onInput={(e) => setFormData({ ...formData, remarks: e.detail.value })}
                 />
               </View>
             </View>
 
-            <View className="flex gap-3 pt-2">
-              <Button
-                className="flex-1 bg-gray-200"
-                onClick={() => Taro.navigateBack()}
-              >
-                <Text>取消</Text>
-              </Button>
-              <Button
-                className="flex-1 bg-blue-500"
-                onClick={handleSubmit}
-                disabled={loading}
-              >
-                <Text>{loading ? '发布中...' : '发布'}</Text>
-              </Button>
-            </View>
+            <Button
+              className="w-full bg-blue-500"
+              onClick={handleSubmit}
+              disabled={loading || formData.is_calculating}
+            >
+              <Text className="text-white font-medium">
+                {formData.is_calculating ? '计算距离中...' : loading ? '发布中...' : '发布需求'}
+              </Text>
+            </Button>
           </View>
         </CardContent>
       </Card>
+
+      {/* 地址簿选择弹窗 */}
+      <Dialog open={showAddressPicker !== undefined} onOpenChange={(open) => !open && setShowAddressPicker(undefined)}>
+        <DialogContent className="max-h-[60vh]">
+          <DialogHeader>
+            <DialogTitle>
+              {showAddressPicker === 'pickup' ? '选择取货地址' : '选择送货地址'}
+            </DialogTitle>
+          </DialogHeader>
+          <View className="space-y-2">
+            {addressBooks.length === 0 ? (
+              <View className="text-center py-8">
+                <Text className="block text-gray-400 text-sm">暂无地址，请先添加地址</Text>
+              </View>
+            ) : (
+              addressBooks.map((address) => (
+                <View
+                  key={address.id}
+                  className="bg-gray-50 rounded-lg p-3"
+                  onClick={() => handleSelectAddress(address)}
+                >
+                  <View className="flex items-start gap-2">
+                    <MapPin size={16} color="#6b7280" />
+                    <View className="flex-1">
+                      <Text className="block text-sm font-medium text-gray-900 mb-1">
+                        {address.address_name}
+                      </Text>
+                      <Text className="block text-xs text-gray-600">
+                        {address.address}
+                      </Text>
+                      {address.is_default && (
+                        <View className="inline-block mt-1">
+                          <Text className="text-xs text-blue-500">默认</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Check size={16} color="#1890ff" />
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowAddressPicker(undefined)}
+            >
+              <Text className="text-xs">取消</Text>
+            </Button>
+            <Button
+              onClick={() => {
+                setShowAddressPicker(undefined)
+                Taro.navigateTo({ url: '/pages/merchant/address-books/index' })
+              }}
+            >
+              <Text className="text-xs">添加地址</Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 常用线路选择弹窗 */}
+      <Dialog open={showRoutePicker} onOpenChange={(open) => !open && setShowRoutePicker(false)}>
+        <DialogContent className="max-h-[60vh]">
+          <DialogHeader>
+            <DialogTitle>选择常用线路</DialogTitle>
+          </DialogHeader>
+          <View className="space-y-2">
+            {favoriteRoutes.length === 0 ? (
+              <View className="text-center py-8">
+                <Text className="block text-gray-400 text-sm">暂无常用线路，请先添加线路</Text>
+              </View>
+            ) : (
+              favoriteRoutes.map((route) => (
+                <View
+                  key={route.id}
+                  className="bg-gray-50 rounded-lg p-3"
+                  onClick={() => handleSelectRoute(route)}
+                >
+                  <View className="flex items-start gap-2 mb-2">
+                    <Route size={16} color="#6b7280" />
+                    <Text className="block text-sm font-medium text-gray-900 flex-1">
+                      {route.route_name}
+                    </Text>
+                    {route.use_count > 0 && (
+                      <Text className="text-xs text-gray-500">
+                        使用 {route.use_count} 次
+                      </Text>
+                    )}
+                  </View>
+                  <View className="ml-6">
+                    <Text className="block text-xs text-gray-600 mb-1">
+                      取：{route.pickup_address?.address || '-'}
+                    </Text>
+                    <Text className="block text-xs text-gray-600">
+                      送：{route.delivery_address?.address || '-'}
+                    </Text>
+                    {route.estimated_distance && (
+                      <Text className="block text-xs text-green-600 mt-1">
+                        距离：{route.estimated_distance.toFixed(2)} 公里
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowRoutePicker(false)}
+            >
+              <Text className="text-xs">取消</Text>
+            </Button>
+            <Button
+              onClick={() => {
+                setShowRoutePicker(false)
+                Taro.navigateTo({ url: '/pages/merchant/favorite-routes/index' })
+              }}
+            >
+              <Text className="text-xs">添加线路</Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </View>
   )
 }
