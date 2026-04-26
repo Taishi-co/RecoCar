@@ -293,56 +293,10 @@ export default function FavoriteRoutes() {
         method: 'POST'
       })
 
-      // 检查用户角色
-      const userInfo = Taro.getStorageSync('userInfo')
-      const isMerchant = userInfo.role === 'merchant'
-
-      if (isMerchant) {
-        // 需求方：跳转到发布需求页面
-        Taro.navigateTo({
-          url: `/pages/merchant/demands/publish?route=${encodeURIComponent(JSON.stringify(route))}`
-        })
-      } else {
-        // 运力方：显示地图信息
-        const pickup = route.pickup_address
-        const delivery = route.delivery_address
-
-        if (pickup?.latitude && pickup?.longitude && delivery?.latitude && delivery?.longitude) {
-          // 显示取货地址地图
-          Taro.showModal({
-            title: '查看地图',
-            content: '请选择要查看的地址',
-            confirmText: '取货地址',
-            cancelText: '收货地址',
-            success: (res) => {
-              if (res.confirm) {
-                // 显示取货地址
-                Taro.openLocation({
-                  latitude: pickup.latitude,
-                  longitude: pickup.longitude,
-                  name: pickup.address_name || '取货地址',
-                  address: pickup.address || '',
-                  scale: 15
-                })
-              } else if (res.cancel) {
-                // 显示收货地址
-                Taro.openLocation({
-                  latitude: delivery.latitude,
-                  longitude: delivery.longitude,
-                  name: delivery.address_name || '收货地址',
-                  address: delivery.address || '',
-                  scale: 15
-                })
-              }
-            }
-          })
-        } else {
-          Taro.showToast({
-            title: '地址信息不完整，无法显示地图',
-            icon: 'none'
-          })
-        }
-      }
+      // 跳转到发布需求页面，并传递线路信息
+      Taro.navigateTo({
+        url: `/pages/merchant/demands/publish?route=${JSON.stringify(route)}`
+      })
     } catch (error) {
       console.error('[FavoriteRoutes] 使用线路失败:', error)
       Taro.showToast({
