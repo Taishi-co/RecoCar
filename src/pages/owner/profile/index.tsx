@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { Camera, Settings, MessageCircle, LogOut, CreditCard, Bell } from 'lucide-react-taro'
+import { Camera, Settings, MessageCircle, LogOut, CreditCard, Bell, MapPin, Route } from 'lucide-react-taro'
 
 interface UserInfo {
   id: string
@@ -321,6 +321,26 @@ export default function OwnerProfile() {
         {/* 功能列表 */}
         <Card className="bg-white rounded-lg shadow-sm mb-4">
           <CardContent className="p-0">
+            <View
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 active:bg-gray-50"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/address-books/index' })}
+            >
+              <View className="flex items-center gap-3">
+                <MapPin size={20} color="#3b82f6" />
+                <Text className="block text-sm">地址簿</Text>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
+            </View>
+            <View
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 active:bg-gray-50"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/favorite-routes/index' })}
+            >
+              <View className="flex items-center gap-3">
+                <Route size={20} color="#3b82f6" />
+                <Text className="block text-sm">常用线路</Text>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
+            </View>
             <View
               className="flex items-center justify-between px-4 py-4 border-b border-gray-100 active:bg-gray-50"
               onClick={() => {
