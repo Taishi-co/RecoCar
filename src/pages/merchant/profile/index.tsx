@@ -44,13 +44,35 @@ export default function MerchantProfile() {
       id: 'templates',
       title: '常用模板',
       icon: <Copy size={20} color="#3b82f6" />,
-      onClick: () => Taro.navigateTo({ url: '/pages/merchant/demands/templates' })
+      onClick: () => {
+        console.log('点击常用模板')
+        Taro.navigateTo({
+          url: '/pages/merchant/demands/templates',
+          success: () => {
+            console.log('导航到常用模板成功')
+          },
+          fail: (err) => {
+            console.error('导航到常用模板失败:', err)
+          }
+        })
+      }
     },
     {
       id: 'schedules',
       title: '定时计划',
       icon: <Clock size={20} color="#3b82f6" />,
-      onClick: () => Taro.navigateTo({ url: '/pages/merchant/demands/schedules' })
+      onClick: () => {
+        console.log('点击定时计划')
+        Taro.navigateTo({
+          url: '/pages/merchant/demands/schedules',
+          success: () => {
+            console.log('导航到定时计划成功')
+          },
+          fail: (err) => {
+            console.error('导航到定时计划失败:', err)
+          }
+        })
+      }
     },
     {
       id: 'address-books',
