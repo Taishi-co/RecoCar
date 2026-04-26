@@ -9,7 +9,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { useNotificationPolling } from '@/hooks/useNotificationPolling'
+// import { useNotificationPolling } from '@/hooks/useNotificationPolling'
 
 interface Vehicle {
   id: string
@@ -66,8 +66,8 @@ export default function OwnerDemands() {
   const [calculatedFare, setCalculatedFare] = useState<number | null>(null)
   const [fareCalculationDetail, setFareCalculationDetail] = useState<any>(null)
 
-  // 启用通知轮询
-  useNotificationPolling(30000) // 每30秒检查一次新通知
+  // 启用通知轮询（暂时注释，避免白屏问题）
+  // useNotificationPolling(30000) // 每30秒检查一次新通知
 
   useEffect(() => {
     loadDemands()

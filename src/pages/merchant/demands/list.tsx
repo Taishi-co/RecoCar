@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Plus, Pencil, Save, FileText } from 'lucide-react-taro'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { useNotificationPolling } from '@/hooks/useNotificationPolling'
+// import { useNotificationPolling } from '@/hooks/useNotificationPolling'
 
 interface Demand {
   id: string
@@ -37,8 +37,8 @@ export default function DemandsList() {
   const [templateName, setTemplateName] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // 启用通知轮询
-  useNotificationPolling(30000) // 每30秒检查一次新通知
+  // 启用通知轮询（暂时注释，避免白屏问题）
+  // useNotificationPolling(30000) // 每30秒检查一次新通知
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')
