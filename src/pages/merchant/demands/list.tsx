@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
-import { Plus, Edit, Save, FileText } from 'lucide-react-taro'
+import { Plus, Pencil, Save, FileText } from 'lucide-react-taro'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 import { useNotificationPolling } from '@/hooks/useNotificationPolling'
@@ -381,7 +381,7 @@ export default function DemandsList() {
                             variant="outline"
                             onClick={() => handleEditDemand(demand)}
                           >
-                            <Edit size={14} color="#6b7280" />
+                            <Pencil size={14} color="#6b7280" />
                           </Button>
                           <Button
                             size="sm"
@@ -456,7 +456,7 @@ export default function DemandsList() {
                 取消需求
               </Text>
               <Text className="block text-sm text-gray-600 mb-2">
-                确定要取消需求 "{selectedDemand?.cargo_name}" 吗？
+                确定要取消需求 &quot;{selectedDemand?.cargo_name}&quot; 吗？
               </Text>
             </View>
 
