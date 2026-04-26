@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { View, Text, Map } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -528,6 +528,79 @@ export default function OwnerDemands() {
                   </View>
                 </View>
               </View>
+
+              {/* 地图展示 */}
+              {(selectedDemand.pickup_lat && selectedDemand.pickup_lng) && (
+                <View className="mb-4">
+                  <Label className="block text-sm font-medium mb-2">
+                    路线地图
+                  </Label>
+                  <View className="rounded-lg overflow-hidden bg-gray-100">
+                    {Taro.getEnv() === Taro.ENV_TYPE.WEAPP ? (
+                      <Map
+                        id="accept-map"
+                        className="w-full"
+                        style={{ height: '200px' }}
+                        latitude={parseFloat(selectedDemand.pickup_lat as string)}
+                        longitude={parseFloat(selectedDemand.pickup_lng as string)}
+                        scale={10}
+                        showLocation
+                        enableZoom
+                        enableScroll
+                        onError={(e) => console.log('地图加载失败:', e)}
+                        markers={([
+                          {
+                            id: 1,
+                            latitude: parseFloat(selectedDemand.pickup_lat as string),
+                            longitude: parseFloat(selectedDemand.pickup_lng as string),
+                            title: '取货点',
+                            iconPath: '',
+                            width: 24,
+                            height: 24
+                          },
+                          ...(selectedDemand.delivery_lat && selectedDemand.delivery_lng ? [{
+                            id: 2,
+                            latitude: parseFloat(selectedDemand.delivery_lat as string),
+                            longitude: parseFloat(selectedDemand.delivery_lng as string),
+                            title: '送货点',
+                            iconPath: '',
+                            width: 24,
+                            height: 24
+                          }] : [])
+                        ] as any)}
+                        polyline={
+                          selectedDemand.pickup_lat && selectedDemand.pickup_lng &&
+                          selectedDemand.delivery_lat && selectedDemand.delivery_lng
+                            ? [
+                                {
+                                  points: [
+                                    {
+                                      latitude: parseFloat(selectedDemand.pickup_lat as string),
+                                      longitude: parseFloat(selectedDemand.pickup_lng as string)
+                                    },
+                                    {
+                                      latitude: parseFloat(selectedDemand.delivery_lat as string),
+                                      longitude: parseFloat(selectedDemand.delivery_lng as string)
+                                    }
+                                  ],
+                                  color: '#3b82f6',
+                                  width: 4,
+                                  dottedLine: true
+                                }
+                              ]
+                            : []
+                        }
+                      />
+                    ) : (
+                      <View className="flex items-center justify-center h-48">
+                        <Text className="text-sm text-gray-500 text-center">
+                          地图功能仅在小程序中可用
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
 
               {/* 车辆选择 */}
               <View className="mb-4">
