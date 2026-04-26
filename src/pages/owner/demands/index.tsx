@@ -65,6 +65,7 @@ export default function OwnerDemands() {
   // 运费计算相关状态
   const [calculatedFare, setCalculatedFare] = useState<number | null>(null)
   const [fareCalculationDetail, setFareCalculationDetail] = useState<any>(null)
+  const [routePolyline, setRoutePolyline] = useState<any[]>([])
 
   // 启用通知轮询（暂时注释，避免白屏问题）
   // useNotificationPolling(30000) // 每30秒检查一次新通知
@@ -133,6 +134,7 @@ export default function OwnerDemands() {
     setSelectedVehicleId('')
     setCalculatedFare(null)
     setFareCalculationDetail(null)
+    setRoutePolyline([]) // 清空路线数据
 
     // 获取当前车主信息
     const userInfo = Taro.getStorageSync('userInfo')
@@ -163,6 +165,9 @@ export default function OwnerDemands() {
           v.status === 'active' && v.is_available === true && v.trip_status === 'idle'
         )
         setVehicles(availableVehicles)
+
+        // 获取路线数据
+        await fetchRouteData()
       } else {
         Taro.showToast({
           title: res.data.message || '加载车辆列表失败',
@@ -178,6 +183,44 @@ export default function OwnerDemands() {
     }
   }
 
+  // 获取路线数据
+  const fetchRouteData = async () => {
+    if (!selectedDemand || !selectedDemand.pickup_lat || !selectedDemand.pickup_lng ||
+        !selectedDemand.delivery_lat || !selectedDemand.delivery_lng) {
+      return
+    }
+
+    try {
+      const res = await Network.request({
+        url: '/api/demands/calculate-distance',
+        method: 'POST',
+        data: {
+          pickup_address: selectedDemand.pickup_address,
+          pickup_lat: parseFloat(selectedDemand.pickup_lat as string),
+          pickup_lng: parseFloat(selectedDemand.pickup_lng as string),
+          delivery_address: selectedDemand.delivery_address,
+          delivery_lat: parseFloat(selectedDemand.delivery_lat as string),
+          delivery_lng: parseFloat(selectedDemand.delivery_lng as string)
+        }
+      })
+
+      console.log('路线数据响应:', res.data)
+
+      if (res.data.code === 200 && res.data.data && res.data.data.polyline) {
+        // 将polyline转换为地图需要的格式
+        const points = res.data.data.polyline.map((point: any) => ({
+          latitude: point.latitude,
+          longitude: point.longitude
+        }))
+        setRoutePolyline(points)
+        console.log('路线点数:', points.length)
+      }
+    } catch (error) {
+      console.error('获取路线数据失败:', error)
+      // 失败时仍然显示直线连接
+    }
+  }
+
   const handleCloseAcceptDialog = () => {
     setShowAcceptDialog(false)
     setSelectedDemand(null)
@@ -186,6 +229,7 @@ export default function OwnerDemands() {
     setFarePrice('')
     setCalculatedFare(null)
     setFareCalculationDetail(null)
+    setRoutePolyline([]) // 清空路线数据
   }
 
   const handleVehicleSelect = async (vehicleId: string) => {
@@ -569,26 +613,35 @@ export default function OwnerDemands() {
                           }] : [])
                         ] as any)}
                         polyline={
-                          selectedDemand.pickup_lat && selectedDemand.pickup_lng &&
-                          selectedDemand.delivery_lat && selectedDemand.delivery_lng
+                          routePolyline.length > 0
                             ? [
                                 {
-                                  points: [
-                                    {
-                                      latitude: parseFloat(selectedDemand.pickup_lat as string),
-                                      longitude: parseFloat(selectedDemand.pickup_lng as string)
-                                    },
-                                    {
-                                      latitude: parseFloat(selectedDemand.delivery_lat as string),
-                                      longitude: parseFloat(selectedDemand.delivery_lng as string)
-                                    }
-                                  ],
+                                  points: routePolyline,
                                   color: '#3b82f6',
                                   width: 4,
-                                  dottedLine: true
+                                  dottedLine: false
                                 }
                               ]
-                            : []
+                            : selectedDemand.pickup_lat && selectedDemand.pickup_lng &&
+                              selectedDemand.delivery_lat && selectedDemand.delivery_lng
+                              ? [
+                                  {
+                                    points: [
+                                      {
+                                        latitude: parseFloat(selectedDemand.pickup_lat as string),
+                                        longitude: parseFloat(selectedDemand.pickup_lng as string)
+                                      },
+                                      {
+                                        latitude: parseFloat(selectedDemand.delivery_lat as string),
+                                        longitude: parseFloat(selectedDemand.delivery_lng as string)
+                                      }
+                                    ],
+                                    color: '#3b82f6',
+                                    width: 4,
+                                    dottedLine: true
+                                  }
+                                ]
+                              : []
                         }
                       />
                     ) : (
