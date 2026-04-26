@@ -74,9 +74,8 @@ export default function DemandTemplates() {
       }
 
       const res = await Network.request({
-        url: '/api/demand-templates',
-        method: 'GET',
-        data: { user_id: userInfo.id }
+        url: `/api/demand-templates?user_id=${userInfo.id}`,
+        method: 'GET'
       })
 
       console.log('[DemandTemplates] 常用模板响应:', res.data)
