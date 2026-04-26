@@ -93,8 +93,16 @@ export default function DemandsList() {
   }
 
   const handleEditDemand = (demand: Demand) => {
+    console.log('点击编辑按钮, demand:', demand)
+    console.log('即将跳转到编辑页面:', `/pages/merchant/demands/edit?id=${demand.id}`)
     Taro.navigateTo({
-      url: `/pages/merchant/demands/edit?id=${demand.id}`
+      url: `/pages/merchant/demands/edit?id=${demand.id}`,
+      success: () => {
+        console.log('导航到编辑页面成功')
+      },
+      fail: (err) => {
+        console.error('导航到编辑页面失败:', err)
+      }
     })
   }
 
@@ -377,9 +385,11 @@ export default function DemandsList() {
                           <Button
                             size="sm"
                             variant="outline"
+                            className="border-blue-500 text-blue-500"
                             onClick={() => handleEditDemand(demand)}
                           >
-                            <Pencil size={14} color="#6b7280" />
+                            <Pencil size={14} />
+                            <Text className="ml-1 text-xs">编辑</Text>
                           </Button>
                           <Button
                             size="sm"

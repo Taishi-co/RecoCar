@@ -40,6 +40,8 @@ export default function EditDemand() {
   const router = useRouter()
   const demandId = router.params.id
 
+  console.log('编辑页面初始化, demandId:', demandId)
+
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState<Partial<Demand>>({})
@@ -48,6 +50,7 @@ export default function EditDemand() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('useEffect 触发, demandId:', demandId)
     if (demandId) {
       loadDemandDetail()
       loadAddressBooks()
