@@ -73,8 +73,12 @@ export default function DemandTemplates() {
         return
       }
 
+      // 手动构建带查询参数的 URL
+      const url = `/api/demand-templates?user_id=${encodeURIComponent(userInfo.id)}`
+      console.log('[DemandTemplates] 请求 URL:', url)
+
       const res = await Network.request({
-        url: `/api/demand-templates?user_id=${userInfo.id}`,
+        url: url,
         method: 'GET'
       })
 
