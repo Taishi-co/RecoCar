@@ -22,6 +22,10 @@ interface Vehicle {
   photos: string | null
   remarks: string | null
   created_at: string
+  // 定价字段
+  base_price?: number
+  base_distance?: number
+  price_per_km?: number
 }
 
 export default function OwnerVehicles() {
@@ -37,7 +41,11 @@ export default function OwnerVehicles() {
     load_capacity: '',
     volume: '',
     battery_life: '',
-    has_cold_chain: 'false'
+    has_cold_chain: 'false',
+    // 定价字段
+    base_price: '20',
+    base_distance: '3',
+    price_per_km: '2'
   })
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
 
@@ -86,7 +94,10 @@ export default function OwnerVehicles() {
       load_capacity: '',
       volume: '',
       battery_life: '',
-      has_cold_chain: 'false'
+      has_cold_chain: 'false',
+      base_price: '20',
+      base_distance: '3',
+      price_per_km: '2'
     })
     setPhotoUrls([])
   }
@@ -99,7 +110,10 @@ export default function OwnerVehicles() {
       load_capacity: vehicle.load_capacity.toString(),
       volume: vehicle.volume.toString(),
       battery_life: vehicle.battery_life.toString(),
-      has_cold_chain: vehicle.has_cold_chain ? 'true' : 'false'
+      has_cold_chain: vehicle.has_cold_chain ? 'true' : 'false',
+      base_price: (vehicle.base_price || 20).toString(),
+      base_distance: (vehicle.base_distance || 3).toString(),
+      price_per_km: (vehicle.price_per_km || 2).toString()
     })
     setPhotoUrls(parsePhotoUrls(vehicle.photos))
     setShowEditForm(true)
@@ -114,7 +128,10 @@ export default function OwnerVehicles() {
       load_capacity: '',
       volume: '',
       battery_life: '',
-      has_cold_chain: 'false'
+      has_cold_chain: 'false',
+      base_price: '20',
+      base_distance: '3',
+      price_per_km: '2'
     })
     setPhotoUrls([])
   }
@@ -228,8 +245,17 @@ export default function OwnerVehicles() {
         url: `/api/vehicles/${editingVehicle.id}`,
         method: 'PUT',
         data: {
-          ...formData,
-          photoUrls: photoUrls
+          vehicle_type: formData.vehicle_type,
+          license_plate: formData.license_plate,
+          load_capacity: formData.load_capacity,
+          volume: formData.volume,
+          battery_life: formData.battery_life,
+          has_cold_chain: formData.has_cold_chain,
+          photoUrls: photoUrls,
+          // 定价字段（转换为数字）
+          base_price: parseFloat(formData.base_price) || 20,
+          base_distance: parseFloat(formData.base_distance) || 3,
+          price_per_km: parseFloat(formData.price_per_km) || 2
         }
       })
 
@@ -249,7 +275,10 @@ export default function OwnerVehicles() {
           load_capacity: '',
           volume: '',
           battery_life: '',
-          has_cold_chain: 'false'
+          has_cold_chain: 'false',
+          base_price: '20',
+          base_distance: '3',
+          price_per_km: '2'
         })
         setPhotoUrls([])
 
@@ -331,8 +360,17 @@ export default function OwnerVehicles() {
         method: 'POST',
         data: {
           owner_id: userInfo.id,
-          ...formData,
-          photoUrls: photoUrls
+          vehicle_type: formData.vehicle_type,
+          license_plate: formData.license_plate,
+          load_capacity: formData.load_capacity,
+          volume: formData.volume,
+          battery_life: formData.battery_life,
+          has_cold_chain: formData.has_cold_chain,
+          photoUrls: photoUrls,
+          // 定价字段（转换为数字）
+          base_price: parseFloat(formData.base_price) || 20,
+          base_distance: parseFloat(formData.base_distance) || 3,
+          price_per_km: parseFloat(formData.price_per_km) || 2
         }
       })
 
@@ -351,7 +389,10 @@ export default function OwnerVehicles() {
           load_capacity: '',
           volume: '',
           battery_life: '',
-          has_cold_chain: 'false'
+          has_cold_chain: 'false',
+          base_price: '20',
+          base_distance: '3',
+          price_per_km: '2'
         })
         setPhotoUrls([])
 
@@ -547,6 +588,14 @@ export default function OwnerVehicles() {
                               载重: {vehicle.load_capacity}kg | 体积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
                             </Text>
                           </View>
+                          {/* 定价信息 */}
+                          {(vehicle.base_price || vehicle.base_distance || vehicle.price_per_km) && (
+                            <View className="flex items-center gap-2 mt-1">
+                              <Text className="text-xs text-blue-600 font-medium">
+                                💰 定价: 起步¥{vehicle.base_price || 20}（{vehicle.base_distance || 3}公里）+ ¥{vehicle.price_per_km || 2}/公里
+                              </Text>
+                            </View>
+                          )}
                         </View>
                         <View className="flex gap-2">
                           {vehicle.status === 'rejected' && (
@@ -721,6 +770,77 @@ export default function OwnerVehicles() {
                   </View>
                 </View>
 
+                {/* 定价设置 */}
+                <View className="border-t pt-4">
+                  <Label className="block text-base font-semibold mb-3">
+                    💰 定价设置
+                  </Label>
+                  <View className="bg-blue-50 p-3 rounded-lg mb-3">
+                    <Text className="block text-xs text-blue-600">
+                      运费计算公式：起步价 + (总距离 - 起步公里数) × 每公里运价
+                    </Text>
+                  </View>
+
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      起步价（元）
+                    </Label>
+                    <View className="bg-gray-50 rounded-lg px-4 py-3">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="默认 20 元"
+                        type="digit"
+                        value={formData.base_price}
+                        onInput={(e) => setFormData({ ...formData, base_price: e.detail.value })}
+                      />
+                    </View>
+                    <Text className="text-xs text-gray-500 mt-1">范围：10-500 元</Text>
+                  </View>
+
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      起步公里数（公里）
+                    </Label>
+                    <View className="bg-gray-50 rounded-lg px-4 py-3">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="默认 3 公里"
+                        type="digit"
+                        value={formData.base_distance}
+                        onInput={(e) => setFormData({ ...formData, base_distance: e.detail.value })}
+                      />
+                    </View>
+                    <Text className="text-xs text-gray-500 mt-1">范围：1-10 公里</Text>
+                  </View>
+
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      每公里运价（元）
+                    </Label>
+                    <View className="bg-gray-50 rounded-lg px-4 py-3">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="默认 2 元/公里"
+                        type="digit"
+                        value={formData.price_per_km}
+                        onInput={(e) => setFormData({ ...formData, price_per_km: e.detail.value })}
+                      />
+                    </View>
+                    <Text className="text-xs text-gray-500 mt-1">范围：0.5-20 元/公里</Text>
+                  </View>
+
+                  {/* 运费计算预览 */}
+                  <View className="bg-green-50 p-3 rounded-lg mt-3">
+                    <Text className="block text-sm font-medium text-green-700 mb-2">
+                      📊 运费计算预览
+                    </Text>
+                    <Text className="block text-xs text-green-600">
+                      示例：距离 10 公里 → 运费 = {formData.base_price || 20} + (10 - {formData.base_distance || 3}) × {formData.price_per_km || 2} =
+                      {((parseFloat(formData.base_price) || 20) + (10 - (parseFloat(formData.base_distance) || 3)) * (parseFloat(formData.price_per_km) || 2)).toFixed(2)} 元
+                    </Text>
+                  </View>
+                </View>
+
                 {/* 照片上传 */}
                 <View>
                   <Label className="block text-sm font-medium mb-2">
@@ -879,6 +999,77 @@ export default function OwnerVehicles() {
                     />
                     <Text className="text-sm text-gray-600">
                       {formData.has_cold_chain === 'true' ? '支持冷链运输' : '不支持冷链运输'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* 定价设置 */}
+                <View className="border-t pt-4">
+                  <Label className="block text-base font-semibold mb-3">
+                    💰 定价设置
+                  </Label>
+                  <View className="bg-blue-50 p-3 rounded-lg mb-3">
+                    <Text className="block text-xs text-blue-600">
+                      运费计算公式：起步价 + (总距离 - 起步公里数) × 每公里运价
+                    </Text>
+                  </View>
+
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      起步价（元）
+                    </Label>
+                    <View className="bg-gray-50 rounded-lg px-4 py-3">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="默认 20 元"
+                        type="digit"
+                        value={formData.base_price}
+                        onInput={(e) => setFormData({ ...formData, base_price: e.detail.value })}
+                      />
+                    </View>
+                    <Text className="text-xs text-gray-500 mt-1">范围：10-500 元</Text>
+                  </View>
+
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      起步公里数（公里）
+                    </Label>
+                    <View className="bg-gray-50 rounded-lg px-4 py-3">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="默认 3 公里"
+                        type="digit"
+                        value={formData.base_distance}
+                        onInput={(e) => setFormData({ ...formData, base_distance: e.detail.value })}
+                      />
+                    </View>
+                    <Text className="text-xs text-gray-500 mt-1">范围：1-10 公里</Text>
+                  </View>
+
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      每公里运价（元）
+                    </Label>
+                    <View className="bg-gray-50 rounded-lg px-4 py-3">
+                      <Input
+                        className="w-full bg-transparent"
+                        placeholder="默认 2 元/公里"
+                        type="digit"
+                        value={formData.price_per_km}
+                        onInput={(e) => setFormData({ ...formData, price_per_km: e.detail.value })}
+                      />
+                    </View>
+                    <Text className="text-xs text-gray-500 mt-1">范围：0.5-20 元/公里</Text>
+                  </View>
+
+                  {/* 运费计算预览 */}
+                  <View className="bg-green-50 p-3 rounded-lg mt-3">
+                    <Text className="block text-sm font-medium text-green-700 mb-2">
+                      📊 运费计算预览
+                    </Text>
+                    <Text className="block text-xs text-green-600">
+                      示例：距离 10 公里 → 运费 = {formData.base_price || 20} + (10 - {formData.base_distance || 3}) × {formData.price_per_km || 2} =
+                      {((parseFloat(formData.base_price) || 20) + (10 - (parseFloat(formData.base_distance) || 3)) * (parseFloat(formData.price_per_km) || 2)).toFixed(2)} 元
                     </Text>
                   </View>
                 </View>

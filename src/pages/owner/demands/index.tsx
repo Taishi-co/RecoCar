@@ -22,6 +22,10 @@ interface Vehicle {
   status: string
   is_available: boolean
   trip_status: string
+  // 定价字段
+  base_price?: number
+  base_distance?: number
+  price_per_km?: number
 }
 
 interface Demand {
@@ -37,6 +41,12 @@ interface Demand {
   status: string
   created_at: string
   merchant_id: string
+  // 距离相关字段
+  estimated_distance?: number | string
+  pickup_lat?: number | string
+  pickup_lng?: number | string
+  delivery_lat?: number | string
+  delivery_lng?: number | string
   merchant?: {
     phone: string
     name: string
@@ -52,6 +62,9 @@ export default function OwnerDemands() {
   const [farePrice, setFarePrice] = useState('')
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('')
+  // 运费计算相关状态
+  const [calculatedFare, setCalculatedFare] = useState<number | null>(null)
+  const [fareCalculationDetail, setFareCalculationDetail] = useState<any>(null)
 
   // 启用通知轮询
   useNotificationPolling(30000) // 每30秒检查一次新通知
@@ -118,6 +131,8 @@ export default function OwnerDemands() {
     setAcceptNote('')
     setFarePrice('')
     setSelectedVehicleId('')
+    setCalculatedFare(null)
+    setFareCalculationDetail(null)
 
     // 获取当前车主信息
     const userInfo = Taro.getStorageSync('userInfo')
@@ -168,6 +183,81 @@ export default function OwnerDemands() {
     setSelectedDemand(null)
     setAcceptNote('')
     setSelectedVehicleId('')
+    setFarePrice('')
+    setCalculatedFare(null)
+    setFareCalculationDetail(null)
+  }
+
+  const handleVehicleSelect = async (vehicleId: string) => {
+    setSelectedVehicleId(vehicleId)
+    setFarePrice('')
+    setCalculatedFare(null)
+    setFareCalculationDetail(null)
+
+    if (!selectedDemand || !vehicleId) return
+
+    // 获取运输距离
+    let totalDistance = 0
+    if (selectedDemand.estimated_distance) {
+      totalDistance = parseFloat(selectedDemand.estimated_distance as any)
+    } else if (selectedDemand.pickup_lat && selectedDemand.pickup_lng &&
+               selectedDemand.delivery_lat && selectedDemand.delivery_lng) {
+      // 计算直线距离（Haversine公式）
+      const R = 6371
+      const dLat = (parseFloat(selectedDemand.delivery_lat as any) - parseFloat(selectedDemand.pickup_lat as any)) * Math.PI / 180
+      const dLon = (parseFloat(selectedDemand.delivery_lng as any) - parseFloat(selectedDemand.pickup_lng as any)) * Math.PI / 180
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(parseFloat(selectedDemand.pickup_lat as any) * Math.PI / 180) *
+                Math.cos(parseFloat(selectedDemand.delivery_lat as any) * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      totalDistance = R * c
+    }
+
+    if (totalDistance <= 0) {
+      Taro.showToast({
+        title: '无法计算距离',
+        icon: 'none'
+      })
+      return
+    }
+
+    // 调用运费计算API
+    try {
+      const res = await Network.request({
+        url: '/api/fare/calculate',
+        method: 'POST',
+        data: {
+          vehicle_id: vehicleId,
+          total_distance: totalDistance
+        }
+      })
+
+      console.log('运费计算响应:', res.data)
+
+      if (res.data.code === 200 && res.data.data) {
+        const fareData = res.data.data
+        setCalculatedFare(fareData.total_fare)
+        setFareCalculationDetail(fareData.calculation_detail)
+        setFarePrice(fareData.total_fare.toString())
+
+        Taro.showToast({
+          title: `已自动计算运费：¥${fareData.total_fare.toFixed(2)}`,
+          icon: 'success'
+        })
+      } else {
+        Taro.showToast({
+          title: '运费计算失败，请手动输入',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('运费计算失败:', error)
+      Taro.showToast({
+        title: '运费计算失败，请手动输入',
+        icon: 'none'
+      })
+    }
   }
 
   const handleConfirmAccept = async () => {
@@ -468,7 +558,7 @@ export default function OwnerDemands() {
                         className={`bg-gray-50 rounded-lg p-3 ${
                           selectedVehicleId === vehicle.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
                         }`}
-                        onClick={() => setSelectedVehicleId(vehicle.id)}
+                        onClick={() => handleVehicleSelect(vehicle.id)}
                       >
                         <View className="flex items-center justify-between">
                           <View className="flex-1">
@@ -488,6 +578,12 @@ export default function OwnerDemands() {
                             <Text className="text-xs text-gray-500">
                               载重: {vehicle.load_capacity}kg | 容积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
                             </Text>
+                            {/* 定价信息 */}
+                            {(vehicle.base_price || vehicle.base_distance || vehicle.price_per_km) && (
+                              <Text className="text-xs text-blue-600 font-medium mt-1">
+                                💰 起步¥{vehicle.base_price || 20}（{vehicle.base_distance || 3}公里）+ ¥{vehicle.price_per_km || 2}/公里
+                              </Text>
+                            )}
                           </View>
                           <View className="flex-shrink-0">
                             <View
@@ -513,12 +609,39 @@ export default function OwnerDemands() {
                 <Label className="block text-sm font-medium mb-2">
                   <Text className="text-red-500">*</Text>运费设置
                 </Label>
+
+                {/* 运费计算详情 */}
+                {calculatedFare && fareCalculationDetail && (
+                  <View className="bg-green-50 rounded-lg p-3 mb-3">
+                    <Text className="block text-sm font-medium text-green-700 mb-2">
+                      ✅ 系统自动计算运费
+                    </Text>
+                    <View className="space-y-1">
+                      <Text className="text-xs text-green-600">
+                        • 起步价：¥{fareCalculationDetail.base_price}（{fareCalculationDetail.base_distance}公里）
+                      </Text>
+                      <Text className="text-xs text-green-600">
+                        • 总距离：{fareCalculationDetail.total_distance.toFixed(2)}公里
+                      </Text>
+                      <Text className="text-xs text-green-600">
+                        • 额外距离：{fareCalculationDetail.extra_distance.toFixed(2)}公里
+                      </Text>
+                      <Text className="text-xs text-green-600">
+                        • 额外费用：¥{fareCalculationDetail.extra_fare.toFixed(2)}
+                      </Text>
+                      <Text className="text-xs text-green-700 font-bold">
+                        • 总运费：¥{fareCalculationDetail.total_fare.toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
                 <View className="bg-gray-50 rounded-lg px-4 py-3">
                   <View className="flex items-center">
                     <View className="flex-1">
                       <Input
                         className="w-full bg-transparent"
-                        placeholder="请输入运费价格"
+                        placeholder={calculatedFare ? `系统计算: ¥${calculatedFare.toFixed(2)}` : '请输入运费价格'}
                         type="digit"
                         value={farePrice}
                         onInput={(e) => setFarePrice(e.detail.value)}
@@ -528,7 +651,7 @@ export default function OwnerDemands() {
                   </View>
                 </View>
                 <Text className="text-xs text-gray-400 mt-1">
-                  提示：设置运费后，需求方需要确认后才能开始运输
+                  {calculatedFare ? '提示：可修改系统计算的运费（±10%以内）' : '提示：选择车辆后系统将自动计算运费'}
                 </Text>
               </View>
 
