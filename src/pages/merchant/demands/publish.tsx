@@ -127,9 +127,27 @@ export default function PublishDemand() {
   }
 
   const handleManualLocationConfirm = (type: 'pickup' | 'delivery', lat: number, lng: number) => {
+    console.log('[handleManualLocationConfirm] type:', type, 'lat:', lat, 'lng:', lng, 'isNaN(lat):', isNaN(lat), 'isNaN(lng):', isNaN(lng))
+
     if (isNaN(lat) || isNaN(lng)) {
       Taro.showToast({
-        title: '坐标格式错误',
+        title: '请输入有效的坐标',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (lat < -90 || lat > 90) {
+      Taro.showToast({
+        title: '纬度范围错误（-90到90）',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (lng < -180 || lng > 180) {
+      Taro.showToast({
+        title: '经度范围错误（-180到180）',
         icon: 'none'
       })
       return
@@ -480,11 +498,11 @@ export default function PublishDemand() {
                   <Text className="block text-sm font-medium text-blue-900 mb-2">手动输入坐标（H5环境）</Text>
                   <View className="flex gap-2 mb-2">
                     <View className="flex-1">
-                      <Text className="block text-xs text-gray-600 mb-1">纬度</Text>
+                      <Text className="block text-xs text-gray-600 mb-1">纬度（-90到90）</Text>
                       <View className="bg-white rounded px-3 py-2">
                         <Input
                           className="w-full bg-transparent"
-                          placeholder="39.908822"
+                          placeholder="例：39.908822"
                           type="digit"
                           value={formData.manualLat}
                           onInput={(e) => setFormData({ ...formData, manualLat: e.detail.value })}
@@ -492,11 +510,11 @@ export default function PublishDemand() {
                       </View>
                     </View>
                     <View className="flex-1">
-                      <Text className="block text-xs text-gray-600 mb-1">经度</Text>
+                      <Text className="block text-xs text-gray-600 mb-1">经度（-180到180）</Text>
                       <View className="bg-white rounded px-3 py-2">
                         <Input
                           className="w-full bg-transparent"
-                          placeholder="116.397499"
+                          placeholder="例：116.397499"
                           type="digit"
                           value={formData.manualLng}
                           onInput={(e) => setFormData({ ...formData, manualLng: e.detail.value })}
@@ -504,11 +522,43 @@ export default function PublishDemand() {
                       </View>
                     </View>
                   </View>
+                  <Text className="block text-xs text-gray-500 mb-2">
+                    💡 提示：点击下方示例可直接复制
+                  </Text>
+                  <View className="flex gap-1 mb-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-gray-200"
+                      variant="ghost"
+                      onClick={() => setFormData({ ...formData, manualLat: '39.908822', manualLng: '116.397499' })}
+                    >
+                      <Text className="text-xs">北京朝阳</Text>
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-gray-200"
+                      variant="ghost"
+                      onClick={() => setFormData({ ...formData, manualLat: '31.230416', manualLng: '121.473701' })}
+                    >
+                      <Text className="text-xs">上海黄浦</Text>
+                    </Button>
+                  </View>
                   <View className="flex gap-2">
                     <Button
                       size="sm"
                       className="flex-1 bg-green-500"
-                      onClick={() => handleManualLocationConfirm('pickup', parseFloat(formData.manualLat), parseFloat(formData.manualLng))}
+                      onClick={() => {
+                        const lat = parseFloat(formData.manualLat)
+                        const lng = parseFloat(formData.manualLng)
+                        if (formData.manualLat && formData.manualLng && !isNaN(lat) && !isNaN(lng)) {
+                          handleManualLocationConfirm('pickup', lat, lng)
+                        } else {
+                          Taro.showToast({
+                            title: '请先输入坐标',
+                            icon: 'none'
+                          })
+                        }
+                      }}
                     >
                       <Text className="text-xs">确认</Text>
                     </Button>
@@ -562,11 +612,11 @@ export default function PublishDemand() {
                   <Text className="block text-sm font-medium text-blue-900 mb-2">手动输入坐标（H5环境）</Text>
                   <View className="flex gap-2 mb-2">
                     <View className="flex-1">
-                      <Text className="block text-xs text-gray-600 mb-1">纬度</Text>
+                      <Text className="block text-xs text-gray-600 mb-1">纬度（-90到90）</Text>
                       <View className="bg-white rounded px-3 py-2">
                         <Input
                           className="w-full bg-transparent"
-                          placeholder="39.918822"
+                          placeholder="例：39.918822"
                           type="digit"
                           value={formData.manualLat}
                           onInput={(e) => setFormData({ ...formData, manualLat: e.detail.value })}
@@ -574,11 +624,11 @@ export default function PublishDemand() {
                       </View>
                     </View>
                     <View className="flex-1">
-                      <Text className="block text-xs text-gray-600 mb-1">经度</Text>
+                      <Text className="block text-xs text-gray-600 mb-1">经度（-180到180）</Text>
                       <View className="bg-white rounded px-3 py-2">
                         <Input
                           className="w-full bg-transparent"
-                          placeholder="116.407499"
+                          placeholder="例：116.407499"
                           type="digit"
                           value={formData.manualLng}
                           onInput={(e) => setFormData({ ...formData, manualLng: e.detail.value })}
@@ -586,11 +636,43 @@ export default function PublishDemand() {
                       </View>
                     </View>
                   </View>
+                  <Text className="block text-xs text-gray-500 mb-2">
+                    💡 提示：点击下方示例可直接复制
+                  </Text>
+                  <View className="flex gap-1 mb-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-gray-200"
+                      variant="ghost"
+                      onClick={() => setFormData({ ...formData, manualLat: '39.918822', manualLng: '116.407499' })}
+                    >
+                      <Text className="text-xs">北京海淀</Text>
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-gray-200"
+                      variant="ghost"
+                      onClick={() => setFormData({ ...formData, manualLat: '31.229553', manualLng: '121.469321' })}
+                    >
+                      <Text className="text-xs">上海静安</Text>
+                    </Button>
+                  </View>
                   <View className="flex gap-2">
                     <Button
                       size="sm"
                       className="flex-1 bg-green-500"
-                      onClick={() => handleManualLocationConfirm('delivery', parseFloat(formData.manualLat), parseFloat(formData.manualLng))}
+                      onClick={() => {
+                        const lat = parseFloat(formData.manualLat)
+                        const lng = parseFloat(formData.manualLng)
+                        if (formData.manualLat && formData.manualLng && !isNaN(lat) && !isNaN(lng)) {
+                          handleManualLocationConfirm('delivery', lat, lng)
+                        } else {
+                          Taro.showToast({
+                            title: '请先输入坐标',
+                            icon: 'none'
+                          })
+                        }
+                      }}
                     >
                       <Text className="text-xs">确认</Text>
                     </Button>
