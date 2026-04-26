@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { Camera, Settings, MessageCircle, LogOut, CreditCard, Bell, MapPin, Route } from 'lucide-react-taro'
+import { Camera, Settings, MessageCircle, LogOut, CreditCard, Bell, MapPin, Route, DollarSign } from 'lucide-react-taro'
 
 interface UserInfo {
   id: string
@@ -338,6 +338,16 @@ export default function OwnerProfile() {
               <View className="flex items-center gap-3">
                 <Route size={20} color="#3b82f6" />
                 <Text className="block text-sm">常用线路</Text>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
+            </View>
+            <View
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 active:bg-gray-50"
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/profile/revenue-stats/index' })}
+            >
+              <View className="flex items-center gap-3">
+                <DollarSign size={20} color="#10b981" />
+                <Text className="block text-sm">收益统计</Text>
               </View>
               <Text className="block text-gray-400 text-sm">›</Text>
             </View>
