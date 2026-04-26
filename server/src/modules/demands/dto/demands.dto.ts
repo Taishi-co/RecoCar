@@ -15,6 +15,12 @@ export const createDemandSchema = z.object({
   delivery_address: z.string().min(1, '送货地址不能为空'),
   delivery_location: z.string().optional(), // JSON 字符串 {lat, lng}
   remarks: z.string().optional(),
+  pickup_lat: z.number().optional(),
+  pickup_lng: z.number().optional(),
+  delivery_lat: z.number().optional(),
+  delivery_lng: z.number().optional(),
+  estimated_distance: z.number().optional(),
+  estimated_fare: z.number().optional(),
 })
 
 export type CreateDemandDto = z.infer<typeof createDemandSchema>

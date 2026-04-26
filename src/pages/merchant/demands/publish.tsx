@@ -18,6 +18,9 @@ interface FormData {
   delivery_address: string
   delivery_location: { latitude: number; longitude: number } | null
   remarks: string
+  estimated_distance: number | null
+  estimated_fare: number | null
+  is_calculating: boolean
 }
 
 export default function PublishDemand() {
@@ -32,7 +35,10 @@ export default function PublishDemand() {
     pickup_location: null,
     delivery_address: '',
     delivery_location: null,
-    remarks: ''
+    remarks: '',
+    estimated_distance: null,
+    estimated_fare: null,
+    is_calculating: false
   })
 
   const handlePickupDateSelect = (e) => {
@@ -76,18 +82,21 @@ export default function PublishDemand() {
           longitude: location.longitude
         }
 
+        let newFormData = { ...formData }
+
         if (type === 'pickup') {
-          setFormData({
-            ...formData,
-            pickup_address: location.name || location.address,
-            pickup_location: locationData
-          })
+          newFormData.pickup_address = location.name || location.address
+          newFormData.pickup_location = locationData
         } else {
-          setFormData({
-            ...formData,
-            delivery_address: location.name || location.address,
-            delivery_location: locationData
-          })
+          newFormData.delivery_address = location.name || location.address
+          newFormData.delivery_location = locationData
+        }
+
+        setFormData(newFormData)
+
+        // 如果两个位置都有，触发距离计算
+        if (newFormData.pickup_location && newFormData.delivery_location) {
+          await calculateDistance(newFormData)
         }
       }
     } catch (error) {
@@ -99,6 +108,51 @@ export default function PublishDemand() {
         title: '选择位置失败',
         icon: 'none'
       })
+    }
+  }
+
+  // 计算距离和运费
+  const calculateDistance = async (currentFormData: FormData) => {
+    if (!currentFormData.pickup_location || !currentFormData.delivery_location) {
+      return
+    }
+
+    try {
+      setFormData({ ...currentFormData, is_calculating: true })
+
+      const res = await Network.request({
+        url: '/api/demands/calculate-distance',
+        method: 'POST',
+        data: {
+          pickup_address: currentFormData.pickup_address,
+          pickup_lat: currentFormData.pickup_location.latitude,
+          pickup_lng: currentFormData.pickup_location.longitude,
+          delivery_address: currentFormData.delivery_address,
+          delivery_lat: currentFormData.delivery_location.latitude,
+          delivery_lng: currentFormData.delivery_location.longitude
+        }
+      })
+
+      console.log('距离计算响应:', res.data)
+
+      if (res.data.code === 200) {
+        setFormData({
+          ...currentFormData,
+          estimated_distance: res.data.data.distance,
+          estimated_fare: res.data.data.estimated_fare,
+          is_calculating: false
+        })
+      } else {
+        setFormData({ ...currentFormData, is_calculating: false })
+        Taro.showToast({
+          title: res.data.message || '距离计算失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('距离计算失败:', error)
+      setFormData({ ...currentFormData, is_calculating: false })
+      // 距离计算失败不影响继续发布
     }
   }
 
@@ -147,7 +201,13 @@ export default function PublishDemand() {
           pickup_location: JSON.stringify(formData.pickup_location),
           delivery_address: formData.delivery_address,
           delivery_location: JSON.stringify(formData.delivery_location),
-          remarks: formData.remarks
+          remarks: formData.remarks,
+          pickup_lat: formData.pickup_location.latitude,
+          pickup_lng: formData.pickup_location.longitude,
+          delivery_lat: formData.delivery_location.latitude,
+          delivery_lng: formData.delivery_location.longitude,
+          estimated_distance: formData.estimated_distance,
+          estimated_fare: formData.estimated_fare
         }
       })
 
@@ -397,6 +457,40 @@ export default function PublishDemand() {
                 </Text>
               )}
             </View>
+
+            {/* 距离测算卡片 */}
+            {formData.is_calculating && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <View className="flex items-center justify-center">
+                    <Text className="text-sm text-blue-600">🔄 正在计算距离...</Text>
+                  </View>
+                </CardContent>
+              </Card>
+            )}
+
+            {formData.estimated_distance !== null && formData.estimated_fare !== null && !formData.is_calculating && (
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="p-4">
+                  <View className="space-y-2">
+                    <View className="flex items-center justify-between">
+                      <Text className="text-sm font-medium text-green-800">📊 距离测算</Text>
+                    </View>
+                    <View className="flex items-center justify-between">
+                      <Text className="text-sm text-green-700">📏 预估距离</Text>
+                      <Text className="text-sm font-bold text-green-700">{formData.estimated_distance.toFixed(2)} 公里</Text>
+                    </View>
+                    <View className="flex items-center justify-between">
+                      <Text className="text-sm text-green-700">💰 预估运费</Text>
+                      <Text className="text-lg font-bold text-green-600">¥{formData.estimated_fare.toFixed(2)}</Text>
+                    </View>
+                    <Text className="block text-xs text-green-600 text-center mt-2">
+                      📝 注：按非高速路线计算，每公里1元
+                    </Text>
+                  </View>
+                </CardContent>
+              </Card>
+            )}
 
             <View>
               <Label className="block text-sm font-medium mb-2">

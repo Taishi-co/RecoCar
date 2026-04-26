@@ -12,6 +12,19 @@ export class DemandsController {
     return this.demandsService.create(createDemandDto)
   }
 
+  @Post('calculate-distance')
+  async calculateDistance(@Body() body: {
+    pickup_address: string
+    pickup_lat: number
+    pickup_lng: number
+    delivery_address: string
+    delivery_lat: number
+    delivery_lng: number
+  }) {
+    console.log('[DemandsController] 计算距离请求:', body)
+    return this.demandsService.calculateDistance(body)
+  }
+
   @Get()
   async getDemands(
     @Query('merchant_id') merchantId?: string,

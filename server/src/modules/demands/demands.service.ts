@@ -8,6 +8,114 @@ export class DemandsService {
   constructor(
     private readonly notificationsService: NotificationsService
   ) {}
+
+  // 计算两地距离（使用高德地图API）
+  async calculateDistance(params: {
+    pickup_lat: number
+    pickup_lng: number
+    delivery_lat: number
+    delivery_lng: number
+  }) {
+    const { pickup_lat, pickup_lng, delivery_lat, delivery_lng } = params
+
+    // 验证参数
+    if (!pickup_lat || !pickup_lng || !delivery_lat || !delivery_lng) {
+      throw new BadRequestException('请提供完整的经纬度坐标')
+    }
+
+    try {
+      // 调用高德地图驾车路径规划API
+      const apiKey = process.env.AMAP_API_KEY || 'demo' // 使用环境变量中的API Key
+
+      const origin = `${pickup_lng},${pickup_lat}`
+      const destination = `${delivery_lng},${delivery_lat}`
+
+      const url = `https://restapi.amap.com/v3/direction/driving?origin=${origin}&destination=${destination}&strategy=10&extensions=all&key=${apiKey}`
+
+      console.log('[DemandsService] 调用高德地图API:', url)
+
+      const response = await fetch(url)
+      const data = await response.json()
+
+      console.log('[DemandsService] 高德地图API响应:', data)
+
+      // 检查响应状态
+      if (data.status !== '1') {
+        throw new BadRequestException(`地图API错误: ${data.info}`)
+      }
+
+      // 获取路线距离
+      if (!data.route || !data.route.paths || data.route.paths.length === 0) {
+        throw new BadRequestException('无法获取路线信息')
+      }
+
+      const path = data.route.paths[0]
+      const distanceMeters = parseInt(path.distance) // 距离（米）
+      const durationSeconds = parseInt(path.duration) // 时间（秒）
+
+      // 转换为公里
+      const distanceKm = distanceMeters / 1000
+
+      // 计算运费：每公里1元
+      const estimatedFare = distanceKm * 1
+
+      return {
+        code: 200,
+        message: '计算成功',
+        data: {
+          distance: distanceKm,
+          distance_text: `${distanceKm.toFixed(2)}公里`,
+          estimated_fare: estimatedFare,
+          route_type: 'non_highway',
+          route_duration: durationSeconds,
+          duration_text: `约${Math.floor(durationSeconds / 60)}分钟`
+        }
+      }
+    } catch (error) {
+      console.error('[DemandsService] 距离计算失败:', error)
+
+      // 降级方案：使用直线距离估算
+      const straightDistance = this.calculateStraightDistance(pickup_lat, pickup_lng, delivery_lat, delivery_lng)
+
+      // 直线距离 × 1.3 ≈ 实际距离
+      const estimatedDistance = straightDistance * 1.3
+      const estimatedFare = estimatedDistance * 1
+
+      console.log('[DemandsService] 使用降级方案计算距离:', {
+        straight_distance: straightDistance,
+        estimated_distance: estimatedDistance,
+        estimated_fare: estimatedFare
+      })
+
+      return {
+        code: 200,
+        message: '计算成功（估算）',
+        data: {
+          distance: estimatedDistance,
+          distance_text: `${estimatedDistance.toFixed(2)}公里`,
+          estimated_fare: estimatedFare,
+          route_type: 'estimated',
+          route_duration: Math.floor(estimatedDistance * 60 / 30), // 假设时速30公里
+          duration_text: `约${Math.floor(estimatedDistance * 60 / 30)}分钟`,
+          is_estimate: true
+        }
+      }
+    }
+  }
+
+  // 计算直线距离（Haversine公式）
+  private calculateStraightDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371 // 地球半径，单位：公里
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+
   async create(createDemandDto: CreateDemandDto) {
     const {
       merchant_id,
@@ -20,7 +128,13 @@ export class DemandsService {
       pickup_location,
       delivery_address,
       delivery_location,
-      remarks
+      remarks,
+      pickup_lat,
+      pickup_lng,
+      delivery_lat,
+      delivery_lng,
+      estimated_distance,
+      estimated_fare
     } = createDemandDto
 
     // 验证用户是否存在
@@ -55,6 +169,13 @@ export class DemandsService {
         delivery_address,
         delivery_location: delivery_location ? JSON.parse(delivery_location) : null,
         remarks,
+        pickup_lat: pickup_lat || null,
+        pickup_lng: pickup_lng || null,
+        delivery_lat: delivery_lat || null,
+        delivery_lng: delivery_lng || null,
+        estimated_distance: estimated_distance || null,
+        estimated_fare: estimated_fare || null,
+        route_type: estimated_distance ? 'non_highway' : null,
         status: 'pending', // 默认待接单
       })
       .select()
