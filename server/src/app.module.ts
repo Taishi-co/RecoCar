@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { AuthModule } from '@/modules/auth/auth.module';
@@ -20,28 +19,7 @@ import { DemandSchedulesModule } from '@/modules/demand-schedules/demand-schedul
 import { ScheduleServiceModule } from '@/modules/schedule-service/schedule-service.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
-    AuthModule,
-    VehiclesModule,
-    DemandsModule,
-    OrdersModule,
-    AdminModule,
-    PlatformModule,
-    HomeModule,
-    NotificationsModule,
-    CancellationsModule,
-    AddressBooksModule,
-    FavoriteRoutesModule,
-    AccountSettingsModule,
-    FareCalculationModule,
-    DemandTemplatesModule,
-    DemandSchedulesModule,
-    ScheduleServiceModule
-  ],
+  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule, AddressBooksModule, FavoriteRoutesModule, AccountSettingsModule, FareCalculationModule, DemandTemplatesModule, DemandSchedulesModule, ScheduleServiceModule],
   controllers: [AppController],
   providers: [AppService],
 })
