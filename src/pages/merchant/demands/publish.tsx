@@ -40,7 +40,6 @@ interface FavoriteRoute {
   pickup_address_id: string | null
   delivery_address_id: string | null
   estimated_distance: number | null
-  estimated_fare: number | null
   use_count: number
   pickup_address?: AddressBook
   delivery_address?: AddressBook

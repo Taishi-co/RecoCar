@@ -24,7 +24,6 @@ interface RouteInfo {
     longitude: number
   }
   estimated_distance: number | null
-  estimated_fare: number | null
   use_count: number
 }
 
@@ -314,18 +313,11 @@ export default function RouteMap() {
             </View>
           </View>
 
-          {(routeInfo.estimated_distance || routeInfo.estimated_fare) && (
-            <View className="flex gap-4 pt-2 border-t">
-              {routeInfo.estimated_distance && (
-                <Text className="text-sm text-gray-600">
-                  📏 {Number(routeInfo.estimated_distance).toFixed(1)}公里
-                </Text>
-              )}
-              {routeInfo.estimated_fare && (
-                <Text className="text-sm text-gray-600">
-                  💰 ¥{Number(routeInfo.estimated_fare).toFixed(2)}
-                </Text>
-              )}
+          {routeInfo.estimated_distance && (
+            <View className="pt-2 border-t">
+              <Text className="text-sm text-gray-600">
+                📏 {Number(routeInfo.estimated_distance).toFixed(1)}公里
+              </Text>
             </View>
           )}
 

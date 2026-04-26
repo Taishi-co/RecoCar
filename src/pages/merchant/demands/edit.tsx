@@ -22,7 +22,6 @@ interface Demand {
   delivery_location: { latitude: number; longitude: number }
   remarks: string
   estimated_distance: number | null
-  estimated_fare: number | null
 }
 
 interface AddressBook {
@@ -140,8 +139,7 @@ export default function EditDemand() {
           delivery_address: demand.delivery_address || '',
           delivery_location: deliveryLocation,
           remarks: demand.remarks || '',
-          estimated_distance: demand.estimated_distance,
-          estimated_fare: demand.estimated_fare
+          estimated_distance: demand.estimated_distance
         })
       } else {
         setError(res.data.message || '需求不存在')
@@ -260,8 +258,7 @@ export default function EditDemand() {
         pickup_lng: formData.pickup_location.longitude,
         delivery_lat: formData.delivery_location.latitude,
         delivery_lng: formData.delivery_location.longitude,
-        estimated_distance: formData.estimated_distance,
-        estimated_fare: formData.estimated_fare
+        estimated_distance: formData.estimated_distance
       }
 
       const res = await Network.request({
