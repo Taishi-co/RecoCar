@@ -21,6 +21,7 @@ interface FavoriteRoute {
   pickup_address: Address | null
   delivery_address: Address | null
   estimated_distance: number | null
+  estimated_fare: number | null
   use_count: number
   created_at: string
 }
@@ -35,7 +36,8 @@ export default function FavoriteRoutes() {
     route_name: '',
     pickup_address_id: '',
     delivery_address_id: '',
-    estimated_distance: ''
+    estimated_distance: '',
+    estimated_fare: ''
   })
 
   useEffect(() => {
@@ -123,14 +125,15 @@ export default function FavoriteRoutes() {
         console.log('[FavoriteRoutes] 距离计算响应:', res.data)
 
         if (res.data.code === 200 && res.data.data) {
-          const { distance } = res.data.data
+          const { distance, estimated_fare } = res.data.data
           setFormData(prev => ({
             ...prev,
-            estimated_distance: distance?.toFixed(1) || ''
+            estimated_distance: distance?.toFixed(1) || '',
+            estimated_fare: estimated_fare?.toFixed(2) || ''
           }))
 
           Taro.showToast({
-            title: `距离 ${distance?.toFixed(1)} 公里`,
+            title: `距离 ${distance?.toFixed(1)} 公里，运费 ¥${estimated_fare?.toFixed(2)}`,
             icon: 'none',
             duration: 2000
           })
@@ -176,7 +179,8 @@ export default function FavoriteRoutes() {
             route_name: formData.route_name,
             pickup_address_id: formData.pickup_address_id,
             delivery_address_id: formData.delivery_address_id,
-            estimated_distance: formData.estimated_distance && !Number.isNaN(parseFloat(formData.estimated_distance)) ? parseFloat(formData.estimated_distance) : null
+            estimated_distance: formData.estimated_distance && !Number.isNaN(parseFloat(formData.estimated_distance)) ? parseFloat(formData.estimated_distance) : null,
+            estimated_fare: formData.estimated_fare && !Number.isNaN(parseFloat(formData.estimated_fare)) ? parseFloat(formData.estimated_fare) : null
           }
         })
       } else {
@@ -189,7 +193,8 @@ export default function FavoriteRoutes() {
             route_name: formData.route_name,
             pickup_address_id: formData.pickup_address_id,
             delivery_address_id: formData.delivery_address_id,
-            estimated_distance: formData.estimated_distance && !Number.isNaN(parseFloat(formData.estimated_distance)) ? parseFloat(formData.estimated_distance) : null
+            estimated_distance: formData.estimated_distance && !Number.isNaN(parseFloat(formData.estimated_distance)) ? parseFloat(formData.estimated_distance) : null,
+            estimated_fare: formData.estimated_fare && !Number.isNaN(parseFloat(formData.estimated_fare)) ? parseFloat(formData.estimated_fare) : null
           }
         })
       }
@@ -208,7 +213,8 @@ export default function FavoriteRoutes() {
           route_name: '',
           pickup_address_id: '',
           delivery_address_id: '',
-          estimated_distance: ''
+          estimated_distance: '',
+          estimated_fare: ''
         })
 
         loadRoutes()
@@ -260,7 +266,8 @@ export default function FavoriteRoutes() {
       route_name: route.route_name,
       pickup_address_id: route.pickup_address?.id || '',
       delivery_address_id: route.delivery_address?.id || '',
-      estimated_distance: route.estimated_distance?.toString() || ''
+      estimated_distance: route.estimated_distance?.toString() || '',
+      estimated_fare: route.estimated_fare?.toString() || ''
     })
     setEditingRouteId(route.id)
     setShowAddForm(true)
@@ -273,7 +280,8 @@ export default function FavoriteRoutes() {
       route_name: '',
       pickup_address_id: '',
       delivery_address_id: '',
-      estimated_distance: ''
+      estimated_distance: '',
+      estimated_fare: ''
     })
   }
 
@@ -397,16 +405,30 @@ export default function FavoriteRoutes() {
               </View>
             </View>
 
-            <View>
-              <Text className="block text-sm font-medium mb-1">预估距离（公里）</Text>
-              <View className="bg-gray-50 rounded px-3 py-2">
-                <Input
-                  className="w-full bg-transparent"
-                  placeholder="可选"
-                  type="digit"
-                  value={formData.estimated_distance}
-                  onInput={(e) => setFormData({ ...formData, estimated_distance: e.detail.value })}
-                />
+            <View className="flex gap-2">
+              <View className="flex-1">
+                <Text className="block text-sm font-medium mb-1">预估距离（公里）</Text>
+                <View className="bg-gray-50 rounded px-3 py-2">
+                  <Input
+                    className="w-full bg-transparent"
+                    placeholder="可选"
+                    type="digit"
+                    value={formData.estimated_distance}
+                    onInput={(e) => setFormData({ ...formData, estimated_distance: e.detail.value })}
+                  />
+                </View>
+              </View>
+              <View className="flex-1">
+                <Text className="block text-sm font-medium mb-1">预估运费（元）</Text>
+                <View className="bg-gray-50 rounded px-3 py-2">
+                  <Input
+                    className="w-full bg-transparent"
+                    placeholder="可选"
+                    type="digit"
+                    value={formData.estimated_fare}
+                    onInput={(e) => setFormData({ ...formData, estimated_fare: e.detail.value })}
+                  />
+                </View>
               </View>
             </View>
 
@@ -493,11 +515,16 @@ export default function FavoriteRoutes() {
                 </View>
               </View>
 
-              {/* 显示距离和使用次数 */}
+              {/* 显示距离、运费和使用次数 */}
               <View className="flex gap-4 pt-2 border-t">
                 {route.estimated_distance !== undefined && route.estimated_distance !== null && (
                   <Text className="text-sm text-gray-600">
                     📏 {Number(route.estimated_distance).toFixed(1)}公里
+                  </Text>
+                )}
+                {route.estimated_fare !== undefined && route.estimated_fare !== null && (
+                  <Text className="text-sm text-gray-600">
+                    💰 ¥{Number(route.estimated_fare).toFixed(2)}
                   </Text>
                 )}
                 {route.use_count > 0 && (
@@ -506,6 +533,7 @@ export default function FavoriteRoutes() {
                   </Text>
                 )}
                 {(route.estimated_distance === undefined || route.estimated_distance === null) &&
+                 (route.estimated_fare === undefined || route.estimated_fare === null) &&
                  route.use_count === 0 && (
                   <Text className="text-sm text-gray-400">
                     暂无运距信息
