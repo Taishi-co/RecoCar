@@ -461,11 +461,12 @@ export default function DemandSchedules() {
                     setFormData({ ...formData, template_id: template.id })
                   }}
                 >
-                  <Input
-                    value={templates.find(t => t.id === formData.template_id)?.template_name || '请选择模板'}
-                    placeholder="请选择模板"
-                    disabled
-                  />
+                  <View className="bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
+                    <Text className={`text-sm ${formData.template_id ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {templates.find(t => t.id === formData.template_id)?.template_name || '请选择模板'}
+                    </Text>
+                    <Text className="text-gray-400">▼</Text>
+                  </View>
                 </Picker>
               )}
             </View>
@@ -481,11 +482,12 @@ export default function DemandSchedules() {
                   setFormData({ ...formData, schedule_type: types[e.detail.value] })
                 }}
               >
-                <Input
-                  value={['每半天', '每天', '每周', '每月', '每隔几天'][['half_day', 'day', 'week', 'month', 'interval'].indexOf(formData.schedule_type)]}
-                  placeholder="请选择重复类型"
-                  disabled
-                />
+                <View className="bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
+                  <Text className="text-sm text-gray-900">
+                    {['每半天', '每天', '每周', '每月', '每隔几天'][['half_day', 'day', 'week', 'month', 'interval'].indexOf(formData.schedule_type)]}
+                  </Text>
+                  <Text className="text-gray-400">▼</Text>
+                </View>
               </Picker>
             </View>
 
@@ -511,11 +513,12 @@ export default function DemandSchedules() {
                   setFormData({ ...formData, start_time: `${e.detail.value} ${time}` })
                 }}
               >
-                <Input
-                  value={formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[0] : '请选择日期'}
-                  placeholder="请选择日期"
-                  disabled
-                />
+                <View className="bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
+                  <Text className={`text-sm ${formData.start_time ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[0] : '请选择日期'}
+                  </Text>
+                  <Text className="text-gray-400">📅</Text>
+                </View>
               </Picker>
               <Picker
                 mode="time"
@@ -525,11 +528,12 @@ export default function DemandSchedules() {
                   setFormData({ ...formData, start_time: `${date} ${e.detail.value}:00` })
                 }}
               >
-                <Input
-                  value={formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[1].slice(0, 5) : '请选择时间'}
-                  placeholder="请选择时间"
-                  disabled
-                />
+                <View className="bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
+                  <Text className={`text-sm ${formData.start_time ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[1].slice(0, 5) : '请选择时间'}
+                  </Text>
+                  <Text className="text-gray-400">⏰</Text>
+                </View>
               </Picker>
             </View>
 
@@ -547,11 +551,12 @@ export default function DemandSchedules() {
                   }
                 }}
               >
-                <Input
-                  value={formData.end_time && formData.end_time.includes(' ') ? formData.end_time.split(' ')[0] : '请选择日期'}
-                  placeholder="请选择日期"
-                  disabled
-                />
+                <View className="bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
+                  <Text className={`text-sm ${formData.end_time ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {formData.end_time && formData.end_time.includes(' ') ? formData.end_time.split(' ')[0] : '请选择日期'}
+                  </Text>
+                  <Text className="text-gray-400">📅</Text>
+                </View>
               </Picker>
             </View>
           </View>
