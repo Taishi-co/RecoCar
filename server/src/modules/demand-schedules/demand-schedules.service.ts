@@ -279,9 +279,19 @@ export class DemandSchedulesService {
     intervalDays: number = 1
   ): string {
     const now = new Date()
-    const [hours, minutes] = baseTime.split(':').map(Number)
 
-    const baseDateTime = new Date(`${baseDate}T${baseTime}:00`)
+    // baseTime 可能是 "HH:mm" 或 "HH:mm:ss" 格式，统一处理
+    const timeParts = baseTime.split(':').map(Number)
+    const hours = timeParts[0]
+    const minutes = timeParts[1]
+
+    // 构建日期时间字符串，baseDate 是 YYYY-MM-DD，baseTime 是 HH:mm:ss
+    const baseDateTime = new Date(`${baseDate}T${baseTime}`)
+
+    // 检查日期是否有效
+    if (isNaN(baseDateTime.getTime())) {
+      throw new BadRequestException('无效的日期时间格式')
+    }
 
     // 如果基准时间已经过去，则计算下一个周期
     if (baseDateTime <= now) {
