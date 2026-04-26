@@ -37,6 +37,7 @@ interface FormData {
   schedule_type: string
   interval_days: string
   start_time: string
+  end_time: string
 }
 
 export default function DemandSchedules() {
@@ -50,7 +51,8 @@ export default function DemandSchedules() {
     schedule_name: '',
     schedule_type: 'day',
     interval_days: '1',
-    start_time: ''
+    start_time: '',
+    end_time: ''
   })
   const [submitting, setSubmitting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -121,7 +123,8 @@ export default function DemandSchedules() {
       schedule_name: '',
       schedule_type: 'day',
       interval_days: '1',
-      start_time: ''
+      start_time: '',
+      end_time: ''
     })
     setShowDialog(true)
   }
@@ -133,7 +136,8 @@ export default function DemandSchedules() {
       schedule_name: schedule.schedule_name || '',
       schedule_type: schedule.schedule_type,
       interval_days: schedule.interval_days?.toString() || '1',
-      start_time: `${schedule.base_date} ${schedule.base_time}`
+      start_time: `${schedule.base_date} ${schedule.base_time}`,
+      end_time: ''
     })
     setShowDialog(true)
   }
@@ -551,6 +555,29 @@ export default function DemandSchedules() {
                     {formData.start_time && formData.start_time.includes(' ') ? formData.start_time.split(' ')[1].slice(0, 5) : '请选择时间'}
                   </Text>
                   <Text className="text-gray-400">⏰</Text>
+                </View>
+              </Picker>
+            </View>
+
+            <View>
+              <Text className="block text-sm font-medium mb-1">结束时间（选填）</Text>
+              <Picker
+                mode="date"
+                value={formData.end_time && formData.end_time.includes(' ') ? formData.end_time.split(' ')[0] : ''}
+                onChange={(e) => {
+                  if (!formData.end_time) {
+                    setFormData({ ...formData, end_time: `${e.detail.value} 00:00:00` })
+                  } else {
+                    const time = formData.end_time.includes(' ') ? formData.end_time.split(' ')[1] : '00:00:00'
+                    setFormData({ ...formData, end_time: `${e.detail.value} ${time}` })
+                  }
+                }}
+              >
+                <View className="bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
+                  <Text className={`text-sm ${formData.end_time ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {formData.end_time && formData.end_time.includes(' ') ? formData.end_time.split(' ')[0] : '请选择日期'}
+                  </Text>
+                  <Text className="text-gray-400">📅</Text>
                 </View>
               </Picker>
             </View>
