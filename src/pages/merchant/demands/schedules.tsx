@@ -18,6 +18,7 @@ interface DemandSchedule {
   interval_days?: number
   base_date: string
   base_time: string
+  end_time: string | null
   status: string
   next_publish_time: string | null
   last_published_at: string | null
@@ -137,7 +138,7 @@ export default function DemandSchedules() {
       schedule_type: schedule.schedule_type,
       interval_days: schedule.interval_days?.toString() || '1',
       start_time: `${schedule.base_date} ${schedule.base_time}`,
-      end_time: ''
+      end_time: schedule.end_time || ''
     })
     setShowDialog(true)
   }
@@ -248,7 +249,8 @@ export default function DemandSchedules() {
         schedule_name: formData.schedule_name || `定时计划-${new Date().toLocaleDateString()}`,
         schedule_type: formData.schedule_type,
         base_date: base_date,
-        base_time: base_time
+        base_time: base_time,
+        end_time: formData.end_time || null
       }
 
       if (formData.schedule_type === 'interval') {
@@ -399,6 +401,11 @@ export default function DemandSchedules() {
                       <Text className="block text-sm text-gray-600">
                         开始时间：{schedule.base_date} {schedule.base_time}
                       </Text>
+                      {schedule.end_time && (
+                        <Text className="block text-sm text-gray-600">
+                          结束时间：{schedule.end_time}
+                        </Text>
+                      )}
                       {schedule.next_publish_time && (
                         <Text className="block text-sm text-blue-600">
                           下次发布：{schedule.next_publish_time}

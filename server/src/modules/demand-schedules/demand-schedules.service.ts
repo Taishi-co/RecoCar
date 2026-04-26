@@ -14,7 +14,8 @@ export class DemandSchedulesService {
       base_date,
       base_time,
       pickup_time_offset,
-      max_publish_count
+      max_publish_count,
+      end_time
     } = createDto
 
     const client = getSupabaseClient()
@@ -55,6 +56,7 @@ export class DemandSchedulesService {
         base_time,
         pickup_time_offset: pickup_time_offset || null,
         max_publish_count: max_publish_count || null,
+        end_time: end_time || null,
         published_count: 0,
         status: 'active',
         next_publish_time: firstPublishTime,

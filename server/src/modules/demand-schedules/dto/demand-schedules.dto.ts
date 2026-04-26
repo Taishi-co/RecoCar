@@ -9,7 +9,8 @@ export const createDemandScheduleSchema = z.object({
   base_date: z.string().min(1, '基准日期不能为空'),
   base_time: z.string().min(1, '基准时间不能为空'),
   pickup_time_offset: z.string().optional(),
-  max_publish_count: z.number().positive().optional()
+  max_publish_count: z.number().positive().optional(),
+  end_time: z.string().optional()
 })
 
 export const updateDemandScheduleSchema = z.object({
@@ -20,7 +21,8 @@ export const updateDemandScheduleSchema = z.object({
   base_time: z.string().min(1).optional(),
   pickup_time_offset: z.string().optional(),
   max_publish_count: z.number().positive().optional(),
-  status: z.enum(['active', 'paused', 'completed', 'cancelled']).optional()
+  status: z.enum(['active', 'paused', 'completed', 'cancelled']).optional(),
+  end_time: z.string().optional()
 })
 
 export type CreateDemandScheduleDto = z.infer<typeof createDemandScheduleSchema>
