@@ -533,23 +533,31 @@ export default function OwnerDemands() {
         </Card>
       </View>
 
-      {/* 接单确认弹窗 */}
+      {/* 接单确认弹窗 - 使用全屏优化方案 */}
       {showAcceptDialog && selectedDemand && (
         <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
-          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
+          <DialogContent className="w-[95vw] max-w-lg max-h-[95vh] overflow-hidden">
             <View className="p-6 flex flex-col h-full">
               {/* 标题 - 固定在顶部 */}
-              <View className="flex-shrink-0">
-                <Text className="block text-lg font-semibold mb-2">
-                  确认接单
-                </Text>
-                <Text className="block text-sm text-gray-500 mb-4">
+              <View className="flex-shrink-0 mb-4">
+                <View className="flex items-center justify-between">
+                  <Text className="text-lg font-semibold">
+                    确认接单
+                  </Text>
+                  <View
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100"
+                    onClick={handleCloseAcceptDialog}
+                  >
+                    <Text className="text-gray-500">✕</Text>
+                  </View>
+                </View>
+                <Text className="text-sm text-gray-500 mt-1">
                   请确认接单：{selectedDemand.cargo_name}
                 </Text>
               </View>
 
               {/* 可滚动内容区域 */}
-              <ScrollView scrollY className="flex-1" style={{ maxHeight: '60vh' }}>
+              <ScrollView scrollY className="flex-1" style={{ maxHeight: '65vh' }}>
                 <View className="space-y-4">
                   <View className="bg-gray-50 rounded-lg p-4">
                     <View className="space-y-2">
@@ -799,16 +807,16 @@ export default function OwnerDemands() {
               </ScrollView>
 
               {/* 按钮区域 - 固定在底部 */}
-              <View className="flex gap-3 mt-4 flex-shrink-0">
+              <View className="flex gap-3 pt-4 flex-shrink-0">
                 <Button
-                  className="flex-1 bg-gray-200"
+                  className="flex-1 bg-gray-200 h-12"
                   onClick={handleCloseAcceptDialog}
                   disabled={loading}
                 >
                   <Text>取消</Text>
                 </Button>
                 <Button
-                  className="flex-1 bg-blue-500"
+                  className="flex-1 bg-blue-500 h-12"
                   onClick={handleConfirmAccept}
                   disabled={loading}
                 >
