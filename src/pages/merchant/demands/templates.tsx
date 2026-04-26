@@ -62,6 +62,7 @@ export default function DemandTemplates() {
     try {
       const userInfo = Taro.getStorageSync('userInfo')
       console.log('[DemandTemplates] 用户信息:', userInfo)
+      console.log('[DemandTemplates] 查询模板使用 user_id:', userInfo.id)
 
       if (!userInfo || !userInfo.id) {
         console.error('[DemandTemplates] 用户信息不存在')
@@ -75,10 +76,12 @@ export default function DemandTemplates() {
       const res = await Network.request({
         url: '/api/demand-templates',
         method: 'GET',
-        data: { userId: userInfo.id }
+        data: { user_id: userInfo.id }
       })
 
       console.log('[DemandTemplates] 常用模板响应:', res.data)
+      console.log('[DemandTemplates] 返回的模板数量:', res.data.data?.length || 0)
+      console.log('[DemandTemplates] 返回的模板列表:', JSON.stringify(res.data.data, null, 2))
 
       if (res.data.code === 200) {
         console.log('[DemandTemplates] 加载到模板数量:', res.data.data?.length || 0)

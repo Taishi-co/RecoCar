@@ -175,6 +175,8 @@ export default function DemandsList() {
   }
 
   const handleConfirmSaveTemplate = async () => {
+    const userInfo = Taro.getStorageSync('userInfo')
+
     if (!templateName.trim()) {
       Taro.showToast({
         title: '请输入模板名称',
@@ -188,23 +190,26 @@ export default function DemandsList() {
     setLoading(true)
 
     try {
+      console.log('[DemandList] 保存模板请求: demandId=', selectedDemand.id, ', templateName=', templateName)
       const res = await Network.request({
         url: `/api/demands/${selectedDemand.id}/save-as-template`,
         method: 'POST',
         data: { template_name: templateName }
       })
 
-      console.log('保存模板响应:', res.data)
+      console.log('[DemandList] 保存模板响应:', res.data)
+      console.log('[DemandList] 响应数据详情:', JSON.stringify(res.data.data, null, 2))
 
       if (res.data.code === 200) {
         console.log('[DemandList] 模板保存成功:', res.data.data)
+        console.log('[DemandList] 当前用户ID:', userInfo.id)
+        console.log('[DemandList] 触发模板列表刷新事件')
         Taro.showToast({
           title: '模板保存成功',
           icon: 'success'
         })
 
         // 触发模板列表刷新事件
-        console.log('[DemandList] 触发模板列表刷新事件')
         Taro.eventCenter.trigger('templateListRefresh')
 
         setShowTemplateDialog(false)
