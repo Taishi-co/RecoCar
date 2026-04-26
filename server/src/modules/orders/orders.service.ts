@@ -275,6 +275,96 @@ export class OrdersService {
     }
   }
 
+  /**
+   * 运力方取消订单（已接单状态，需求方未确认运费）
+   */
+  async cancelOrderByOwner(id: string, reason: string, ownerId: string) {
+    const client = getSupabaseClient()
+
+    console.log('[OrdersService] 运力方取消订单:', id, 'reason:', reason, 'ownerId:', ownerId)
+
+    // 检查订单是否存在
+    const { data: existingOrder, error: checkError } = await client
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingOrder) {
+      throw new NotFoundException('订单不存在')
+    }
+
+    // 检查订单状态 - 只有已接单的订单可以取消
+    if (existingOrder.status !== 'accepted') {
+      throw new BadRequestException('只有已接单的订单可以取消')
+    }
+
+    // 检查运费确认状态 - 已确认运费的订单不能直接取消，需要申请取消
+    if (existingOrder.merchant_confirmed) {
+      throw new BadRequestException('运费已确认，不能直接取消，请联系需求方协商取消')
+    }
+
+    // 检查是否是运力方的订单
+    if (existingOrder.owner_id !== ownerId) {
+      throw new BadRequestException('无权取消此订单')
+    }
+
+    // 更新订单状态为已取消
+    const { data: order, error: updateError } = await client
+      .from('orders')
+      .update({
+        status: 'cancelled',
+        cancel_reason: reason,
+        cancel_time: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`取消订单失败: ${updateError.message}`)
+    }
+
+    // 更新需求状态为待接单（让其他车主可以继续接单）
+    await client
+      .from('demands')
+      .update({ status: 'pending', owner_id: null })
+      .eq('id', existingOrder.demand_id)
+
+    // 恢复车辆状态为空闲
+    if (existingOrder.vehicle_id) {
+      await client
+        .from('vehicles')
+        .update({ trip_status: 'idle' })
+        .eq('id', existingOrder.vehicle_id)
+    }
+
+    // 给需求方发送通知
+    if (existingOrder.merchant_id) {
+      try {
+        await this.notificationsService.create({
+          userId: existingOrder.merchant_id,
+          type: 'order_cancelled',
+          title: '订单已被车主取消',
+          content: `您的订单"${existingOrder.remarks || '订单'}"已被车主取消，取消原因：${reason}`,
+          relatedOrderId: existingOrder.id,
+          relatedDemandId: existingOrder.demand_id
+        })
+      } catch (notificationError) {
+        console.error('[OrdersService] 创建通知失败:', notificationError)
+        // 通知创建失败不影响取消订单流程
+      }
+    }
+
+    console.log('[OrdersService] 运力方取消订单成功:', id)
+
+    return {
+      code: 200,
+      message: '订单已取消，需求已恢复待接单状态',
+      data: order
+    }
+  }
+
   async complete(id: string, pickupPhotoKey?: string, deliveryPhotoKey?: string) {
     const client = getSupabaseClient()
 

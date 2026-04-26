@@ -58,6 +58,17 @@ export class OrdersController {
     return this.ordersService.cancelOrder(id, reason, merchantId)
   }
 
+  // 运力方取消订单（已接单状态，需求方未确认运费）
+  @Post(':id/owner-cancel')
+  async cancelOrderByOwner(
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+    @Body('owner_id') ownerId: string
+  ) {
+    console.log('[OrdersController] 运力方取消订单:', id, 'reason:', reason, 'ownerId:', ownerId)
+    return this.ordersService.cancelOrderByOwner(id, reason, ownerId)
+  }
+
   @Post(':id/start-transport')
   async startTransport(@Param('id') id: string) {
     console.log('[OrdersController] 开始运输请求:', id)
