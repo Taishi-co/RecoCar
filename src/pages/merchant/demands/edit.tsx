@@ -509,19 +509,6 @@ export default function EditDemand() {
               )}
             </View>
 
-            {formData.estimated_distance && typeof formData.estimated_distance === 'number' && (
-              <View className="bg-green-50 rounded-lg p-3">
-                <Text className="block text-sm font-medium text-green-900 mb-2">
-                  距离估算：{formData.estimated_distance.toFixed(2)} 公里
-                </Text>
-                {formData.estimated_fare && typeof formData.estimated_fare === 'number' && (
-                  <Text className="block text-sm text-green-700">
-                    预估运费：¥{formData.estimated_fare.toFixed(2)}
-                  </Text>
-                )}
-              </View>
-            )}
-
             <View>
               <Label className="block text-sm font-medium mb-2">
                 备注（选填）

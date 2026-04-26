@@ -20,9 +20,6 @@ interface FormData {
   delivery_address: string
   delivery_location: { latitude: number; longitude: number } | null
   remarks: string
-  estimated_distance: number | null
-  estimated_fare: number | null
-  is_calculating: boolean
 }
 
 interface AddressBook {
@@ -61,10 +58,7 @@ export default function PublishDemand() {
     pickup_location: null,
     delivery_address: '',
     delivery_location: null,
-    remarks: '',
-    estimated_distance: null,
-    estimated_fare: null,
-    is_calculating: false
+    remarks: ''
   })
 
   // 地址簿和线路数据
@@ -101,9 +95,8 @@ export default function PublishDemand() {
                 longitude: routeData.delivery_address.longitude
               }
             : null,
-          estimated_distance: routeData.estimated_distance || null,
-          estimated_fare: routeData.estimated_fare || null
         }))
+
 
         // 显示提示信息
         Taro.showToast({
@@ -192,11 +185,6 @@ export default function PublishDemand() {
     setFormData(newFormData)
     setShowAddressPicker(undefined)
 
-    // 如果两个位置都有，触发距离计算
-    if (newFormData.pickup_location && newFormData.delivery_location) {
-      calculateDistance(newFormData)
-    }
-
     Taro.showToast({
       title: '地址选择成功',
       icon: 'success'
@@ -223,9 +211,6 @@ export default function PublishDemand() {
       }
     }
 
-    newFormData.estimated_distance = route.estimated_distance
-    newFormData.estimated_fare = route.estimated_fare
-
     setFormData(newFormData)
     setShowRoutePicker(false)
 
@@ -247,51 +232,6 @@ export default function PublishDemand() {
       })
     } catch (error) {
       console.error('[PublishDemand] 增加线路使用次数失败:', error)
-    }
-  }
-
-  // 计算距离和运费
-  const calculateDistance = async (currentFormData: FormData) => {
-    if (!currentFormData.pickup_location || !currentFormData.delivery_location) {
-      return
-    }
-
-    try {
-      setFormData({ ...currentFormData, is_calculating: true })
-
-      const res = await Network.request({
-        url: '/api/demands/calculate-distance',
-        method: 'POST',
-        data: {
-          pickup_address: currentFormData.pickup_address,
-          pickup_lat: currentFormData.pickup_location.latitude,
-          pickup_lng: currentFormData.pickup_location.longitude,
-          delivery_address: currentFormData.delivery_address,
-          delivery_lat: currentFormData.delivery_location.latitude,
-          delivery_lng: currentFormData.delivery_location.longitude
-        }
-      })
-
-      console.log('距离计算响应:', res.data)
-
-      if (res.data.code === 200) {
-        setFormData({
-          ...currentFormData,
-          estimated_distance: res.data.data.distance,
-          estimated_fare: res.data.data.estimated_fare,
-          is_calculating: false
-        })
-      } else {
-        setFormData({ ...currentFormData, is_calculating: false })
-        Taro.showToast({
-          title: res.data.message || '距离计算失败',
-          icon: 'none'
-        })
-      }
-    } catch (error) {
-      console.error('距离计算失败:', error)
-      setFormData({ ...currentFormData, is_calculating: false })
-      // 距离计算失败不影响继续发布
     }
   }
 
@@ -344,9 +284,7 @@ export default function PublishDemand() {
           pickup_lat: formData.pickup_location.latitude,
           pickup_lng: formData.pickup_location.longitude,
           delivery_lat: formData.delivery_location.latitude,
-          delivery_lng: formData.delivery_location.longitude,
-          estimated_distance: formData.estimated_distance,
-          estimated_fare: formData.estimated_fare
+          delivery_lng: formData.delivery_location.longitude
         }
       })
 
@@ -641,19 +579,6 @@ export default function PublishDemand() {
               )}
             </View>
 
-            {formData.estimated_distance && (
-              <View className="bg-green-50 rounded-lg p-3">
-                <Text className="block text-sm font-medium text-green-900 mb-2">
-                  距离估算：{formData.estimated_distance.toFixed(2)} 公里
-                </Text>
-                {formData.estimated_fare && (
-                  <Text className="block text-sm text-green-700">
-                    预估运费：¥{formData.estimated_fare.toFixed(2)}
-                  </Text>
-                )}
-              </View>
-            )}
-
             <View>
               <Label className="block text-sm font-medium mb-2">
                 备注（选填）
@@ -671,10 +596,10 @@ export default function PublishDemand() {
             <Button
               className="w-full bg-blue-500"
               onClick={handleSubmit}
-              disabled={loading || formData.is_calculating}
+              disabled={loading}
             >
               <Text className="text-white font-medium">
-                {formData.is_calculating ? '计算距离中...' : loading ? '发布中...' : '发布需求'}
+                {loading ? '发布中...' : '发布需求'}
               </Text>
             </Button>
           </View>
@@ -777,11 +702,6 @@ export default function PublishDemand() {
                     <Text className="block text-xs text-gray-600">
                       送：{route.delivery_address?.address || '-'}
                     </Text>
-                    {route.estimated_distance && (
-                      <Text className="block text-xs text-green-600 mt-1">
-                        距离：{route.estimated_distance.toFixed(2)} 公里
-                      </Text>
-                    )}
                   </View>
                 </View>
               ))
