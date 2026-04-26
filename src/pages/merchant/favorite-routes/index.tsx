@@ -179,8 +179,8 @@ export default function FavoriteRoutes() {
             route_name: formData.route_name,
             pickup_address_id: formData.pickup_address_id,
             delivery_address_id: formData.delivery_address_id,
-            estimated_distance: formData.estimated_distance ? parseFloat(formData.estimated_distance) : null,
-            estimated_fare: formData.estimated_fare ? parseFloat(formData.estimated_fare) : null
+            estimated_distance: formData.estimated_distance && !Number.isNaN(parseFloat(formData.estimated_distance)) ? parseFloat(formData.estimated_distance) : null,
+            estimated_fare: formData.estimated_fare && !Number.isNaN(parseFloat(formData.estimated_fare)) ? parseFloat(formData.estimated_fare) : null
           }
         })
       } else {
@@ -193,8 +193,8 @@ export default function FavoriteRoutes() {
             route_name: formData.route_name,
             pickup_address_id: formData.pickup_address_id,
             delivery_address_id: formData.delivery_address_id,
-            estimated_distance: formData.estimated_distance ? parseFloat(formData.estimated_distance) : null,
-            estimated_fare: formData.estimated_fare ? parseFloat(formData.estimated_fare) : null
+            estimated_distance: formData.estimated_distance && !Number.isNaN(parseFloat(formData.estimated_distance)) ? parseFloat(formData.estimated_distance) : null,
+            estimated_fare: formData.estimated_fare && !Number.isNaN(parseFloat(formData.estimated_fare)) ? parseFloat(formData.estimated_fare) : null
           }
         })
       }
@@ -499,16 +499,18 @@ export default function FavoriteRoutes() {
               </View>
 
               {/* 显示距离、运费和使用次数 */}
-              {(route.estimated_distance || route.estimated_fare || route.use_count > 0) && (
+              {(route.estimated_distance !== undefined && route.estimated_distance !== null ||
+                route.estimated_fare !== undefined && route.estimated_fare !== null ||
+                route.use_count > 0) && (
                 <View className="flex gap-4 pt-2 border-t">
-                  {route.estimated_distance && (
+                  {route.estimated_distance !== undefined && route.estimated_distance !== null && (
                     <Text className="text-sm text-gray-600">
-                      📏 {route.estimated_distance}公里
+                      📏 {Number(route.estimated_distance).toFixed(1)}公里
                     </Text>
                   )}
-                  {route.estimated_fare && (
+                  {route.estimated_fare !== undefined && route.estimated_fare !== null && (
                     <Text className="text-sm text-gray-600">
-                      💰 ¥{route.estimated_fare.toFixed(2)}
+                      💰 ¥{Number(route.estimated_fare).toFixed(2)}
                     </Text>
                   )}
                   {route.use_count > 0 && (
@@ -516,7 +518,9 @@ export default function FavoriteRoutes() {
                       使用 {route.use_count} 次
                     </Text>
                   )}
-                  {!route.estimated_distance && !route.estimated_fare && route.use_count === 0 && (
+                  {(route.estimated_distance === undefined || route.estimated_distance === null) &&
+                   (route.estimated_fare === undefined || route.estimated_fare === null) &&
+                   route.use_count === 0 && (
                     <Text className="text-sm text-gray-400">
                       暂无运距信息
                     </Text>
