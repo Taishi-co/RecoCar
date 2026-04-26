@@ -290,20 +290,6 @@ export default function DemandsList() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/templates' })}
-            >
-              <Text className="text-xs">常用模板</Text>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/schedules' })}
-            >
-              <Text className="text-xs">定时计划</Text>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/merchant/orders/index' })}
             >
               <Text className="text-xs">订单管理</Text>
