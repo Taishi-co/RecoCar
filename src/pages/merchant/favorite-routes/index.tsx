@@ -499,34 +499,30 @@ export default function FavoriteRoutes() {
               </View>
 
               {/* 显示距离、运费和使用次数 */}
-              {(route.estimated_distance !== undefined && route.estimated_distance !== null ||
-                route.estimated_fare !== undefined && route.estimated_fare !== null ||
-                route.use_count > 0) && (
-                <View className="flex gap-4 pt-2 border-t">
-                  {route.estimated_distance !== undefined && route.estimated_distance !== null && (
-                    <Text className="text-sm text-gray-600">
-                      📏 {Number(route.estimated_distance).toFixed(1)}公里
-                    </Text>
-                  )}
-                  {route.estimated_fare !== undefined && route.estimated_fare !== null && (
-                    <Text className="text-sm text-gray-600">
-                      💰 ¥{Number(route.estimated_fare).toFixed(2)}
-                    </Text>
-                  )}
-                  {route.use_count > 0 && (
-                    <Text className="text-sm text-gray-600">
-                      使用 {route.use_count} 次
-                    </Text>
-                  )}
-                  {(route.estimated_distance === undefined || route.estimated_distance === null) &&
-                   (route.estimated_fare === undefined || route.estimated_fare === null) &&
-                   route.use_count === 0 && (
-                    <Text className="text-sm text-gray-400">
-                      暂无运距信息
-                    </Text>
-                  )}
-                </View>
-              )}
+              <View className="flex gap-4 pt-2 border-t">
+                {route.estimated_distance !== undefined && route.estimated_distance !== null && (
+                  <Text className="text-sm text-gray-600">
+                    📏 {Number(route.estimated_distance).toFixed(1)}公里
+                  </Text>
+                )}
+                {route.estimated_fare !== undefined && route.estimated_fare !== null && (
+                  <Text className="text-sm text-gray-600">
+                    💰 ¥{Number(route.estimated_fare).toFixed(2)}
+                  </Text>
+                )}
+                {route.use_count > 0 && (
+                  <Text className="text-sm text-gray-600">
+                    使用 {route.use_count} 次
+                  </Text>
+                )}
+                {(route.estimated_distance === undefined || route.estimated_distance === null) &&
+                 (route.estimated_fare === undefined || route.estimated_fare === null) &&
+                 route.use_count === 0 && (
+                  <Text className="text-sm text-gray-400">
+                    暂无运距信息
+                  </Text>
+                )}
+              </View>
             </CardContent>
           </Card>
         ))}
