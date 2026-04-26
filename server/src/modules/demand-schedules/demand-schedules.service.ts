@@ -140,7 +140,7 @@ export class DemandSchedulesService {
     }
 
     // 如果修改了关键参数，重新计算下次发布时间
-    let updateData = { ...updateDto, updated_at: new Date().toISOString() }
+    const updateData: any = { ...updateDto, updated_at: new Date().toISOString() }
 
     if (updateDto.base_date || updateDto.base_time || updateDto.schedule_type || updateDto.interval_days) {
       const baseDate = updateDto.base_date || existingSchedule.base_date

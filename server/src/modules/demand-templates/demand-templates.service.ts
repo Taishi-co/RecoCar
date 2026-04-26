@@ -244,17 +244,31 @@ export class DemandTemplatesService {
   async incrementUseCount(id: string) {
     const client = getSupabaseClient()
 
-    const { data: template, error } = await client
+    // 先获取当前 use_count
+    const { data: template, error: queryError } = await client
       .from('demand_templates')
-      .update({ use_count: client.raw('use_count + 1'), updated_at: new Date().toISOString() })
+      .select('use_count')
+      .eq('id', id)
+      .single()
+
+    if (queryError || !template) {
+      console.error('[DemandTemplatesService] 查询模板失败:', queryError)
+      return null
+    }
+
+    // 更新 use_count
+    const { data: updatedTemplate, error } = await client
+      .from('demand_templates')
+      .update({ use_count: template.use_count + 1, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single()
 
     if (error) {
       console.error('[DemandTemplatesService] 增加使用次数失败:', error)
+      return null
     }
 
-    return template
+    return updatedTemplate
   }
 }

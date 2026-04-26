@@ -70,8 +70,8 @@ export class FavoriteRoutesService {
     }
 
     // 查询关联的地址信息
-    let pickupAddress = null
-    let deliveryAddress = null
+    let pickupAddress: any = null
+    let deliveryAddress: any = null
 
     if (pickup_address_id) {
       const { data } = await client
@@ -119,8 +119,8 @@ export class FavoriteRoutesService {
 
     // 查询每个线路的关联地址
     const enrichedRoutes = await Promise.all((routes || []).map(async (route) => {
-      let pickupAddress = null
-      let deliveryAddress = null
+      let pickupAddress: any = null
+      let deliveryAddress: any = null
 
       if (route.pickup_address_id) {
         const { data } = await client
@@ -168,8 +168,8 @@ export class FavoriteRoutesService {
     }
 
     // 查询关联的地址信息
-    let pickupAddress = null
-    let deliveryAddress = null
+    let pickupAddress: any = null
+    let deliveryAddress: any = null
 
     if (route.pickup_address_id) {
       const { data } = await client
@@ -230,8 +230,8 @@ export class FavoriteRoutesService {
     }
 
     // 查询关联的地址信息
-    let pickupAddress = null
-    let deliveryAddress = null
+    let pickupAddress: any = null
+    let deliveryAddress: any = null
 
     if (route.pickup_address_id) {
       const { data } = await client
@@ -324,8 +324,8 @@ export class FavoriteRoutesService {
     }
 
     // 查询关联的地址信息
-    let pickupAddress = null
-    let deliveryAddress = null
+    let pickupAddress: any = null
+    let deliveryAddress: any = null
 
     if (route.pickup_address_id) {
       const { data } = await client
