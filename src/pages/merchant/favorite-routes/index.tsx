@@ -125,15 +125,15 @@ export default function FavoriteRoutes() {
         console.log('[FavoriteRoutes] 距离计算响应:', res.data)
 
         if (res.data.code === 200 && res.data.data) {
-          const { distance, fare } = res.data.data
+          const { distance, estimated_fare } = res.data.data
           setFormData(prev => ({
             ...prev,
             estimated_distance: distance?.toFixed(1) || '',
-            estimated_fare: fare?.toFixed(2) || ''
+            estimated_fare: estimated_fare?.toFixed(2) || ''
           }))
 
           Taro.showToast({
-            title: `距离 ${distance} 公里，运费 ¥${fare}`,
+            title: `距离 ${distance?.toFixed(1)} 公里，运费 ¥${estimated_fare?.toFixed(2)}`,
             icon: 'none',
             duration: 2000
           })
