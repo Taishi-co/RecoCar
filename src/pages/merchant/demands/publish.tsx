@@ -21,6 +21,9 @@ interface FormData {
   estimated_distance: number | null
   estimated_fare: number | null
   is_calculating: boolean
+  manualInputMode: 'pickup' | 'delivery' | null
+  manualLat: string
+  manualLng: string
 }
 
 export default function PublishDemand() {
@@ -38,7 +41,10 @@ export default function PublishDemand() {
     remarks: '',
     estimated_distance: null,
     estimated_fare: null,
-    is_calculating: false
+    is_calculating: false,
+    manualInputMode: null,
+    manualLat: '',
+    manualLng: ''
   })
 
   const handlePickupDateSelect = (e) => {
@@ -62,58 +68,18 @@ export default function PublishDemand() {
       const isMiniApp = env === Taro.ENV_TYPE.WEAPP || env === Taro.ENV_TYPE.TT
 
       if (!isMiniApp) {
-        // H5 环境：提示用户手动输入经纬度
-        Taro.showModal({
-          title: '输入位置信息',
-          content: '当前在 H5 环境，请手动输入经纬度坐标',
-          editable: true,
-          placeholderText: '39.908822,116.397499',
-          success: (res) => {
-            if (res.confirm && res.content) {
-              const coords = res.content.split(',')
-              if (coords.length === 2) {
-                const lat = parseFloat(coords[0])
-                const lng = parseFloat(coords[1])
-
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  const locationData = { latitude: lat, longitude: lng }
-
-                  let newFormData = { ...formData }
-
-                  if (type === 'pickup') {
-                    newFormData.pickup_address = `(${lat.toFixed(6)}, ${lng.toFixed(6)})`
-                    newFormData.pickup_location = locationData
-                  } else {
-                    newFormData.delivery_address = `(${lat.toFixed(6)}, ${lng.toFixed(6)})`
-                    newFormData.delivery_location = locationData
-                  }
-
-                  setFormData(newFormData)
-
-                  // 如果两个位置都有，触发距离计算
-                  if (newFormData.pickup_location && newFormData.delivery_location) {
-                    calculateDistance(newFormData)
-                  }
-
-                  Taro.showToast({
-                    title: '位置设置成功',
-                    icon: 'success'
-                  })
-                } else {
-                  Taro.showToast({
-                    title: '坐标格式错误，请输入：纬度,经度',
-                    icon: 'none'
-                  })
-                }
-              } else {
-                Taro.showToast({
-                  title: '坐标格式错误，请输入：纬度,经度',
-                  icon: 'none'
-                })
-              }
-            }
-          }
-        })
+        // H5 环境：切换到手动输入模式
+        if (type === 'pickup') {
+          setFormData({
+            ...formData,
+            manualInputMode: type
+          })
+        } else {
+          setFormData({
+            ...formData,
+            manualInputMode: type
+          })
+        }
         return
       }
 
@@ -158,6 +124,41 @@ export default function PublishDemand() {
         icon: 'none'
       })
     }
+  }
+
+  const handleManualLocationConfirm = (type: 'pickup' | 'delivery', lat: number, lng: number) => {
+    if (isNaN(lat) || isNaN(lng)) {
+      Taro.showToast({
+        title: '坐标格式错误',
+        icon: 'none'
+      })
+      return
+    }
+
+    const locationData = { latitude: lat, longitude: lng }
+
+    let newFormData = { ...formData }
+
+    if (type === 'pickup') {
+      newFormData.pickup_address = `(${lat.toFixed(6)}, ${lng.toFixed(6)})`
+      newFormData.pickup_location = locationData
+    } else {
+      newFormData.delivery_address = `(${lat.toFixed(6)}, ${lng.toFixed(6)})`
+      newFormData.delivery_location = locationData
+    }
+
+    newFormData.manualInputMode = null
+    setFormData(newFormData)
+
+    // 如果两个位置都有，触发距离计算
+    if (newFormData.pickup_location && newFormData.delivery_location) {
+      calculateDistance(newFormData)
+    }
+
+    Taro.showToast({
+      title: '位置设置成功',
+      icon: 'success'
+    })
   }
 
   // 计算距离和运费
@@ -472,13 +473,64 @@ export default function PublishDemand() {
                   <Text className="text-xs">定位</Text>
                 </Button>
               </View>
+
+              {/* H5 手动输入坐标 */}
+              {formData.manualInputMode === 'pickup' && (
+                <View className="mt-2 p-3 bg-blue-50 rounded-lg">
+                  <Text className="block text-sm font-medium text-blue-900 mb-2">手动输入坐标（H5环境）</Text>
+                  <View className="flex gap-2 mb-2">
+                    <View className="flex-1">
+                      <Text className="block text-xs text-gray-600 mb-1">纬度</Text>
+                      <View className="bg-white rounded px-3 py-2">
+                        <Input
+                          className="w-full bg-transparent"
+                          placeholder="39.908822"
+                          type="digit"
+                          value={formData.manualLat}
+                          onInput={(e) => setFormData({ ...formData, manualLat: e.detail.value })}
+                        />
+                      </View>
+                    </View>
+                    <View className="flex-1">
+                      <Text className="block text-xs text-gray-600 mb-1">经度</Text>
+                      <View className="bg-white rounded px-3 py-2">
+                        <Input
+                          className="w-full bg-transparent"
+                          placeholder="116.397499"
+                          type="digit"
+                          value={formData.manualLng}
+                          onInput={(e) => setFormData({ ...formData, manualLng: e.detail.value })}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  <View className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-500"
+                      onClick={() => handleManualLocationConfirm('pickup', parseFloat(formData.manualLat), parseFloat(formData.manualLng))}
+                    >
+                      <Text className="text-xs">确认</Text>
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => setFormData({ ...formData, manualInputMode: null, manualLat: '', manualLng: '' })}
+                    >
+                      <Text className="text-xs">取消</Text>
+                    </Button>
+                  </View>
+                </View>
+              )}
+
               {formData.pickup_location && (
                 <Text className="block text-xs text-gray-400 mt-1">
                   已选择位置：{formData.pickup_location.latitude.toFixed(6)}, {formData.pickup_location.longitude.toFixed(6)}
                 </Text>
               )}
               <Text className="block text-xs text-gray-400 mt-1">
-                提示：小程序可地图选择，H5请输入坐标（如：39.908822,116.397499）
+                提示：小程序可地图选择，H5点击"定位"后手动输入坐标
               </Text>
             </View>
 
@@ -503,13 +555,64 @@ export default function PublishDemand() {
                   <Text className="text-xs">定位</Text>
                 </Button>
               </View>
+
+              {/* H5 手动输入坐标 */}
+              {formData.manualInputMode === 'delivery' && (
+                <View className="mt-2 p-3 bg-blue-50 rounded-lg">
+                  <Text className="block text-sm font-medium text-blue-900 mb-2">手动输入坐标（H5环境）</Text>
+                  <View className="flex gap-2 mb-2">
+                    <View className="flex-1">
+                      <Text className="block text-xs text-gray-600 mb-1">纬度</Text>
+                      <View className="bg-white rounded px-3 py-2">
+                        <Input
+                          className="w-full bg-transparent"
+                          placeholder="39.918822"
+                          type="digit"
+                          value={formData.manualLat}
+                          onInput={(e) => setFormData({ ...formData, manualLat: e.detail.value })}
+                        />
+                      </View>
+                    </View>
+                    <View className="flex-1">
+                      <Text className="block text-xs text-gray-600 mb-1">经度</Text>
+                      <View className="bg-white rounded px-3 py-2">
+                        <Input
+                          className="w-full bg-transparent"
+                          placeholder="116.407499"
+                          type="digit"
+                          value={formData.manualLng}
+                          onInput={(e) => setFormData({ ...formData, manualLng: e.detail.value })}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  <View className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-500"
+                      onClick={() => handleManualLocationConfirm('delivery', parseFloat(formData.manualLat), parseFloat(formData.manualLng))}
+                    >
+                      <Text className="text-xs">确认</Text>
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => setFormData({ ...formData, manualInputMode: null, manualLat: '', manualLng: '' })}
+                    >
+                      <Text className="text-xs">取消</Text>
+                    </Button>
+                  </View>
+                </View>
+              )}
+
               {formData.delivery_location && (
                 <Text className="block text-xs text-gray-400 mt-1">
                   已选择位置：{formData.delivery_location.latitude.toFixed(6)}, {formData.delivery_location.longitude.toFixed(6)}
                 </Text>
               )}
               <Text className="block text-xs text-gray-400 mt-1">
-                提示：小程序可地图选择，H5请输入坐标（如：39.918822,116.407499）
+                提示：小程序可地图选择，H5点击"定位"后手动输入坐标
               </Text>
             </View>
 
