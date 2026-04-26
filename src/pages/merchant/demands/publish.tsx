@@ -421,13 +421,6 @@ export default function PublishDemand() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => Taro.navigateTo({ url: '/pages/merchant/favorite-routes/index' })}
-            >
-              <Route size={16} color="#6b7280" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/merchant/profile/index' })}
             >
               <Text className="text-xs">我的</Text>
@@ -558,25 +551,15 @@ export default function PublishDemand() {
             {/* 快捷选择区域 */}
             <View className="bg-blue-50 rounded-lg p-3">
               <Text className="block text-sm font-medium text-blue-900 mb-2">快捷选择</Text>
-              <View className="flex gap-2">
-                <Button
-                  size="sm"
-                  className="flex-1 bg-blue-500"
-                  onClick={() => setShowRoutePicker(true)}
-                  disabled={favoriteRoutes.length === 0}
-                >
-                  <Route size={14} color="#fff" />
-                  <Text className="text-xs ml-1">常用线路</Text>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => Taro.navigateTo({ url: '/pages/merchant/favorite-routes/index' })}
-                >
-                  <Text className="text-xs">管理线路</Text>
-                </Button>
-              </View>
+              <Button
+                size="sm"
+                className="w-full bg-blue-500"
+                onClick={() => setShowRoutePicker(true)}
+                disabled={favoriteRoutes.length === 0}
+              >
+                <Route size={14} color="#fff" />
+                <Text className="text-xs ml-1">常用线路</Text>
+              </Button>
             </View>
 
             <View>
@@ -764,7 +747,7 @@ export default function PublishDemand() {
           <View className="space-y-2">
             {favoriteRoutes.length === 0 ? (
               <View className="text-center py-8">
-                <Text className="block text-gray-400 text-sm">暂无常用线路，请先添加线路</Text>
+                <Text className="block text-gray-400 text-sm">暂无常用线路</Text>
               </View>
             ) : (
               favoriteRoutes.map((route) => (
@@ -807,14 +790,6 @@ export default function PublishDemand() {
               onClick={() => setShowRoutePicker(false)}
             >
               <Text className="text-xs">取消</Text>
-            </Button>
-            <Button
-              onClick={() => {
-                setShowRoutePicker(false)
-                Taro.navigateTo({ url: '/pages/merchant/favorite-routes/index' })
-              }}
-            >
-              <Text className="text-xs">添加线路</Text>
             </Button>
           </DialogFooter>
         </DialogContent>
