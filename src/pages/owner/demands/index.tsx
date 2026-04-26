@@ -239,10 +239,10 @@ export default function OwnerDemands() {
         const fareData = res.data.data
         setCalculatedFare(fareData.total_fare)
         setFareCalculationDetail(fareData.calculation_detail)
-        setFarePrice(fareData.total_fare.toString())
+        setFarePrice(Math.floor(fareData.total_fare).toString())
 
         Taro.showToast({
-          title: `已自动计算运费：¥${fareData.total_fare.toFixed(2)}`,
+          title: `已自动计算运费：¥${Math.floor(fareData.total_fare)}`,
           icon: 'success'
         })
       } else {
@@ -623,7 +623,7 @@ export default function OwnerDemands() {
                         • 额外费用：¥{fareCalculationDetail.extra_fare.toFixed(2)}
                       </Text>
                       <Text className="text-xs text-green-700 font-bold">
-                        • 总运费：¥{fareCalculationDetail.total_fare.toFixed(2)}
+                        • 总运费：¥{Math.floor(fareCalculationDetail.total_fare)}
                       </Text>
                     </View>
                   </View>
@@ -634,7 +634,7 @@ export default function OwnerDemands() {
                     <View className="flex-1">
                       <Input
                         className="w-full bg-transparent"
-                        placeholder={calculatedFare ? `系统计算: ¥${calculatedFare.toFixed(2)}` : '请输入运费价格'}
+                        placeholder={calculatedFare ? `系统计算: ¥${Math.floor(calculatedFare)}` : '请输入运费价格'}
                         type="digit"
                         value={farePrice}
                         onInput={(e) => setFarePrice(e.detail.value)}
@@ -644,7 +644,7 @@ export default function OwnerDemands() {
                   </View>
                 </View>
                 <Text className="text-xs text-gray-400 mt-1">
-                  {calculatedFare ? '提示：可修改系统计算的运费（±10%以内）' : '提示：选择车辆后系统将自动计算运费'}
+                  {calculatedFare ? '提示：可修改系统计算的运费' : '提示：选择车辆后系统将自动计算运费'}
                 </Text>
               </View>
 
