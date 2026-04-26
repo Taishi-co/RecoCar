@@ -73,9 +73,8 @@ export default function DemandSchedules() {
       }
 
       const res = await Network.request({
-        url: '/api/demand-schedules',
-        method: 'GET',
-        data: { userId: userInfo.id }
+        url: `/api/demand-schedules?user_id=${encodeURIComponent(userInfo.id)}`,
+        method: 'GET'
       })
 
       console.log('定时计划响应:', res.data)
@@ -100,10 +99,11 @@ export default function DemandSchedules() {
       if (!userInfo || !userInfo.id) return
 
       const res = await Network.request({
-        url: '/api/demand-templates',
-        method: 'GET',
-        data: { userId: userInfo.id }
+        url: `/api/demand-templates?user_id=${encodeURIComponent(userInfo.id)}`,
+        method: 'GET'
       })
+
+      console.log('[DemandSchedules] 加载模板响应:', res.data)
 
       if (res.data.code === 200) {
         setTemplates(res.data.data || [])
