@@ -252,6 +252,144 @@ export class DemandSchedulesService {
     }
   }
 
+  async publishNow(id: string, currentUserId: string) {
+    const client = getSupabaseClient()
+
+    // 1. 查询定时计划
+    const { data: schedule, error: scheduleError } = await client
+      .from('demand_schedules')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (scheduleError || !schedule) {
+      throw new NotFoundException('定时计划不存在')
+    }
+
+    // 2. 验证权限
+    if (schedule.user_id !== currentUserId) {
+      throw new BadRequestException('无权操作该定时计划')
+    }
+
+    // 3. 检查状态
+    if (schedule.status === 'cancelled') {
+      throw new BadRequestException('该计划已取消，无法发布')
+    }
+
+    // 4. 获取关联的模板
+    const { data: template, error: templateError } = await client
+      .from('demand_templates')
+      .select('*')
+      .eq('id', schedule.template_id)
+      .single()
+
+    if (templateError || !template) {
+      throw new BadRequestException('关联的模板不存在或已被删除')
+    }
+
+    // 5. 计算取货时间（当前时间 + 偏移量）
+    const publishTime = new Date()
+    const pickupTime = schedule.pickup_time_offset
+      ? new Date(publishTime.getTime() + this.parseOffsetToMilliseconds(schedule.pickup_time_offset))
+      : publishTime
+
+    // 6. 创建需求
+    const { data: demand, error: demandError } = await client
+      .from('demands')
+      .insert({
+        merchant_id: schedule.user_id,
+        owner_id: schedule.user_id,
+        template_id: template.id,
+        cargo_name: template.cargo_name,
+        cargo_type: template.cargo_type,
+        weight: template.weight,
+        volume: template.volume,
+        pickup_address: template.pickup_address,
+        pickup_lat: template.pickup_lat,
+        pickup_lng: template.pickup_lng,
+        pickup_time: pickupTime.toISOString(),
+        delivery_address: template.delivery_address,
+        delivery_lat: template.delivery_lat,
+        delivery_lng: template.delivery_lng,
+        remarks: template.remarks,
+        status: 'pending',
+        is_from_schedule: true,
+        schedule_id: schedule.id,
+        created_at: publishTime.toISOString(),
+        updated_at: publishTime.toISOString()
+      })
+      .select()
+      .single()
+
+    if (demandError) {
+      console.error('[DemandSchedulesService] 创建需求失败:', demandError)
+      throw new BadRequestException('创建需求失败')
+    }
+
+    // 8. 更新模板使用次数
+    await client
+      .from('demand_templates')
+      .update({ use_count: (template.use_count || 0) + 1 })
+      .eq('id', template.id)
+
+    // 9. 更新定时计划
+    await client
+      .from('demand_schedules')
+      .update({
+        published_count: schedule.published_count + 1,
+        last_published_at: publishTime.toISOString(),
+        // next_publish_time 保持不变，不影响定时任务
+        updated_at: publishTime.toISOString()
+      })
+      .eq('id', schedule.id)
+
+    // 10. 记录发布日志
+    await client
+      .from('demand_publish_logs')
+      .insert({
+        schedule_id: schedule.id,
+        demand_id: demand.id,
+        publish_time: publishTime.toISOString(),
+        publish_type: 'manual',
+        status: 'success',
+        created_at: publishTime.toISOString()
+      })
+
+    return {
+      code: 200,
+      message: '需求发布成功',
+      data: {
+        demand_id: demand.id,
+        schedule_id: schedule.id,
+        published_at: publishTime.toISOString(),
+        demand_info: {
+          cargo_name: demand.cargo_name,
+          pickup_address: demand.pickup_address,
+          delivery_address: demand.delivery_address,
+          pickup_time: demand.pickup_time
+        }
+      }
+    }
+  }
+
+  // 解析偏移量字符串为毫秒（例如："2h" -> 7200000, "30m" -> 1800000）
+  private parseOffsetToMilliseconds(offset: string): number {
+    const match = offset.match(/^(\d+)([hm])$/)
+    if (!match) return 0
+
+    const value = parseInt(match[1], 10)
+    const unit = match[2]
+
+    switch (unit) {
+      case 'h':
+        return value * 60 * 60 * 1000
+      case 'm':
+        return value * 60 * 1000
+      default:
+        return 0
+    }
+  }
+
   async getLogs(scheduleId: string) {
     const client = getSupabaseClient()
 

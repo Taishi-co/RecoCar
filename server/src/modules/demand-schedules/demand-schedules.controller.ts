@@ -48,6 +48,12 @@ export class DemandSchedulesController {
     return this.demandSchedulesService.resume(id)
   }
 
+  @Post(':id/publish-now')
+  async publishNow(@Param('id') id: string, @Body() body: { user_id: string }) {
+    console.log('[DemandSchedulesController] 立即发布请求 - id:', id, 'user_id:', body.user_id)
+    return this.demandSchedulesService.publishNow(id, body.user_id)
+  }
+
   @Delete(':id')
   async deleteSchedule(@Param('id') id: string) {
     console.log('[DemandSchedulesController] 删除计划请求 - id:', id)

@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Clock, Play, Pause } from 'lucide-react-taro'
+import { Plus, Pencil, Trash2, Clock, Play, Pause, Zap } from 'lucide-react-taro'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
@@ -47,6 +47,8 @@ export default function DemandSchedules() {
   const [loading, setLoading] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<DemandSchedule | null>(null)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [publishingScheduleId, setPublishingScheduleId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     template_id: '',
     schedule_name: '',
@@ -199,6 +201,63 @@ export default function DemandSchedules() {
     } finally {
       setShowDeleteDialog(false)
       setDeletingSchedule(null)
+    }
+  }
+
+  const handlePublishNow = async (schedule: DemandSchedule) => {
+    // 确认提示
+    const confirm = await Taro.showModal({
+      title: '立即发布',
+      content: '确定要立即发布该定时计划吗？这将基于模板创建一条新的需求。',
+      confirmText: '确定',
+      cancelText: '取消'
+    })
+
+    if (!confirm.confirm) return
+
+    setIsPublishing(true)
+    setPublishingScheduleId(schedule.id)
+
+    try {
+      const userInfo = Taro.getStorageSync('userInfo')
+      if (!userInfo || !userInfo.id) {
+        Taro.showToast({
+          title: '请先登录',
+          icon: 'none'
+        })
+        return
+      }
+
+      const res = await Network.request({
+        url: `/api/demand-schedules/${schedule.id}/publish-now`,
+        method: 'POST',
+        data: { user_id: userInfo.id }
+      })
+
+      console.log('立即发布响应:', res.data)
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '需求发布成功',
+          icon: 'success',
+          duration: 2000
+        })
+        loadSchedules() // 刷新列表
+      } else {
+        Taro.showToast({
+          title: res.data.message || '发布失败',
+          icon: 'none'
+        })
+      }
+    } catch (err) {
+      console.error('立即发布失败:', err)
+      Taro.showToast({
+        title: '发布失败',
+        icon: 'none'
+      })
+    } finally {
+      setIsPublishing(false)
+      setPublishingScheduleId(null)
     }
   }
 
@@ -454,6 +513,14 @@ export default function DemandSchedules() {
                       onClick={() => handleEditSchedule(schedule)}
                     >
                       <Pencil size={14} color="#6b7280" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handlePublishNow(schedule)}
+                      disabled={isPublishing && publishingScheduleId === schedule.id}
+                    >
+                      <Zap size={14} color="#f59e0b" />
                     </Button>
                     <Button
                       size="sm"
