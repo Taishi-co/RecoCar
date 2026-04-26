@@ -5,7 +5,7 @@ import Taro from '@tarojs/taro'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Plus, Trash2, Route, MapPin, Navigation } from 'lucide-react-taro'
+import { Plus, Trash2, Route, MapPin, Navigation, FilePen } from 'lucide-react-taro'
 
 interface Address {
   id: string
@@ -31,6 +31,7 @@ export default function FavoriteRoutes() {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [loading, setLoading] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingRouteId, setEditingRouteId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     route_name: '',
     pickup_address_id: '',
@@ -108,28 +109,46 @@ export default function FavoriteRoutes() {
     try {
       const userInfo = Taro.getStorageSync('userInfo')
 
-      const res = await Network.request({
-        url: '/api/favorite-routes',
-        method: 'POST',
-        data: {
-          user_id: userInfo.id,
-          route_name: formData.route_name,
-          pickup_address_id: formData.pickup_address_id,
-          delivery_address_id: formData.delivery_address_id,
-          estimated_distance: formData.estimated_distance ? parseFloat(formData.estimated_distance) : null,
-          estimated_fare: formData.estimated_fare ? parseFloat(formData.estimated_fare) : null
-        }
-      })
+      let res
+      if (editingRouteId) {
+        // 编辑模式
+        res = await Network.request({
+          url: `/api/favorite-routes/${editingRouteId}`,
+          method: 'PUT',
+          data: {
+            route_name: formData.route_name,
+            pickup_address_id: formData.pickup_address_id,
+            delivery_address_id: formData.delivery_address_id,
+            estimated_distance: formData.estimated_distance ? parseFloat(formData.estimated_distance) : null,
+            estimated_fare: formData.estimated_fare ? parseFloat(formData.estimated_fare) : null
+          }
+        })
+      } else {
+        // 新增模式
+        res = await Network.request({
+          url: '/api/favorite-routes',
+          method: 'POST',
+          data: {
+            user_id: userInfo.id,
+            route_name: formData.route_name,
+            pickup_address_id: formData.pickup_address_id,
+            delivery_address_id: formData.delivery_address_id,
+            estimated_distance: formData.estimated_distance ? parseFloat(formData.estimated_distance) : null,
+            estimated_fare: formData.estimated_fare ? parseFloat(formData.estimated_fare) : null
+          }
+        })
+      }
 
-      console.log('[FavoriteRoutes] 添加线路响应:', res.data)
+      console.log('[FavoriteRoutes] 保存线路响应:', res.data)
 
       if (res.data.code === 200) {
         Taro.showToast({
-          title: '添加成功',
+          title: editingRouteId ? '修改成功' : '添加成功',
           icon: 'success'
         })
 
         setShowAddForm(false)
+        setEditingRouteId(null)
         setFormData({
           route_name: '',
           pickup_address_id: '',
@@ -141,14 +160,14 @@ export default function FavoriteRoutes() {
         loadRoutes()
       } else {
         Taro.showToast({
-          title: res.data.message || '添加失败',
+          title: res.data.message || (editingRouteId ? '修改失败' : '添加失败'),
           icon: 'none'
         })
       }
     } catch (error) {
-      console.error('[FavoriteRoutes] 添加线路失败:', error)
+      console.error('[FavoriteRoutes] 保存线路失败:', error)
       Taro.showToast({
-        title: '添加失败',
+        title: editingRouteId ? '修改失败' : '添加失败',
         icon: 'none'
       })
     } finally {
@@ -180,6 +199,30 @@ export default function FavoriteRoutes() {
     } catch (error) {
       console.error('[FavoriteRoutes] 删除线路失败:', error)
     }
+  }
+
+  const handleEdit = (route: FavoriteRoute) => {
+    setFormData({
+      route_name: route.route_name,
+      pickup_address_id: route.pickup_address?.id || '',
+      delivery_address_id: route.delivery_address?.id || '',
+      estimated_distance: route.estimated_distance?.toString() || '',
+      estimated_fare: route.estimated_fare?.toString() || ''
+    })
+    setEditingRouteId(route.id)
+    setShowAddForm(true)
+  }
+
+  const handleCancelEdit = () => {
+    setShowAddForm(false)
+    setEditingRouteId(null)
+    setFormData({
+      route_name: '',
+      pickup_address_id: '',
+      delivery_address_id: '',
+      estimated_distance: '',
+      estimated_fare: ''
+    })
   }
 
   const handleUseRoute = async (route: FavoriteRoute) => {
@@ -223,10 +266,14 @@ export default function FavoriteRoutes() {
         </View>
       )}
 
-      {/* 添加线路表单 */}
+      {/* 添加/编辑线路表单 */}
       {showAddForm && (
         <Card className="m-4">
           <CardContent className="p-4 space-y-3">
+            <View className="flex items-center justify-between mb-2">
+              <Text className="text-base font-semibold">{editingRouteId ? '编辑线路' : '添加线路'}</Text>
+            </View>
+
             <View>
               <Text className="block text-sm font-medium mb-1">线路名称</Text>
               <View className="bg-gray-50 rounded px-3 py-2">
@@ -313,16 +360,7 @@ export default function FavoriteRoutes() {
                 size="sm"
                 className="flex-1"
                 variant="outline"
-                onClick={() => {
-                  setShowAddForm(false)
-                  setFormData({
-                    route_name: '',
-                    pickup_address_id: '',
-                    delivery_address_id: '',
-                    estimated_distance: '',
-                    estimated_fare: ''
-                  })
-                }}
+                onClick={handleCancelEdit}
               >
                 <Text>取消</Text>
               </Button>
@@ -332,7 +370,7 @@ export default function FavoriteRoutes() {
                 onClick={handleAddRoute}
                 disabled={loading}
               >
-                <Text>确认添加</Text>
+                <Text>{editingRouteId ? '保存修改' : '确认添加'}</Text>
               </Button>
             </View>
           </CardContent>
@@ -356,6 +394,13 @@ export default function FavoriteRoutes() {
                     onClick={() => handleUseRoute(route)}
                   >
                     <Navigation size={16} color="#ffffff" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-amber-500"
+                    onClick={() => handleEdit(route)}
+                  >
+                    <FilePen size={16} color="#ffffff" />
                   </Button>
                   <Button
                     size="sm"
