@@ -142,17 +142,45 @@ export default function AddressBooks() {
         return
       }
 
-      const location = await Taro.chooseLocation({
-        latitude: 39.90469,
-        longitude: 116.40717
+      // 小程序环境：先尝试获取用户实时位置
+      let userLocation = {
+        latitude: 39.6206,  // 唐山市纪念碑广场默认纬度
+        longitude: 118.1802 // 唐山市纪念碑广场默认经度
+      }
+
+      try {
+        const location = await Taro.getLocation({
+          type: 'gcj02'
+        })
+
+        if (location && location.latitude && location.longitude) {
+          userLocation = {
+            latitude: location.latitude,
+            longitude: location.longitude
+          }
+          console.log('[AddressBooks] 获取到用户实时位置:', userLocation)
+        }
+      } catch (locationError) {
+        console.error('[AddressBooks] 获取用户位置失败，使用默认位置:', locationError)
+        // 如果获取位置失败，使用默认的唐山市纪念碑广场坐标
+        Taro.showToast({
+          title: '定位失败，使用默认位置',
+          icon: 'none'
+        })
+      }
+
+      // 打开地图选择位置
+      const selectedLocation = await Taro.chooseLocation({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
       })
 
-      if (location) {
+      if (selectedLocation) {
         setFormData({
           ...formData,
-          address: location.name || location.address,
-          latitude: location.latitude.toString(),
-          longitude: location.longitude.toString()
+          address: selectedLocation.name || selectedLocation.address,
+          latitude: selectedLocation.latitude.toString(),
+          longitude: selectedLocation.longitude.toString()
         })
       }
     } catch (error) {
