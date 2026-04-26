@@ -145,7 +145,7 @@ export default function EditDemand() {
 
   const handlePickupDateSelect = (e) => {
     const date = e.detail.value
-    const currentDate = formData.pickup_time ? new Date(formData.pickup_time) : new Date()
+    const currentDate = (formData.pickup_time && formData.pickup_time.includes(' ')) ? new Date(formData.pickup_time) : new Date()
     const time = currentDate.toTimeString().slice(0, 5)
     const newPickupTime = `${date} ${time}:00`
     setFormData({ ...formData, pickup_time: newPickupTime })
@@ -153,7 +153,7 @@ export default function EditDemand() {
 
   const handlePickupTimeSelect = (e) => {
     const time = e.detail.value
-    const date = formData.pickup_time ? formData.pickup_time.split(' ')[0] : new Date().toISOString().slice(0, 10)
+    const date = (formData.pickup_time && formData.pickup_time.includes(' ')) ? formData.pickup_time.split(' ')[0] : new Date().toISOString().slice(0, 10)
     const newPickupTime = `${date} ${time}:00`
     setFormData({ ...formData, pickup_time: newPickupTime })
   }
@@ -422,24 +422,24 @@ export default function EditDemand() {
               <View className="flex gap-3">
                 <Picker
                   mode="date"
-                  value={formData.pickup_time ? formData.pickup_time.split(' ')[0] : ''}
+                  value={formData.pickup_time && formData.pickup_time.includes(' ') ? formData.pickup_time.split(' ')[0] : ''}
                   onChange={handlePickupDateSelect}
                 >
                   <View className="flex-1 bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
                     <Text className={`text-sm ${formData.pickup_time ? 'text-gray-900' : 'text-gray-400'}`}>
-                      {formData.pickup_time ? formData.pickup_time.split(' ')[0] : '选择日期'}
+                      {formData.pickup_time && formData.pickup_time.includes(' ') ? formData.pickup_time.split(' ')[0] : '选择日期'}
                     </Text>
                     <Text className="text-gray-400">📅</Text>
                   </View>
                 </Picker>
                 <Picker
                   mode="time"
-                  value={formData.pickup_time ? formData.pickup_time.split(' ')[1].slice(0, 5) : ''}
+                  value={formData.pickup_time && formData.pickup_time.includes(' ') ? formData.pickup_time.split(' ')[1].slice(0, 5) : ''}
                   onChange={handlePickupTimeSelect}
                 >
                   <View className="flex-1 bg-gray-50 rounded-lg px-4 py-3 flex items-center justify-between">
                     <Text className={`text-sm ${formData.pickup_time ? 'text-gray-900' : 'text-gray-400'}`}>
-                      {formData.pickup_time ? formData.pickup_time.split(' ')[1].slice(0, 5) : '选择时间'}
+                      {formData.pickup_time && formData.pickup_time.includes(' ') ? formData.pickup_time.split(' ')[1].slice(0, 5) : '选择时间'}
                     </Text>
                     <Text className="text-gray-400">⏰</Text>
                   </View>
@@ -471,7 +471,7 @@ export default function EditDemand() {
                 </Button>
               </View>
 
-              {formData.pickup_location && (
+              {formData.pickup_location && formData.pickup_location.latitude && formData.pickup_location.longitude && (
                 <Text className="block text-xs text-gray-400 mt-1">
                   已选择：{formData.pickup_location.latitude.toFixed(6)}, {formData.pickup_location.longitude.toFixed(6)}
                 </Text>
@@ -502,19 +502,19 @@ export default function EditDemand() {
                 </Button>
               </View>
 
-              {formData.delivery_location && (
+              {formData.delivery_location && formData.delivery_location.latitude && formData.delivery_location.longitude && (
                 <Text className="block text-xs text-gray-400 mt-1">
                   已选择：{formData.delivery_location.latitude.toFixed(6)}, {formData.delivery_location.longitude.toFixed(6)}
                 </Text>
               )}
             </View>
 
-            {formData.estimated_distance && (
+            {formData.estimated_distance && typeof formData.estimated_distance === 'number' && (
               <View className="bg-green-50 rounded-lg p-3">
                 <Text className="block text-sm font-medium text-green-900 mb-2">
                   距离估算：{formData.estimated_distance.toFixed(2)} 公里
                 </Text>
-                {formData.estimated_fare && (
+                {formData.estimated_fare && typeof formData.estimated_fare === 'number' && (
                   <Text className="block text-sm text-green-700">
                     预估运费：¥{formData.estimated_fare.toFixed(2)}
                   </Text>

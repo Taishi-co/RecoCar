@@ -388,7 +388,7 @@ export default function DemandsList() {
                             className="border-blue-500 text-blue-500"
                             onClick={() => handleEditDemand(demand)}
                           >
-                            <Pencil size={14} />
+                            <Pencil size={14} color="#1890ff" />
                             <Text className="ml-1 text-xs">编辑</Text>
                           </Button>
                           <Button
