@@ -505,13 +505,6 @@ export default function OwnerVehicles() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => Taro.navigateTo({ url: '/pages/owner/stats/index' })}
-            >
-              <Text className="text-xs">收益统计</Text>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/owner/profile/index' })}
             >
               <Text className="text-xs">我的</Text>
