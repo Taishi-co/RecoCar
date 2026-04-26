@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, Map } from '@tarojs/components'
+import { View, Text, Map, ScrollView } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -536,259 +536,270 @@ export default function OwnerDemands() {
       {/* 接单确认弹窗 */}
       {showAcceptDialog && selectedDemand && (
         <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
-          <DialogContent className="sm:max-w-md">
-            <View className="p-6">
-              <Text className="block text-lg font-semibold mb-2">
-                确认接单
-              </Text>
-              <Text className="block text-sm text-gray-500 mb-4">
-                请确认接单：{selectedDemand.cargo_name}
-              </Text>
-              <View className="bg-gray-50 rounded-lg p-4 mb-4">
-                <View className="space-y-2">
-                  <View className="flex items-start">
-                    <Text className="text-xs text-gray-500 w-16 flex-shrink-0">取货:</Text>
-                    <Text className="text-xs text-gray-700 flex-1">
-                      {selectedDemand.pickup_address}
-                    </Text>
-                  </View>
-                  <View className="flex items-start">
-                    <Text className="text-xs text-gray-500 w-16 flex-shrink-0">送货:</Text>
-                    <Text className="text-xs text-gray-700 flex-1">
-                      {selectedDemand.delivery_address}
-                    </Text>
-                  </View>
-                  <View className="flex items-start">
-                    <Text className="text-xs text-gray-500 w-16 flex-shrink-0">时间:</Text>
-                    <Text className="text-xs text-gray-700 flex-1">
-                      {new Date(selectedDemand.pickup_time).toLocaleString()}
-                    </Text>
-                  </View>
-                  <View className="flex items-start">
-                    <Text className="text-xs text-gray-500 w-16 flex-shrink-0">规格:</Text>
-                    <Text className="text-xs text-gray-700 flex-1">
-                      {selectedDemand.weight}kg / {selectedDemand.volume}m³
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* 地图展示 */}
-              {(selectedDemand.pickup_lat && selectedDemand.pickup_lng) && (
-                <View className="mb-4">
-                  <Label className="block text-sm font-medium mb-2">
-                    路线地图
-                  </Label>
-                  <View className="rounded-lg overflow-hidden bg-gray-100">
-                    {Taro.getEnv() === Taro.ENV_TYPE.WEAPP ? (
-                      <Map
-                        id="accept-map"
-                        className="w-full"
-                        style={{ height: '200px' }}
-                        latitude={parseFloat(selectedDemand.pickup_lat as string)}
-                        longitude={parseFloat(selectedDemand.pickup_lng as string)}
-                        scale={10}
-                        showLocation
-                        enableZoom
-                        enableScroll
-                        onError={(e) => console.log('地图加载失败:', e)}
-                        markers={([
-                          {
-                            id: 1,
-                            latitude: parseFloat(selectedDemand.pickup_lat as string),
-                            longitude: parseFloat(selectedDemand.pickup_lng as string),
-                            title: '取货点',
-                            iconPath: '',
-                            width: 24,
-                            height: 24
-                          },
-                          ...(selectedDemand.delivery_lat && selectedDemand.delivery_lng ? [{
-                            id: 2,
-                            latitude: parseFloat(selectedDemand.delivery_lat as string),
-                            longitude: parseFloat(selectedDemand.delivery_lng as string),
-                            title: '送货点',
-                            iconPath: '',
-                            width: 24,
-                            height: 24
-                          }] : [])
-                        ] as any)}
-                        polyline={
-                          routePolyline.length > 0
-                            ? [
-                                {
-                                  points: routePolyline,
-                                  color: '#3b82f6',
-                                  width: 4,
-                                  dottedLine: false
-                                }
-                              ]
-                            : selectedDemand.pickup_lat && selectedDemand.pickup_lng &&
-                              selectedDemand.delivery_lat && selectedDemand.delivery_lng
-                              ? [
-                                  {
-                                    points: [
-                                      {
-                                        latitude: parseFloat(selectedDemand.pickup_lat as string),
-                                        longitude: parseFloat(selectedDemand.pickup_lng as string)
-                                      },
-                                      {
-                                        latitude: parseFloat(selectedDemand.delivery_lat as string),
-                                        longitude: parseFloat(selectedDemand.delivery_lng as string)
-                                      }
-                                    ],
-                                    color: '#3b82f6',
-                                    width: 4,
-                                    dottedLine: true
-                                  }
-                                ]
-                              : []
-                        }
-                      />
-                    ) : (
-                      <View className="flex items-center justify-center h-48">
-                        <Text className="text-sm text-gray-500 text-center">
-                          地图功能仅在小程序中可用
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              )}
-
-              {/* 车辆选择 */}
-              <View className="mb-4">
-                <Label className="block text-sm font-medium mb-2">
-                  <Text className="text-red-500">*</Text>选择车辆
-                </Label>
-                {vehicles.length === 0 ? (
-                  <View className="bg-gray-50 rounded-lg p-4 text-center">
-                    <Text className="block text-gray-500 text-sm mb-2">
-                      暂无可用车辆
-                    </Text>
-                    <Text className="block text-gray-400 text-xs">
-                      请前往车辆管理页面设置车辆为出车状态
-                    </Text>
-                  </View>
-                ) : (
-                  <View className="space-y-2">
-                    {vehicles.map((vehicle) => (
-                      <View
-                        key={vehicle.id}
-                        className={`bg-gray-50 rounded-lg p-3 ${
-                          selectedVehicleId === vehicle.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
-                        }`}
-                        onClick={() => handleVehicleSelect(vehicle.id)}
-                      >
-                        <View className="flex items-center justify-between">
-                          <View className="flex-1">
-                            <Text className="block font-medium text-sm mb-1">
-                              {vehicle.vehicle_type}
-                            </Text>
-                            <View className="flex items-center gap-2 mb-1">
-                              <Text className="text-xs text-gray-600">
-                                车牌: {vehicle.license_plate || '未填写'}
-                              </Text>
-                              {vehicle.has_cold_chain && (
-                                <Badge className="bg-cyan-500">
-                                  <Text className="text-white text-xs">冷链</Text>
-                                </Badge>
-                              )}
-                            </View>
-                            <Text className="text-xs text-gray-500">
-                              载重: {vehicle.load_capacity}kg | 容积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
-                            </Text>
-                            {/* 定价信息 */}
-                            {(vehicle.base_price || vehicle.base_distance || vehicle.price_per_km) && (
-                              <Text className="text-xs text-blue-600 font-medium mt-1">
-                                💰 起步¥{vehicle.base_price || 20}（{vehicle.base_distance || 3}公里）+ ¥{vehicle.price_per_km || 2}/公里
-                              </Text>
-                            )}
-                          </View>
-                          <View className="flex-shrink-0">
-                            <View
-                              style={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '50%',
-                                border: '2px solid #d1d5db',
-                                backgroundColor: selectedVehicleId === vehicle.id ? '#3b82f6' : 'transparent',
-                                borderWidth: selectedVehicleId === vehicle.id ? '6px' : '2px'
-                              }}
-                            />
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              {/* 运费设置 */}
-              <View className="mb-4">
-                <Label className="block text-sm font-medium mb-2">
-                  <Text className="text-red-500">*</Text>运费设置
-                </Label>
-
-                {/* 运费计算详情 */}
-                {calculatedFare && fareCalculationDetail && (
-                  <View className="bg-green-50 rounded-lg p-3 mb-3">
-                    <Text className="block text-sm font-medium text-green-700 mb-2">
-                      ✅ 系统自动计算运费
-                    </Text>
-                    <View className="space-y-1">
-                      <Text className="text-xs text-green-600">
-                        • 起步价：¥{fareCalculationDetail.base_price}（{fareCalculationDetail.base_distance}公里）
-                      </Text>
-                      <Text className="text-xs text-green-600">
-                        • 总距离：{fareCalculationDetail.total_distance.toFixed(2)}公里
-                      </Text>
-                      <Text className="text-xs text-green-600">
-                        • 额外距离：{fareCalculationDetail.extra_distance.toFixed(2)}公里
-                      </Text>
-                      <Text className="text-xs text-green-600">
-                        • 额外费用：¥{fareCalculationDetail.extra_fare.toFixed(2)}
-                      </Text>
-                      <Text className="text-xs text-green-700 font-bold">
-                        • 总运费：¥{Math.floor(fareCalculationDetail.total_fare)}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-
-                <View className="bg-gray-50 rounded-lg px-4 py-3">
-                  <View className="flex items-center">
-                    <View className="flex-1">
-                      <Input
-                        className="w-full bg-transparent"
-                        placeholder={calculatedFare ? `系统计算: ¥${Math.floor(calculatedFare)}` : '请输入运费价格'}
-                        type="digit"
-                        value={farePrice}
-                        onInput={(e) => setFarePrice(e.detail.value)}
-                      />
-                    </View>
-                    <Text className="text-sm text-gray-600 ml-2">元</Text>
-                  </View>
-                </View>
-                <Text className="text-xs text-gray-400 mt-1">
-                  {calculatedFare ? '提示：可修改系统计算的运费' : '提示：选择车辆后系统将自动计算运费'}
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
+            <View className="p-6 flex flex-col h-full">
+              {/* 标题 - 固定在顶部 */}
+              <View className="flex-shrink-0">
+                <Text className="block text-lg font-semibold mb-2">
+                  确认接单
+                </Text>
+                <Text className="block text-sm text-gray-500 mb-4">
+                  请确认接单：{selectedDemand.cargo_name}
                 </Text>
               </View>
 
-              <View>
-                <Label className="block text-sm font-medium mb-2">
-                  备注说明（可选）
-                </Label>
-                <View className="bg-gray-50 rounded-lg p-4">
-                  <Textarea
-                    style={{ width: '100%', minHeight: '80px', backgroundColor: 'transparent' }}
-                    placeholder="如：预计10分钟内到达取货点"
-                    maxlength={200}
-                    value={acceptNote}
-                    onInput={(e) => setAcceptNote(e.detail.value)}
-                  />
+              {/* 可滚动内容区域 */}
+              <ScrollView scrollY className="flex-1" style={{ maxHeight: '60vh' }}>
+                <View className="space-y-4">
+                  <View className="bg-gray-50 rounded-lg p-4">
+                    <View className="space-y-2">
+                      <View className="flex items-start">
+                        <Text className="text-xs text-gray-500 w-16 flex-shrink-0">取货:</Text>
+                        <Text className="text-xs text-gray-700 flex-1">
+                          {selectedDemand.pickup_address}
+                        </Text>
+                      </View>
+                      <View className="flex items-start">
+                        <Text className="text-xs text-gray-500 w-16 flex-shrink-0">送货:</Text>
+                        <Text className="text-xs text-gray-700 flex-1">
+                          {selectedDemand.delivery_address}
+                        </Text>
+                      </View>
+                      <View className="flex items-start">
+                        <Text className="text-xs text-gray-500 w-16 flex-shrink-0">时间:</Text>
+                        <Text className="text-xs text-gray-700 flex-1">
+                          {new Date(selectedDemand.pickup_time).toLocaleString()}
+                        </Text>
+                      </View>
+                      <View className="flex items-start">
+                        <Text className="text-xs text-gray-500 w-16 flex-shrink-0">规格:</Text>
+                        <Text className="text-xs text-gray-700 flex-1">
+                          {selectedDemand.weight}kg / {selectedDemand.volume}m³
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* 地图展示 */}
+                  {(selectedDemand.pickup_lat && selectedDemand.pickup_lng) && (
+                    <View>
+                      <Label className="block text-sm font-medium mb-2">
+                        路线地图
+                      </Label>
+                      <View className="rounded-lg overflow-hidden bg-gray-100">
+                        {Taro.getEnv() === Taro.ENV_TYPE.WEAPP ? (
+                          <Map
+                            id="accept-map"
+                            className="w-full"
+                            style={{ height: '150px' }}
+                            latitude={parseFloat(selectedDemand.pickup_lat as string)}
+                            longitude={parseFloat(selectedDemand.pickup_lng as string)}
+                            scale={10}
+                            showLocation
+                            enableZoom
+                            enableScroll
+                            onError={(e) => console.log('地图加载失败:', e)}
+                            markers={([
+                              {
+                                id: 1,
+                                latitude: parseFloat(selectedDemand.pickup_lat as string),
+                                longitude: parseFloat(selectedDemand.pickup_lng as string),
+                                title: '取货点',
+                                iconPath: '',
+                                width: 24,
+                                height: 24
+                              },
+                              ...(selectedDemand.delivery_lat && selectedDemand.delivery_lng ? [{
+                                id: 2,
+                                latitude: parseFloat(selectedDemand.delivery_lat as string),
+                                longitude: parseFloat(selectedDemand.delivery_lng as string),
+                                title: '送货点',
+                                iconPath: '',
+                                width: 24,
+                                height: 24
+                              }] : [])
+                            ] as any)}
+                            polyline={
+                              routePolyline.length > 0
+                                ? [
+                                    {
+                                      points: routePolyline,
+                                      color: '#3b82f6',
+                                      width: 4,
+                                      dottedLine: false
+                                    }
+                                  ]
+                                : selectedDemand.pickup_lat && selectedDemand.pickup_lng &&
+                                  selectedDemand.delivery_lat && selectedDemand.delivery_lng
+                                  ? [
+                                      {
+                                        points: [
+                                          {
+                                            latitude: parseFloat(selectedDemand.pickup_lat as string),
+                                            longitude: parseFloat(selectedDemand.pickup_lng as string)
+                                          },
+                                          {
+                                            latitude: parseFloat(selectedDemand.delivery_lat as string),
+                                            longitude: parseFloat(selectedDemand.delivery_lng as string)
+                                          }
+                                        ],
+                                        color: '#3b82f6',
+                                        width: 4,
+                                        dottedLine: true
+                                      }
+                                    ]
+                                  : []
+                            }
+                          />
+                        ) : (
+                          <View className="flex items-center justify-center h-36">
+                            <Text className="text-sm text-gray-500 text-center">
+                              地图功能仅在小程序中可用
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  )}
+
+                  {/* 车辆选择 */}
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      <Text className="text-red-500">*</Text>选择车辆
+                    </Label>
+                    {vehicles.length === 0 ? (
+                      <View className="bg-gray-50 rounded-lg p-4 text-center">
+                        <Text className="block text-gray-500 text-sm mb-2">
+                          暂无可用车辆
+                        </Text>
+                        <Text className="block text-gray-400 text-xs">
+                          请前往车辆管理页面设置车辆为出车状态
+                        </Text>
+                      </View>
+                    ) : (
+                      <View className="space-y-2">
+                        {vehicles.map((vehicle) => (
+                          <View
+                            key={vehicle.id}
+                            className={`bg-gray-50 rounded-lg p-3 ${
+                              selectedVehicleId === vehicle.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
+                            }`}
+                            onClick={() => handleVehicleSelect(vehicle.id)}
+                          >
+                            <View className="flex items-center justify-between">
+                              <View className="flex-1">
+                                <Text className="block font-medium text-sm mb-1">
+                                  {vehicle.vehicle_type}
+                                </Text>
+                                <View className="flex items-center gap-2 mb-1">
+                                  <Text className="text-xs text-gray-600">
+                                    车牌: {vehicle.license_plate || '未填写'}
+                                  </Text>
+                                  {vehicle.has_cold_chain && (
+                                    <Badge className="bg-cyan-500">
+                                      <Text className="text-white text-xs">冷链</Text>
+                                    </Badge>
+                                  )}
+                                </View>
+                                <Text className="text-xs text-gray-500">
+                                  载重: {vehicle.load_capacity}kg | 容积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
+                                </Text>
+                                {/* 定价信息 */}
+                                {(vehicle.base_price || vehicle.base_distance || vehicle.price_per_km) && (
+                                  <Text className="text-xs text-blue-600 font-medium mt-1">
+                                    💰 起步¥{vehicle.base_price || 20}（{vehicle.base_distance || 3}公里）+ ¥{vehicle.price_per_km || 2}/公里
+                                  </Text>
+                                )}
+                              </View>
+                              <View className="flex-shrink-0">
+                                <View
+                                  style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    border: '2px solid #d1d5db',
+                                    backgroundColor: selectedVehicleId === vehicle.id ? '#3b82f6' : 'transparent',
+                                    borderWidth: selectedVehicleId === vehicle.id ? '6px' : '2px'
+                                  }}
+                                />
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* 运费设置 */}
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      <Text className="text-red-500">*</Text>运费设置
+                    </Label>
+
+                    {/* 运费计算详情 */}
+                    {calculatedFare && fareCalculationDetail && (
+                      <View className="bg-green-50 rounded-lg p-3 mb-3">
+                        <Text className="block text-sm font-medium text-green-700 mb-2">
+                          ✅ 系统自动计算运费
+                        </Text>
+                        <View className="space-y-1">
+                          <Text className="text-xs text-green-600">
+                            • 起步价：¥{fareCalculationDetail.base_price}（{fareCalculationDetail.base_distance}公里）
+                          </Text>
+                          <Text className="text-xs text-green-600">
+                            • 总距离：{fareCalculationDetail.total_distance.toFixed(2)}公里
+                          </Text>
+                          <Text className="text-xs text-green-600">
+                            • 额外距离：{fareCalculationDetail.extra_distance.toFixed(2)}公里
+                          </Text>
+                          <Text className="text-xs text-green-600">
+                            • 额外费用：¥{fareCalculationDetail.extra_fare.toFixed(2)}
+                          </Text>
+                          <Text className="text-xs text-green-700 font-bold">
+                            • 总运费：¥{Math.floor(fareCalculationDetail.total_fare)}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+
+                    <View className="bg-gray-50 rounded-lg px-4 py-3">
+                      <View className="flex items-center">
+                        <View className="flex-1">
+                          <Input
+                            className="w-full bg-transparent"
+                            placeholder={calculatedFare ? `系统计算: ¥${Math.floor(calculatedFare)}` : '请输入运费价格'}
+                            type="digit"
+                            value={farePrice}
+                            onInput={(e) => setFarePrice(e.detail.value)}
+                          />
+                        </View>
+                        <Text className="text-sm text-gray-600 ml-2">元</Text>
+                      </View>
+                    </View>
+                    <Text className="text-xs text-gray-400 mt-1">
+                      {calculatedFare ? '提示：可修改系统计算的运费' : '提示：选择车辆后系统将自动计算运费'}
+                    </Text>
+                  </View>
+
+                  <View>
+                    <Label className="block text-sm font-medium mb-2">
+                      备注说明（可选）
+                    </Label>
+                    <View className="bg-gray-50 rounded-lg p-4">
+                      <Textarea
+                        style={{ width: '100%', minHeight: '80px', backgroundColor: 'transparent' }}
+                        placeholder="如：预计10分钟内到达取货点"
+                        maxlength={200}
+                        value={acceptNote}
+                        onInput={(e) => setAcceptNote(e.detail.value)}
+                      />
+                    </View>
+                  </View>
                 </View>
-              </View>
-              <View className="flex gap-3 mt-6">
+              </ScrollView>
+
+              {/* 按钮区域 - 固定在底部 */}
+              <View className="flex gap-3 mt-4 flex-shrink-0">
                 <Button
                   className="flex-1 bg-gray-200"
                   onClick={handleCloseAcceptDialog}
