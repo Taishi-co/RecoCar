@@ -10,9 +10,10 @@ import { PlatformModule } from '@/modules/platform/platform.module';
 import { HomeModule } from '@/modules/home/home.module';
 import { NotificationsModule } from '@/modules/notifications/notification.module';
 import { CancellationsModule } from '@/modules/cancellations/cancellations.module';
+import { AddressBookModule } from '@/modules/address_book/address_book.module';
 
 @Module({
-  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule],
+  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule, AddressBookModule],
   controllers: [AppController],
   providers: [AppService],
 })

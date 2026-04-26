@@ -6,6 +6,28 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
+import { BookOpen } from 'lucide-react-taro'
+
+interface FormData {
+  cargo_name: string
+  cargo_type: string
+  weight: string
+  volume: string
+  pickup_time: string
+  pickup_address: string
+  pickup_location: { latitude: number; longitude: number } | null
+  delivery_address: string
+  delivery_location: { latitude: number; longitude: number } | null
+  remarks: string
+  estimated_distance: number | null
+  estimated_fare: number | null
+  is_calculating: boolean
+  manualInputMode: 'pickup' | 'delivery' | null
+  manualLat: string
+  manualLng: string
+  save_pickup: boolean
+  save_delivery: boolean
+}
 
 interface FormData {
   cargo_name: string
@@ -44,7 +66,9 @@ export default function PublishDemand() {
     is_calculating: false,
     manualInputMode: null,
     manualLat: '',
-    manualLng: ''
+    manualLng: '',
+    save_pickup: false,
+    save_delivery: false
   })
 
   const handlePickupDateSelect = (e) => {
@@ -127,9 +151,9 @@ export default function PublishDemand() {
   }
 
   const handleManualLocationConfirm = (type: 'pickup' | 'delivery', lat: number, lng: number) => {
-    console.log('[handleManualLocationConfirm] type:', type, 'lat:', lat, 'lng:', lng, 'isNaN(lat):', isNaN(lat), 'isNaN(lng):', isNaN(lng))
+    console.log('[handleManualLocationConfirm] type:', type, 'lat:', lat, 'lng:', lng, 'Number.isNaN(lat):', Number.isNaN(lat), 'Number.isNaN(lng):', Number.isNaN(lng))
 
-    if (isNaN(lat) || isNaN(lng)) {
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
       Taro.showToast({
         title: '请输入有效的坐标',
         icon: 'none'
@@ -177,6 +201,81 @@ export default function PublishDemand() {
       title: '位置设置成功',
       icon: 'success'
     })
+  }
+
+  // 打开地址簿选择
+  const openAddressBook = (type: 'pickup' | 'delivery') => {
+    Taro.navigateTo({
+      url: `/pages/common/address-book/index?type=${type}`,
+      events: {
+        addressSelected: (address) => {
+          const locationData = { latitude: address.latitude, longitude: address.longitude }
+          let newFormData = { ...formData }
+
+          if (type === 'pickup') {
+            newFormData.pickup_address = address.address
+            newFormData.pickup_location = locationData
+          } else {
+            newFormData.delivery_address = address.address
+            newFormData.delivery_location = locationData
+          }
+
+          setFormData(newFormData)
+
+          // 如果两个位置都有，触发距离计算
+          if (newFormData.pickup_location && newFormData.delivery_location) {
+            calculateDistance(newFormData)
+          }
+
+          Taro.showToast({
+            title: '已选择地址',
+            icon: 'success'
+          })
+        }
+      }
+    })
+  }
+
+  // 保存地址到地址簿
+  const saveToAddressBook = async (type: 'pickup' | 'delivery') => {
+    const userInfo = Taro.getStorageSync('userInfo')
+
+    const addressData = {
+      user_id: userInfo.id,
+      address_type: type,
+      title: type === 'pickup' ? formData.pickup_address : formData.delivery_address,
+      address: type === 'pickup' ? formData.pickup_address : formData.delivery_address,
+      latitude: type === 'pickup' ? formData.pickup_location!.latitude : formData.delivery_location!.latitude,
+      longitude: type === 'pickup' ? formData.pickup_location!.longitude : formData.delivery_location!.longitude,
+      tag: '常用',
+      is_default: false
+    }
+
+    try {
+      const res = await Network.request({
+        url: '/api/address-books',
+        method: 'POST',
+        data: addressData
+      })
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '已保存到地址簿',
+          icon: 'success'
+        })
+      } else {
+        Taro.showToast({
+          title: res.data.message || '保存失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('保存到地址簿失败:', error)
+      Taro.showToast({
+        title: '保存失败',
+        icon: 'none'
+      })
+    }
   }
 
   // 计算距离和运费
@@ -485,7 +584,14 @@ export default function PublishDemand() {
                 </View>
                 <Button
                   size="sm"
-                  className="bg-blue-500 px-4"
+                  className="bg-blue-500 px-3"
+                  onClick={() => openAddressBook('pickup')}
+                >
+                  <BookOpen size={16} color="white" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-green-500 px-3"
                   onClick={() => handleChooseLocation('pickup')}
                 >
                   <Text className="text-xs">定位</Text>
@@ -550,7 +656,7 @@ export default function PublishDemand() {
                       onClick={() => {
                         const lat = parseFloat(formData.manualLat)
                         const lng = parseFloat(formData.manualLng)
-                        if (formData.manualLat && formData.manualLng && !isNaN(lat) && !isNaN(lng)) {
+                        if (formData.manualLat && formData.manualLng && !Number.isNaN(lat) && !Number.isNaN(lng)) {
                           handleManualLocationConfirm('pickup', lat, lng)
                         } else {
                           Taro.showToast({
@@ -580,7 +686,7 @@ export default function PublishDemand() {
                 </Text>
               )}
               <Text className="block text-xs text-gray-400 mt-1">
-                提示：小程序可地图选择，H5点击"定位"后手动输入坐标
+                提示：小程序可地图选择，H5点击&#34;定位&#34;后手动输入坐标
               </Text>
             </View>
 
@@ -599,7 +705,14 @@ export default function PublishDemand() {
                 </View>
                 <Button
                   size="sm"
-                  className="bg-blue-500 px-4"
+                  className="bg-blue-500 px-3"
+                  onClick={() => openAddressBook('delivery')}
+                >
+                  <BookOpen size={16} color="white" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-green-500 px-3"
                   onClick={() => handleChooseLocation('delivery')}
                 >
                   <Text className="text-xs">定位</Text>
@@ -664,7 +777,7 @@ export default function PublishDemand() {
                       onClick={() => {
                         const lat = parseFloat(formData.manualLat)
                         const lng = parseFloat(formData.manualLng)
-                        if (formData.manualLat && formData.manualLng && !isNaN(lat) && !isNaN(lng)) {
+                        if (formData.manualLat && formData.manualLng && !Number.isNaN(lat) && !Number.isNaN(lng)) {
                           handleManualLocationConfirm('delivery', lat, lng)
                         } else {
                           Taro.showToast({
@@ -694,7 +807,7 @@ export default function PublishDemand() {
                 </Text>
               )}
               <Text className="block text-xs text-gray-400 mt-1">
-                提示：小程序可地图选择，H5点击"定位"后手动输入坐标
+                提示：小程序可地图选择，H5点击&#34;定位&#34;后手动输入坐标
               </Text>
             </View>
 
@@ -745,6 +858,41 @@ export default function PublishDemand() {
                 />
               </View>
             </View>
+
+            {/* 保存到地址簿 */}
+            {(formData.pickup_location || formData.delivery_location) && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <Text className="block text-sm font-medium text-blue-900 mb-3">💾 保存到地址簿</Text>
+                  <View className="space-y-2">
+                    {formData.pickup_location && (
+                      <View className="flex items-center justify-between">
+                        <Text className="text-sm text-blue-700">取货地址：{formData.pickup_address.slice(0, 20)}...</Text>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => saveToAddressBook('pickup')}
+                        >
+                          <Text className="text-xs">保存</Text>
+                        </Button>
+                      </View>
+                    )}
+                    {formData.delivery_location && (
+                      <View className="flex items-center justify-between">
+                        <Text className="text-sm text-blue-700">送货地址：{formData.delivery_address.slice(0, 20)}...</Text>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => saveToAddressBook('delivery')}
+                        >
+                          <Text className="text-xs">保存</Text>
+                        </Button>
+                      </View>
+                    )}
+                  </View>
+                </CardContent>
+              </Card>
+            )}
 
             <View className="flex gap-3 pt-2">
               <Button
