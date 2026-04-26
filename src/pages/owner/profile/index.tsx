@@ -343,12 +343,7 @@ export default function OwnerProfile() {
             </View>
             <View
               className="flex items-center justify-between px-4 py-4 border-b border-gray-100 active:bg-gray-50"
-              onClick={() => {
-                Taro.showToast({
-                  title: '功能开发中',
-                  icon: 'none'
-                })
-              }}
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/account-settings/index' })}
             >
               <View className="flex items-center gap-3">
                 <Settings size={20} color="#3b82f6" />

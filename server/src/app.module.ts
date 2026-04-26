@@ -12,9 +12,10 @@ import { NotificationsModule } from '@/modules/notifications/notification.module
 import { CancellationsModule } from '@/modules/cancellations/cancellations.module';
 import { AddressBooksModule } from '@/modules/address-books/address-books.module';
 import { FavoriteRoutesModule } from '@/modules/favorite-routes/favorite-routes.module';
+import { AccountSettingsModule } from '@/modules/account-settings/account-settings.module';
 
 @Module({
-  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule, AddressBooksModule, FavoriteRoutesModule],
+  imports: [AuthModule, VehiclesModule, DemandsModule, OrdersModule, AdminModule, PlatformModule, HomeModule, NotificationsModule, CancellationsModule, AddressBooksModule, FavoriteRoutesModule, AccountSettingsModule],
   controllers: [AppController],
   providers: [AppService],
 })
