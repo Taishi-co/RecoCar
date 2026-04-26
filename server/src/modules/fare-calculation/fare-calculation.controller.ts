@@ -50,11 +50,19 @@ export class FareCalculationController {
     const minFare = Math.min(...fares)
     const maxFare = Math.max(...fares)
 
+    // 获取路线信息（所有车辆的路线信息相同）
+    const routeInfo = results[0] ? {
+      route_type: results[0].route_type,
+      is_estimate: results[0].is_estimate,
+      route_duration: results[0].route_duration
+    } : null
+
     return {
       code: 200,
       message: '计算成功',
       data: {
         vehicles: results,
+        route_info: routeInfo,
         fare_range: {
           min: minFare,
           max: maxFare,

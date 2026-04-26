@@ -1,5 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
-import { getSupabaseClient } from '@/storage/database/supabase-client'
+import { Injectable, BadRequestException, Inject, forwardRef } from '@nestjs/common'
+import { getSupabaseClient } from '../../storage/database/supabase-client'
+import { DemandsService } from '../demands/demands.service'
 
 // 运费计算详情接口
 export interface FareCalculationDetail {
@@ -24,16 +25,27 @@ export interface FareCalculationResult {
   extra_fare: number
   total_fare: number
   calculation_detail: FareCalculationDetail
+  // 路线信息
+  route_type: 'highway' | 'non_highway' | 'estimated'
+  is_estimate: boolean
+  route_duration?: number
 }
 
 @Injectable()
 export class FareCalculationService {
   private supabase = getSupabaseClient()
 
+  constructor(
+    @Inject(forwardRef(() => DemandsService))
+    private readonly demandsService: DemandsService
+  ) {}
+
   /**
    * 根据车辆和距离计算运费
    */
   async calculateFare(vehicleId: string, totalDistance: number): Promise<FareCalculationResult> {
+    console.log(`[FareCalculationService] INFO - 开始计算运费: vehicleId=${vehicleId}, distance=${totalDistance}km`)
+
     // 1. 获取车辆定价信息
     const { data: vehicle, error: vehicleError } = await this.supabase
       .from('vehicles')
@@ -42,11 +54,13 @@ export class FareCalculationService {
       .maybeSingle()
 
     if (vehicleError || !vehicle) {
+      console.error(`[FareCalculationService] ERROR - 车辆不存在: vehicleId=${vehicleId}`)
       throw new BadRequestException('车辆不存在或定价信息不完整')
     }
 
     // 2. 验证定价信息完整性
     if (vehicle.base_price === null || vehicle.base_distance === null || vehicle.price_per_km === null) {
+      console.error(`[FareCalculationService] ERROR - 车辆定价信息不完整: vehicleId=${vehicleId}`)
       throw new BadRequestException('车辆定价信息不完整，请先设置定价')
     }
 
@@ -77,6 +91,13 @@ export class FareCalculationService {
       total_fare: totalFare
     }
 
+    console.log(
+      `[FareCalculationService] INFO - 运费计算完成: vehicleId=${vehicleId}, ` +
+      `basePrice=¥${basePrice}, baseDistance=${baseDistance}km, ` +
+      `pricePerKm=¥${pricePerKm}/km, totalDistance=${totalDistance}km, ` +
+      `extraDistance=${extraDistance}km, extraFare=¥${extraFare.toFixed(2)}, totalFare=¥${totalFare.toFixed(2)}`
+    )
+
     // 7. 返回计算结果
     return {
       vehicle_id: vehicle.id,
@@ -88,7 +109,9 @@ export class FareCalculationService {
       extra_distance: extraDistance,
       extra_fare: extraFare,
       total_fare: totalFare,
-      calculation_detail: calculationDetail
+      calculation_detail: calculationDetail,
+      route_type: 'non_highway', // 默认非高速路线
+      is_estimate: false // 默认非估算值
     }
   }
 
@@ -142,39 +165,77 @@ export class FareCalculationService {
     deliveryLat: number,
     deliveryLng: number
   ): Promise<FareCalculationResult[]> {
-    // 1. 调用距离计算服务（这里需要注入 DemandsService 或单独的距离计算服务）
-    // 为了简化，这里假设距离已经计算好
-    // 实际项目中，应该调用 DemandsService.calculateDistance()
+    console.log(
+      `[FareCalculationService] INFO - 开始计算多车辆运费: ` +
+      `vehicleIds=[${vehicleIds.join(', ')}], ` +
+      `pickup=(${pickupLat}, ${pickupLng}), ` +
+      `delivery=(${deliveryLat}, ${deliveryLng})`
+    )
 
-    // 临时方案：使用直线距离估算
-    const distance = this.calculateStraightDistance(pickupLat, pickupLng, deliveryLat, deliveryLng)
+    let distance: number
+    let routeType: 'non_highway' | 'estimated'
+    let isEstimate: boolean
+    let routeDuration: number | undefined
 
-    // 2. 为每辆车计算运费
+    try {
+      // 1. 调用 DemandsService 的精确距离计算（高德地图 API 或降级方案）
+      const distanceResult = await this.demandsService.calculateDistance({
+        pickup_lat: pickupLat,
+        pickup_lng: pickupLng,
+        delivery_lat: deliveryLat,
+        delivery_lng: deliveryLng
+      })
+
+      // 2. 提取距离和路线信息（从返回的数据结构中）
+      distance = distanceResult.data.distance
+      routeType = distanceResult.data.route_type
+      isEstimate = distanceResult.data.is_estimate || false
+      routeDuration = distanceResult.data.route_duration
+
+      console.log(
+        `[FareCalculationService] INFO - 距离计算完成: ` +
+        `distance=${distance}km, routeType=${routeType}, ` +
+        `isEstimate=${isEstimate}, duration=${routeDuration}min`
+      )
+    } catch (error) {
+      console.error('[FareCalculationService] ERROR - 距离计算失败:', error)
+      throw new BadRequestException('距离计算失败，请稍后重试')
+    }
+
+    // 3. 为每辆车计算运费
     const results: FareCalculationResult[] = []
+    let successCount = 0
+    let failCount = 0
+
     for (const vehicleId of vehicleIds) {
       try {
         const fareResult = await this.calculateFare(vehicleId, distance)
-        results.push(fareResult)
+
+        // 4. 添加路线信息
+        results.push({
+          ...fareResult,
+          route_type: routeType,
+          is_estimate: isEstimate,
+          route_duration: routeDuration
+        })
+
+        successCount++
       } catch (error) {
-        console.error(`计算车辆 ${vehicleId} 运费失败:`, error)
+        failCount++
+        console.error(`[FareCalculationService] WARN - 车辆 ${vehicleId} 运费计算失败:`, error)
       }
     }
 
-    return results
-  }
+    if (successCount === 0) {
+      console.error('[FareCalculationService] ERROR - 所有车辆运费计算失败')
+      throw new BadRequestException('所有车辆运费计算失败')
+    }
 
-  /**
-   * 计算直线距离（Haversine公式）
-   */
-  private calculateStraightDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371 // 地球半径，单位：公里
-    const dLat = (lat2 - lat1) * Math.PI / 180
-    const dLon = (lon2 - lon1) * Math.PI / 180
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
+    console.log(
+      `[FareCalculationService] INFO - 多车辆运费计算完成: ` +
+      `success=${successCount}, fail=${failCount}, total=${vehicleIds.length}`
+    )
+
+    return results
   }
 }
