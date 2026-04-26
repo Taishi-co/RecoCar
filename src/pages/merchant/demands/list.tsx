@@ -197,10 +197,15 @@ export default function DemandsList() {
       console.log('保存模板响应:', res.data)
 
       if (res.data.code === 200) {
+        console.log('[DemandList] 模板保存成功:', res.data.data)
         Taro.showToast({
           title: '模板保存成功',
           icon: 'success'
         })
+
+        // 触发模板列表刷新事件
+        console.log('[DemandList] 触发模板列表刷新事件')
+        Taro.eventCenter.trigger('templateListRefresh')
 
         setShowTemplateDialog(false)
         setSelectedDemand(null)

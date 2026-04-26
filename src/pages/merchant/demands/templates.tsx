@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text } from '@tarojs/components'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Trash2, ArrowRight, FileText } from 'lucide-react-taro'
-import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
 interface DemandTemplate {
@@ -38,11 +38,33 @@ export default function DemandTemplates() {
     loadTemplates()
   }, [])
 
+  useDidShow(() => {
+    console.log('[DemandTemplates] 页面显示，刷新模板列表')
+    loadTemplates()
+  })
+
+  // 监听模板列表刷新事件
+  useEffect(() => {
+    const handler = () => {
+      console.log('[DemandTemplates] 接收到刷新事件')
+      loadTemplates()
+    }
+
+    Taro.eventCenter.on('templateListRefresh', handler)
+
+    return () => {
+      Taro.eventCenter.off('templateListRefresh', handler)
+    }
+  }, [])
+
   const loadTemplates = async () => {
     setLoading(true)
     try {
       const userInfo = Taro.getStorageSync('userInfo')
+      console.log('[DemandTemplates] 用户信息:', userInfo)
+
       if (!userInfo || !userInfo.id) {
+        console.error('[DemandTemplates] 用户信息不存在')
         Taro.showToast({
           title: '请先登录',
           icon: 'none'
@@ -56,13 +78,16 @@ export default function DemandTemplates() {
         data: { userId: userInfo.id }
       })
 
-      console.log('常用模板响应:', res.data)
+      console.log('[DemandTemplates] 常用模板响应:', res.data)
 
       if (res.data.code === 200) {
+        console.log('[DemandTemplates] 加载到模板数量:', res.data.data?.length || 0)
         setTemplates(res.data.data || [])
+      } else {
+        console.error('[DemandTemplates] 响应错误:', res.data.message)
       }
     } catch (err) {
-      console.error('加载常用模板失败:', err)
+      console.error('[DemandTemplates] 加载常用模板失败:', err)
       Taro.showToast({
         title: '加载失败',
         icon: 'none'
