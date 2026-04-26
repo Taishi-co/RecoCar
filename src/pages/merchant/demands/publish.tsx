@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, Picker } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -47,6 +47,50 @@ export default function PublishDemand() {
     manualLat: '',
     manualLng: ''
   })
+
+  // 检查是否从常用线路跳转过来，自动填充地址信息
+  useEffect(() => {
+    try {
+      const instance = Taro.getCurrentInstance()
+      const routeParams = instance.router?.params
+
+      if (routeParams?.route) {
+        const routeData = JSON.parse(decodeURIComponent(routeParams.route))
+
+        console.log('[PublishDemand] 从常用线路跳转:', routeData)
+
+        // 自动填充取货地址和送货地址
+        setFormData((prev) => ({
+          ...prev,
+          pickup_address: routeData.pickup_address?.address || '',
+          pickup_location: routeData.pickup_address?.latitude && routeData.pickup_address?.longitude
+            ? {
+                latitude: routeData.pickup_address.latitude,
+                longitude: routeData.pickup_address.longitude
+              }
+            : null,
+          delivery_address: routeData.delivery_address?.address || '',
+          delivery_location: routeData.delivery_address?.latitude && routeData.delivery_address?.longitude
+            ? {
+                latitude: routeData.delivery_address.latitude,
+                longitude: routeData.delivery_address.longitude
+              }
+            : null,
+          estimated_distance: routeData.estimated_distance || null,
+          estimated_fare: routeData.estimated_fare || null
+        }))
+
+        // 显示提示信息
+        Taro.showToast({
+          title: `已自动填充: ${routeData.route_name}`,
+          icon: 'success',
+          duration: 2000
+        })
+      }
+    } catch (error) {
+      console.error('[PublishDemand] 解析线路参数失败:', error)
+    }
+  }, [])
 
   const handlePickupDateSelect = (e) => {
     const date = e.detail.value
