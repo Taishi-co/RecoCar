@@ -9,6 +9,7 @@ export default typeof definePageConfig === 'function'
         'pages/owner/commission-payment/index',// 车主端-佣金支付
         'pages/owner/stats/index',             // 车主端-统计
         'pages/owner/profile/index',           // 车主端-我的
+        'pages/owner/profile/revenue-stats/index', // 车主端-收益统计
         'pages/owner/account-settings/index',  // 车主端-账号设置
         'pages/owner/profile-edit/index',      // 车主端-个人信息编辑
         'pages/owner/change-phone/index',      // 车主端-修改手机号
@@ -51,6 +52,7 @@ export default typeof definePageConfig === 'function'
         'pages/owner/commission-payment/index',// 车主端-佣金支付
         'pages/owner/stats/index',             // 车主端-统计
         'pages/owner/profile/index',           // 车主端-我的
+        'pages/owner/profile/revenue-stats/index', // 车主端-收益统计
         'pages/owner/account-settings/index',  // 车主端-账号设置
         'pages/owner/profile-edit/index',      // 车主端-个人信息编辑
         'pages/owner/change-phone/index',      // 车主端-修改手机号
