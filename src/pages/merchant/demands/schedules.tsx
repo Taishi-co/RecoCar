@@ -132,13 +132,32 @@ export default function DemandSchedules() {
 
   const handleEditSchedule = (schedule: DemandSchedule) => {
     setEditingSchedule(schedule)
+
+    // 处理 end_time 格式：ISO 格式 -> "YYYY-MM-DD HH:mm:ss"
+    let formattedEndTime = ''
+    if (schedule.end_time) {
+      try {
+        const date = new Date(schedule.end_time)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        const seconds = String(date.getSeconds()).padStart(2, '0')
+        formattedEndTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+      } catch (err) {
+        console.error('格式化结束时间失败:', err)
+        formattedEndTime = schedule.end_time as string
+      }
+    }
+
     setFormData({
       template_id: schedule.template_id,
       schedule_name: schedule.schedule_name || '',
       schedule_type: schedule.schedule_type,
       interval_days: schedule.interval_days?.toString() || '1',
       start_time: `${schedule.base_date} ${schedule.base_time}`,
-      end_time: schedule.end_time || ''
+      end_time: formattedEndTime
     })
     setShowDialog(true)
   }
