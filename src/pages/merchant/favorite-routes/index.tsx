@@ -287,16 +287,33 @@ export default function FavoriteRoutes() {
 
   const handleUseRoute = async (route: FavoriteRoute) => {
     try {
+      // 获取当前用户信息
+      const userInfo = Taro.getStorageSync('userInfo')
+      const userRole = userInfo.role
+
       // 增加使用次数
       await Network.request({
         url: `/api/favorite-routes/${route.id}/increment-use-count`,
         method: 'POST'
       })
 
-      // 跳转到发布需求页面，并传递线路信息
-      Taro.navigateTo({
-        url: `/pages/merchant/demands/publish?route=${JSON.stringify(route)}`
-      })
+      // 根据用户角色判断跳转逻辑
+      if (userRole === 'merchant') {
+        // 需求方：跳转到发布需求页面，并传递线路信息
+        Taro.navigateTo({
+          url: `/pages/merchant/demands/publish?route=${encodeURIComponent(JSON.stringify(route))}`
+        })
+      } else if (userRole === 'owner') {
+        // 运力方：跳转到地图线路显示页面
+        Taro.navigateTo({
+          url: `/pages/merchant/route-map/index?route=${encodeURIComponent(JSON.stringify(route))}`
+        })
+      } else {
+        Taro.showToast({
+          title: '未知用户类型',
+          icon: 'none'
+        })
+      }
     } catch (error) {
       console.error('[FavoriteRoutes] 使用线路失败:', error)
       Taro.showToast({
