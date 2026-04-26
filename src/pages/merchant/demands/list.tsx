@@ -297,6 +297,13 @@ export default function DemandsList() {
             <Button
               size="sm"
               variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/stats/index' })}
+            >
+              <Text className="text-xs">数据统计</Text>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/merchant/profile/index' })}
             >
               <Text className="text-xs">我的</Text>
