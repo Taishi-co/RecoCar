@@ -675,13 +675,18 @@ export default function MerchantOrders() {
                             )}
                             {/* 旧版运费确认（保留兼容性） */}
                             {order.status === 'accepted' && !order.merchant_confirmed && (
-                              <Button
-                                size="sm"
-                                className="bg-orange-500"
-                                onClick={() => handleConfirmFare(order.id)}
-                              >
-                                <Text className="text-xs">确认运费</Text>
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="bg-orange-500"
+                                  onClick={() => handleConfirmFare(order.id)}
+                                >
+                                  <Text className="text-xs">确认运费</Text>
+                                </Button>
+                                <Text className="text-xs text-gray-500 mt-1 block">
+                                  提示：确认运费后不可直接取消
+                                </Text>
+                              </>
                             )}
                             {order.status === 'accepted' && order.merchant_confirmed && (
                               <View className="bg-green-500 px-3 py-1 rounded-lg">
@@ -757,6 +762,20 @@ export default function MerchantOrders() {
                 <Text className="block text-base font-medium mb-2">
                   取消订单
                 </Text>
+                <View className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+                  <Text className="block text-sm text-orange-800 mb-2">
+                    ⚠️ 取消订单后：
+                  </Text>
+                  <Text className="block text-sm text-orange-700 mb-1">
+                    • 该需求将恢复到待接单状态
+                  </Text>
+                  <Text className="block text-sm text-orange-700 mb-1">
+                    • 其他车主可以继续接单
+                  </Text>
+                  <Text className="block text-sm text-orange-700">
+                    • 此操作不可逆
+                  </Text>
+                </View>
                 <Text className="block text-sm text-gray-600 mb-2">
                   确定要取消订单 &quot;{selectedOrder.demand?.cargo_name}&quot; 吗？
                 </Text>
