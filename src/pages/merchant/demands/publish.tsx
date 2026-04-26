@@ -66,6 +66,36 @@ export default function PublishDemand() {
   const [favoriteRoutes, setFavoriteRoutes] = useState<FavoriteRoute[]>([])
   const [showAddressPicker, setShowAddressPicker] = useState<'pickup' | 'delivery' | undefined>(undefined)
   const [showRoutePicker, setShowRoutePicker] = useState(false)
+  const [estimatedDistance, setEstimatedDistance] = useState<number | null>(null)
+
+  // 计算两点之间的距离（公里）
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371 // 地球半径（公里）
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return Math.round(R * c * 100) / 100 // 保留两位小数
+  }
+
+  // 当地址变化时计算距离
+  useEffect(() => {
+    if (formData.pickup_location && formData.delivery_location) {
+      const distance = calculateDistance(
+        formData.pickup_location.latitude,
+        formData.pickup_location.longitude,
+        formData.delivery_location.latitude,
+        formData.delivery_location.longitude
+      )
+      setEstimatedDistance(distance)
+      console.log('[PublishDemand] 计算距离:', distance, '公里')
+    } else {
+      setEstimatedDistance(null)
+    }
+  }, [formData.pickup_location, formData.delivery_location])
 
   // 检查是否从常用线路或常用模板跳转过来，自动填充信息
   useEffect(() => {
@@ -113,7 +143,9 @@ export default function PublishDemand() {
         // 手动解码所有参数
         const decodedParams: any = {}
         Object.keys(routeParams).forEach(key => {
-          decodedParams[key] = decodeURIComponent(routeParams[key])
+          if (routeParams[key]) {
+            decodedParams[key] = decodeURIComponent(routeParams[key])
+          }
         })
 
         console.log('[PublishDemand] 从常用模板跳转 - 解码后参数:', decodedParams)
@@ -621,6 +653,15 @@ export default function PublishDemand() {
                 </Text>
               )}
             </View>
+
+            {/* 距离估算 */}
+            {estimatedDistance !== null && (
+              <View className="bg-green-50 rounded-lg p-3">
+                <Text className="block text-sm font-medium text-green-900">
+                  距离估算：{estimatedDistance} 公里
+                </Text>
+              </View>
+            )}
 
             <View>
               <Label className="block text-sm font-medium mb-2">
