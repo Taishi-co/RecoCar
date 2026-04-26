@@ -13,14 +13,15 @@ interface DemandSchedule {
   user_id: string
   template_id: string
   template_name: string
+  schedule_name: string
   schedule_type: 'half_day' | 'day' | 'week' | 'month' | 'interval'
   interval_days?: number
-  start_time: string
-  end_time: string | null
-  is_active: boolean
+  base_date: string
+  base_time: string
+  status: string
+  next_publish_time: string | null
   last_published_at: string | null
-  next_publish_at: string | null
-  use_count: number
+  published_count: number
   created_at: string
   updated_at: string
 }
@@ -132,11 +133,11 @@ export default function DemandSchedules() {
     setEditingSchedule(schedule)
     setFormData({
       template_id: schedule.template_id,
-      schedule_name: schedule.template_name || '',
+      schedule_name: schedule.schedule_name || '',
       schedule_type: schedule.schedule_type,
       interval_days: schedule.interval_days?.toString() || '1',
-      start_time: schedule.start_time,
-      end_time: schedule.end_time || ''
+      start_time: `${schedule.base_date} ${schedule.base_time}`,
+      end_time: ''
     })
     setShowDialog(true)
   }
@@ -183,16 +184,20 @@ export default function DemandSchedules() {
 
   const handleToggleActive = async (schedule: DemandSchedule) => {
     try {
+      const url = schedule.status === 'active'
+        ? `/api/demand-schedules/${schedule.id}/pause`
+        : `/api/demand-schedules/${schedule.id}/resume`
+
       const res = await Network.request({
-        url: `/api/demand-schedules/${schedule.id}/toggle`,
-        method: 'PUT'
+        url: url,
+        method: 'POST'
       })
 
       console.log('切换计划状态响应:', res.data)
 
       if (res.data.code === 200) {
         Taro.showToast({
-          title: schedule.is_active ? '已暂停' : '已启动',
+          title: schedule.status === 'active' ? '已暂停' : '已启动',
           icon: 'success'
         })
         loadSchedules()
@@ -378,9 +383,9 @@ export default function DemandSchedules() {
                   <View className="flex-1">
                     <View className="flex items-center gap-2 mb-2">
                       <Text className="block text-base font-semibold text-gray-900">
-                        {schedule.template_name}
+                        {schedule.schedule_name}
                       </Text>
-                      {schedule.is_active ? (
+                      {schedule.status === 'active' ? (
                         <Text className="text-xs text-green-500">运行中</Text>
                       ) : (
                         <Text className="text-xs text-gray-500">已暂停</Text>
@@ -392,20 +397,15 @@ export default function DemandSchedules() {
                         重复：{getScheduleTypeText(schedule.schedule_type, schedule.interval_days)}
                       </Text>
                       <Text className="block text-sm text-gray-600">
-                        开始时间：{schedule.start_time}
+                        开始时间：{schedule.base_date} {schedule.base_time}
                       </Text>
-                      {schedule.end_time && (
-                        <Text className="block text-sm text-gray-600">
-                          结束时间：{schedule.end_time}
-                        </Text>
-                      )}
-                      {schedule.next_publish_at && (
+                      {schedule.next_publish_time && (
                         <Text className="block text-sm text-blue-600">
-                          下次发布：{schedule.next_publish_at}
+                          下次发布：{schedule.next_publish_time}
                         </Text>
                       )}
                       <Text className="block text-xs text-gray-400 mt-2">
-                        已发布次数：{schedule.use_count} 次
+                        已发布次数：{schedule.published_count} 次
                       </Text>
                     </View>
                   </View>
@@ -416,7 +416,7 @@ export default function DemandSchedules() {
                       variant="outline"
                       onClick={() => handleToggleActive(schedule)}
                     >
-                      {schedule.is_active ? (
+                      {schedule.status === 'active' ? (
                         <Pause size={14} color="#6b7280" />
                       ) : (
                         <Play size={14} color="#6b7280" />
