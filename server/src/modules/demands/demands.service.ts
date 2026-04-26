@@ -219,7 +219,10 @@ export class DemandsService {
       route_type: 'estimated',
       route_duration: estimatedTime,
       duration_text: `约${estimatedTime}分钟`,
-      polyline: [] // 降级方案没有实际路线，返回空数组
+      polyline: [
+        { latitude: pickup_lat, longitude: pickup_lng },
+        { latitude: delivery_lat, longitude: delivery_lng }
+      ] // 降级方案返回起止点直线
     }
   }
 
