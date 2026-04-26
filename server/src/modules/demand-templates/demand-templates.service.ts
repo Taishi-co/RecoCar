@@ -151,6 +151,36 @@ export class DemandTemplatesService {
       throw new BadRequestException('更新模板失败')
     }
 
+    // 同步更新引用该模板的定时计划
+    // 如果模板名称发生变化，更新定时计划的 schedule_name
+    if (updateDto.template_name && updateDto.template_name !== existingTemplate.template_name) {
+      console.log(`[DemandTemplatesService] 模板名称变更: ${existingTemplate.template_name} -> ${updateDto.template_name}，开始更新关联的定时计划`)
+
+      const { data: schedules, error: schedulesError } = await client
+        .from('demand_schedules')
+        .select('id, schedule_name')
+        .eq('template_id', id)
+
+      if (!schedulesError && schedules && schedules.length > 0) {
+        // 更新定时计划的 schedule_name，将模板名称替换
+        for (const schedule of schedules) {
+          // 如果定时计划名称与模板名称相同，则更新为新的模板名称
+          // 否则不修改（因为用户可能自定义了计划名称）
+          if (schedule.schedule_name === existingTemplate.template_name) {
+            await client
+              .from('demand_schedules')
+              .update({
+                schedule_name: updateDto.template_name,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', schedule.id)
+
+            console.log(`[DemandTemplatesService] 更新定时计划 ${schedule.id} 的名称`)
+          }
+        }
+      }
+    }
+
     return {
       code: 200,
       message: '模板更新成功',
@@ -172,17 +202,43 @@ export class DemandTemplatesService {
       throw new NotFoundException('模板不存在')
     }
 
-    // 检查是否有关联的定时计划
-    const { data: schedules } = await client
+    // 查找并删除所有关联的定时计划
+    const { data: schedules, error: schedulesError } = await client
       .from('demand_schedules')
-      .select('id')
+      .select('id, schedule_name, status')
       .eq('template_id', id)
-      .limit(1)
 
-    if (schedules && schedules.length > 0) {
-      throw new BadRequestException('该模板有关联的定时计划，无法删除')
+    if (!schedulesError && schedules && schedules.length > 0) {
+      console.log(`[DemandTemplatesService] 删除模板 ${id}，同时删除 ${schedules.length} 个关联的定时计划`)
+
+      // 先暂停所有关联的定时计划
+      for (const schedule of schedules) {
+        if (schedule.status === 'active') {
+          await client
+            .from('demand_schedules')
+            .update({
+              status: 'cancelled',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', schedule.id)
+
+          console.log(`[DemandTemplatesService] 暂停定时计划 ${schedule.id} (${schedule.schedule_name})`)
+        }
+      }
+
+      // 删除所有关联的定时计划
+      const { error: deleteSchedulesError } = await client
+        .from('demand_schedules')
+        .delete()
+        .eq('template_id', id)
+
+      if (deleteSchedulesError) {
+        console.error('[DemandTemplatesService] 删除关联定时计划失败:', deleteSchedulesError)
+        throw new BadRequestException('删除关联定时计划失败')
+      }
     }
 
+    // 删除模板
     const { error: deleteError } = await client
       .from('demand_templates')
       .delete()
@@ -195,7 +251,7 @@ export class DemandTemplatesService {
 
     return {
       code: 200,
-      message: '模板删除成功',
+      message: `模板删除成功${schedules && schedules.length > 0 ? `，同时删除了 ${schedules.length} 个定时计划` : ''}`,
       data: null
     }
   }
