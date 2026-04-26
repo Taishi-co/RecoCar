@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Route, BookOpen } from 'lucide-react-taro'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
@@ -127,9 +128,9 @@ export default function PublishDemand() {
   }
 
   const handleManualLocationConfirm = (type: 'pickup' | 'delivery', lat: number, lng: number) => {
-    console.log('[handleManualLocationConfirm] type:', type, 'lat:', lat, 'lng:', lng, 'isNaN(lat):', isNaN(lat), 'isNaN(lng):', isNaN(lng))
+    console.log('[handleManualLocationConfirm] type:', type, 'lat:', lat, 'lng:', lng, 'isNaN(lat):', Number.isNaN(lat), 'isNaN(lng):', Number.isNaN(lng))
 
-    if (isNaN(lat) || isNaN(lng)) {
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
       Taro.showToast({
         title: '请输入有效的坐标',
         icon: 'none'
@@ -343,6 +344,20 @@ export default function PublishDemand() {
             <Button
               size="sm"
               variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/address-books/index' })}
+            >
+              <BookOpen size={16} color="#6b7280" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => Taro.navigateTo({ url: '/pages/merchant/favorite-routes/index' })}
+            >
+              <Route size={16} color="#6b7280" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => Taro.navigateTo({ url: '/pages/merchant/profile/index' })}
             >
               <Text className="text-xs">我的</Text>
@@ -550,7 +565,7 @@ export default function PublishDemand() {
                       onClick={() => {
                         const lat = parseFloat(formData.manualLat)
                         const lng = parseFloat(formData.manualLng)
-                        if (formData.manualLat && formData.manualLng && !isNaN(lat) && !isNaN(lng)) {
+                        if (formData.manualLat && formData.manualLng && !Number.isNaN(lat) && !Number.isNaN(lng)) {
                           handleManualLocationConfirm('pickup', lat, lng)
                         } else {
                           Taro.showToast({
@@ -580,7 +595,7 @@ export default function PublishDemand() {
                 </Text>
               )}
               <Text className="block text-xs text-gray-400 mt-1">
-                提示：小程序可地图选择，H5点击"定位"后手动输入坐标
+                提示：小程序可地图选择，H5点击&ldquo;定位&rdquo;后手动输入坐标
               </Text>
             </View>
 
@@ -664,7 +679,7 @@ export default function PublishDemand() {
                       onClick={() => {
                         const lat = parseFloat(formData.manualLat)
                         const lng = parseFloat(formData.manualLng)
-                        if (formData.manualLat && formData.manualLng && !isNaN(lat) && !isNaN(lng)) {
+                        if (formData.manualLat && formData.manualLng && !Number.isNaN(lat) && !Number.isNaN(lng)) {
                           handleManualLocationConfirm('delivery', lat, lng)
                         } else {
                           Taro.showToast({
@@ -694,7 +709,7 @@ export default function PublishDemand() {
                 </Text>
               )}
               <Text className="block text-xs text-gray-400 mt-1">
-                提示：小程序可地图选择，H5点击"定位"后手动输入坐标
+                提示：小程序可地图选择，H5点击&ldquo;定位&rdquo;后手动输入坐标
               </Text>
             </View>
 
