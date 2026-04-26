@@ -37,6 +37,12 @@ export const updateDemandSchema = z.object({
   delivery_address: z.string().optional(),
   delivery_location: z.string().optional(),
   remarks: z.string().optional(),
+  pickup_lat: z.number().optional(),
+  pickup_lng: z.number().optional(),
+  delivery_lat: z.number().optional(),
+  delivery_lng: z.number().optional(),
+  estimated_distance: z.number().optional(),
+  estimated_fare: z.number().optional(),
 })
 
 export type UpdateDemandDto = z.infer<typeof updateDemandSchema>

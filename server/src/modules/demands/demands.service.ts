@@ -450,6 +450,26 @@ export class DemandsService {
       remarks: updateDemandDto.remarks,
     }
 
+    // 添加可选字段
+    if (updateDemandDto.pickup_lat !== undefined) {
+      updateData.pickup_lat = updateDemandDto.pickup_lat
+    }
+    if (updateDemandDto.pickup_lng !== undefined) {
+      updateData.pickup_lng = updateDemandDto.pickup_lng
+    }
+    if (updateDemandDto.delivery_lat !== undefined) {
+      updateData.delivery_lat = updateDemandDto.delivery_lat
+    }
+    if (updateDemandDto.delivery_lng !== undefined) {
+      updateData.delivery_lng = updateDemandDto.delivery_lng
+    }
+    if (updateDemandDto.estimated_distance !== undefined) {
+      updateData.estimated_distance = updateDemandDto.estimated_distance
+    }
+    if (updateDemandDto.estimated_fare !== undefined) {
+      updateData.estimated_fare = updateDemandDto.estimated_fare
+    }
+
     const { data: demand, error: updateError } = await client
       .from('demands')
       .update(updateData)

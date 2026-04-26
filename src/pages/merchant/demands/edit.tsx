@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
+import Taro, { useRouter } from '@tarojs/taro'
 import { View, Text, Picker } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { MapPin } from 'lucide-react-taro'
-import Taro, { useRouter } from '@tarojs/taro'
+import { MapPin, TriangleAlert } from 'lucide-react-taro'
 import { Network } from '@/network'
 
 interface Demand {
@@ -40,19 +40,27 @@ export default function EditDemand() {
   const router = useRouter()
   const demandId = router.params.id
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState<Partial<Demand>>({})
   const [addressBooks, setAddressBooks] = useState<AddressBook[]>([])
   const [showAddressPicker, setShowAddressPicker] = useState<'pickup' | 'delivery' | undefined>(undefined)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (demandId) {
       loadDemandDetail()
       loadAddressBooks()
+    } else {
+      setError('需求ID不能为空')
+      setLoading(false)
     }
   }, [demandId])
 
   const loadDemandDetail = async () => {
+    setLoading(true)
+    setError(null)
+
     try {
       const res = await Network.request({
         url: `/api/demands/${demandId}`
@@ -60,34 +68,54 @@ export default function EditDemand() {
 
       console.log('需求详情响应:', res.data)
 
-      if (res.data.code === 200) {
+      if (res.data.code === 200 && res.data.data) {
         const demand = res.data.data
+
+        // 安全解析 pickup_location
+        let pickupLocation: any = null
+        try {
+          pickupLocation = typeof demand.pickup_location === 'string'
+            ? JSON.parse(demand.pickup_location)
+            : demand.pickup_location
+        } catch (e) {
+          console.error('解析 pickup_location 失败:', e)
+          pickupLocation = { latitude: 0, longitude: 0 }
+        }
+
+        // 安全解析 delivery_location
+        let deliveryLocation: any = null
+        try {
+          deliveryLocation = typeof demand.delivery_location === 'string'
+            ? JSON.parse(demand.delivery_location)
+            : demand.delivery_location
+        } catch (e) {
+          console.error('解析 delivery_location 失败:', e)
+          deliveryLocation = { latitude: 0, longitude: 0 }
+        }
+
         setFormData({
           id: demand.id,
-          cargo_name: demand.cargo_name,
-          cargo_type: demand.cargo_type,
+          cargo_name: demand.cargo_name || '',
+          cargo_type: demand.cargo_type || 'normal',
           weight: demand.weight?.toString() || '',
           volume: demand.volume?.toString() || '',
-          pickup_time: demand.pickup_time,
-          pickup_address: demand.pickup_address,
-          pickup_location: typeof demand.pickup_location === 'string'
-            ? JSON.parse(demand.pickup_location)
-            : demand.pickup_location,
-          delivery_address: demand.delivery_address,
-          delivery_location: typeof demand.delivery_location === 'string'
-            ? JSON.parse(demand.delivery_location)
-            : demand.delivery_location,
+          pickup_time: demand.pickup_time || '',
+          pickup_address: demand.pickup_address || '',
+          pickup_location: pickupLocation,
+          delivery_address: demand.delivery_address || '',
+          delivery_location: deliveryLocation,
           remarks: demand.remarks || '',
           estimated_distance: demand.estimated_distance,
           estimated_fare: demand.estimated_fare
         })
+      } else {
+        setError(res.data.message || '需求不存在')
       }
-    } catch (error) {
-      console.error('加载需求详情失败:', error)
-      Taro.showToast({
-        title: '加载失败',
-        icon: 'none'
-      })
+    } catch (err) {
+      console.error('加载需求详情失败:', err)
+      setError('加载需求详情失败，请重试')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -107,8 +135,8 @@ export default function EditDemand() {
       if (res.data.code === 200) {
         setAddressBooks(res.data.data || [])
       }
-    } catch (error) {
-      console.error('[EditDemand] 加载地址数据失败:', error)
+    } catch (err) {
+      console.error('[EditDemand] 加载地址数据失败:', err)
     }
   }
 
@@ -179,30 +207,32 @@ export default function EditDemand() {
       return
     }
 
-    setLoading(true)
+    setSubmitting(true)
 
     try {
+      const submitData = {
+        cargo_name: formData.cargo_name,
+        cargo_type: formData.cargo_type,
+        weight: parseFloat(formData.weight || '0'),
+        volume: parseFloat(formData.volume || '0'),
+        pickup_time: formData.pickup_time,
+        pickup_address: formData.pickup_address,
+        pickup_location: JSON.stringify(formData.pickup_location),
+        delivery_address: formData.delivery_address,
+        delivery_location: JSON.stringify(formData.delivery_location),
+        remarks: formData.remarks,
+        pickup_lat: formData.pickup_location.latitude,
+        pickup_lng: formData.pickup_location.longitude,
+        delivery_lat: formData.delivery_location.latitude,
+        delivery_lng: formData.delivery_location.longitude,
+        estimated_distance: formData.estimated_distance,
+        estimated_fare: formData.estimated_fare
+      }
+
       const res = await Network.request({
         url: `/api/demands/${demandId}`,
         method: 'PUT',
-        data: {
-          cargo_name: formData.cargo_name,
-          cargo_type: formData.cargo_type,
-          weight: parseFloat(formData.weight),
-          volume: parseFloat(formData.volume),
-          pickup_time: formData.pickup_time,
-          pickup_address: formData.pickup_address,
-          pickup_location: JSON.stringify(formData.pickup_location),
-          delivery_address: formData.delivery_address,
-          delivery_location: JSON.stringify(formData.delivery_location),
-          remarks: formData.remarks,
-          pickup_lat: formData.pickup_location.latitude,
-          pickup_lng: formData.pickup_location.longitude,
-          delivery_lat: formData.delivery_location.latitude,
-          delivery_lng: formData.delivery_location.longitude,
-          estimated_distance: formData.estimated_distance,
-          estimated_fare: formData.estimated_fare
-        }
+        data: submitData
       })
 
       console.log('更新需求响应:', res.data)
@@ -225,14 +255,14 @@ export default function EditDemand() {
           icon: 'none'
         })
       }
-    } catch (error) {
-      console.error('更新需求失败:', error)
+    } catch (err) {
+      console.error('更新需求失败:', err)
       Taro.showToast({
         title: '网络错误，请重试',
         icon: 'none'
       })
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
@@ -274,14 +304,35 @@ export default function EditDemand() {
         </View>
       </View>
 
-      <Card className="bg-white rounded-lg shadow-sm m-4">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">
-            编辑需求
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <View className="space-y-4">
+      {/* 加载状态 */}
+      {loading && (
+        <View className="flex flex-col items-center justify-center p-8">
+          <Text className="block text-gray-600 text-center">加载中...</Text>
+        </View>
+      )}
+
+      {/* 错误状态 */}
+      {!loading && error && (
+        <View className="flex flex-col items-center justify-center p-8">
+          <TriangleAlert size={48} color="#ef4444" className="mb-4" />
+          <Text className="block text-red-600 text-center mb-4">{error}</Text>
+          <Button onClick={loadDemandDetail}>
+            <Text className="text-sm">重新加载</Text>
+          </Button>
+        </View>
+      )}
+
+      {/* 正常显示 */}
+      {!loading && !error && (
+        <>
+          <Card className="bg-white rounded-lg shadow-sm m-4">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                编辑需求
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <View className="space-y-4">
             <View>
               <Label className="block text-sm font-medium mb-2">
                 <Text className="text-red-500">*</Text>货品名称
@@ -485,10 +536,10 @@ export default function EditDemand() {
             <Button
               className="w-full bg-blue-500"
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={submitting}
             >
               <Text className="text-white font-medium">
-                {loading ? '更新中...' : '更新需求'}
+                {submitting ? '更新中...' : '更新需求'}
               </Text>
             </Button>
           </View>
@@ -545,6 +596,8 @@ export default function EditDemand() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </View>
   )
 }
