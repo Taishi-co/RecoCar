@@ -84,7 +84,12 @@ export default function DemandSchedules() {
       console.log('定时计划响应:', res.data)
 
       if (res.data.code === 200) {
-        setSchedules(res.data.data || [])
+        const schedules = res.data.data || []
+        console.log('[DemandSchedules] 加载的计划数据:', schedules)
+        if (schedules.length > 0) {
+          console.log('[DemandSchedules] 第一个计划的 end_time:', schedules[0].end_time)
+        }
+        setSchedules(schedules)
       }
     } catch (err) {
       console.error('加载定时计划失败:', err)
@@ -131,15 +136,21 @@ export default function DemandSchedules() {
   }
 
   const handleEditSchedule = (schedule: DemandSchedule) => {
+    console.log('[DemandSchedules] 编辑计划 - 原始数据:', schedule)
+    console.log('[DemandSchedules] 编辑计划 - end_time:', schedule.end_time)
+
     setEditingSchedule(schedule)
-    setFormData({
+    const newFormData = {
       template_id: schedule.template_id,
       schedule_name: schedule.schedule_name || '',
       schedule_type: schedule.schedule_type,
       interval_days: schedule.interval_days?.toString() || '1',
       start_time: `${schedule.base_date} ${schedule.base_time}`,
       end_time: schedule.end_time || ''
-    })
+    }
+
+    console.log('[DemandSchedules] 编辑计划 - 设置的表单数据:', newFormData)
+    setFormData(newFormData)
     setShowDialog(true)
   }
 
@@ -457,7 +468,7 @@ export default function DemandSchedules() {
         <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingSchedule ? '编辑计划' : '新建计划'}
+              {editingSchedule ? `编辑计划 (end_time: ${formData.end_time || 'null'})` : '新建计划'}
             </DialogTitle>
           </DialogHeader>
 

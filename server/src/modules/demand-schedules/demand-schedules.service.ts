@@ -100,6 +100,11 @@ export class DemandSchedulesService {
       throw new BadRequestException('查询计划列表失败')
     }
 
+    console.log('[DemandSchedulesService] 查询计划列表成功，计划数量:', schedules?.length || 0)
+    if (schedules && schedules.length > 0) {
+      console.log('[DemandSchedulesService] 第一个计划的 end_time:', schedules[0].end_time)
+    }
+
     return {
       code: 200,
       message: '查询成功',
