@@ -44,37 +44,39 @@ interface RentalRequest {
 export default function PendingRentals() {
   const [requests, setRequests] = useState<RentalRequest[]>([])
   const [loading, setLoading] = useState(false)
-  const [userInfo, setUserInfo] = useState<any>(null)
-
-  const loadUserInfo = () => {
-    const user = Taro.getStorageSync('userInfo')
-    if (user) {
-      setUserInfo(user)
-    }
-  }
 
   useDidShow(() => {
-    loadUserInfo()
     loadPendingRentals()
   })
 
   useEffect(() => {
-    loadUserInfo()
     loadPendingRentals()
   }, [])
 
   const loadPendingRentals = async () => {
-    if (!userInfo) return
-
     setLoading(true)
     try {
       console.log('加载车主待确认租赁申请...')
+
+      // 直接从 storage 获取 userInfo，避免异步 state 更新问题
+      const currentUser = Taro.getStorageSync('userInfo')
+      if (!currentUser) {
+        console.error('用户信息不存在')
+        Taro.showToast({
+          title: '请先登录',
+          icon: 'none'
+        })
+        setLoading(false)
+        return
+      }
+
+      console.log('当前用户 ID:', currentUser.id)
 
       const res = await Network.request({
         url: '/api/rentals/pending-for-owner',
         method: 'GET',
         data: {
-          owner_id: userInfo.id
+          owner_id: currentUser.id
         }
       })
 
@@ -115,6 +117,16 @@ export default function PendingRentals() {
   }
 
   const handleConfirm = async (request: RentalRequest) => {
+    // 直接从 storage 获取 userInfo，避免异步 state 更新问题
+    const currentUser = Taro.getStorageSync('userInfo')
+    if (!currentUser) {
+      Taro.showToast({
+        title: '请先登录',
+        icon: 'none'
+      })
+      return
+    }
+
     Taro.showModal({
       title: '确认租赁',
       content: `确认接受租户 ${request.renters.name} 的租赁申请？\n\n车辆：${request.vehicles.license_plate}\n租期：${formatDate(request.rent_start_date)} 至 ${formatDate(request.rent_end_date)}`,
@@ -125,7 +137,7 @@ export default function PendingRentals() {
               url: `/api/rentals/${request.id}/confirm-owner`,
               method: 'POST',
               data: {
-                owner_id: userInfo.id,
+                owner_id: currentUser.id,
                 confirm: true
               }
             })
@@ -157,6 +169,16 @@ export default function PendingRentals() {
   }
 
   const handleReject = async (request: RentalRequest) => {
+    // 直接从 storage 获取 userInfo，避免异步 state 更新问题
+    const currentUser = Taro.getStorageSync('userInfo')
+    if (!currentUser) {
+      Taro.showToast({
+        title: '请先登录',
+        icon: 'none'
+      })
+      return
+    }
+
     Taro.showModal({
       title: '拒绝租赁',
       content: `确认拒绝租户 ${request.renters.name} 的租赁申请？\n\n拒绝后，该申请将被终止。`,
@@ -164,7 +186,7 @@ export default function PendingRentals() {
         if (modalRes.confirm) {
           try {
             const body: any = {
-              owner_id: userInfo.id,
+              owner_id: currentUser.id,
               confirm: false,
               notes: '车主拒绝租赁'
             }
