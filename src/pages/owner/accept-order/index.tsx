@@ -364,7 +364,7 @@ export default function AcceptOrder() {
                         id: 1,
                         latitude: parseFloat(selectedDemand.pickup_lat),
                         longitude: parseFloat(selectedDemand.pickup_lng),
-                        title: '取货点',
+                        title: selectedDemand.pickup_address || '取货点',
                         iconPath: '',
                         width: 24,
                         height: 24
@@ -373,7 +373,7 @@ export default function AcceptOrder() {
                         id: 2,
                         latitude: parseFloat(selectedDemand.delivery_lat),
                         longitude: parseFloat(selectedDemand.delivery_lng),
-                        title: '送货点',
+                        title: selectedDemand.delivery_address || '送货点',
                         iconPath: '',
                         width: 24,
                         height: 24
@@ -687,7 +687,7 @@ export default function AcceptOrder() {
                   id: 1,
                   latitude: selectedDemand.pickup_lat ? parseFloat(selectedDemand.pickup_lat) : 39.9042,
                   longitude: selectedDemand.pickup_lng ? parseFloat(selectedDemand.pickup_lng) : 116.4074,
-                  title: '取货点',
+                  title: selectedDemand.pickup_address || '取货点',
                   iconPath: '',
                   width: 32,
                   height: 32
@@ -696,7 +696,7 @@ export default function AcceptOrder() {
                   id: 2,
                   latitude: parseFloat(selectedDemand.delivery_lat),
                   longitude: parseFloat(selectedDemand.delivery_lng),
-                  title: '送货点',
+                  title: selectedDemand.delivery_address || '送货点',
                   iconPath: '',
                   width: 32,
                   height: 32
