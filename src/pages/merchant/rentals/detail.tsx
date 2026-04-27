@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { View, Text, Picker } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Car, Calendar, DollarSign, Info, ArrowLeft } from 'lucide-react-taro'
@@ -133,6 +132,31 @@ export default function VehicleRentalsDetail() {
 
   const handleConfirmRental = () => {
     setShowConfirmDialog(true)
+  }
+
+  const handleStartDateChange = (e: any) => {
+    const date = new Date(e.detail.value)
+    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    setRentStartDate(formattedDate)
+
+    // 根据租赁类型自动计算结束日期
+    if (rentalType === 'monthly') {
+      const endDate = new Date(date)
+      endDate.setMonth(endDate.getMonth() + 1)
+      const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+      setRentEndDate(formattedEndDate)
+    } else if (rentalType === 'yearly') {
+      const endDate = new Date(date)
+      endDate.setFullYear(endDate.getFullYear() + 1)
+      const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+      setRentEndDate(formattedEndDate)
+    }
+  }
+
+  const handleEndDateChange = (e: any) => {
+    const date = new Date(e.detail.value)
+    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    setRentEndDate(formattedDate)
   }
 
   const handleSubmitRental = async () => {
@@ -412,21 +436,39 @@ export default function VehicleRentalsDetail() {
             </View>
             <View>
               <Label>开始日期</Label>
-              <Input
+              <View
+                className="mt-2 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200 flex items-center justify-between"
+              >
+                <Text className="block text-sm text-gray-900">
+                  {rentStartDate || '请选择开始日期'}
+                </Text>
+                <Calendar size={16} color="#6b7280" />
+              </View>
+              <Picker
+                mode="date"
                 value={rentStartDate}
-                onInput={(e: any) => setRentStartDate(e.detail.value)}
-                placeholder="YYYY-MM-DD"
-                className="mt-2"
-              />
+                onChange={handleStartDateChange}
+              >
+                <View></View>
+              </Picker>
             </View>
             <View>
               <Label>结束日期</Label>
-              <Input
+              <View
+                className="mt-2 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200 flex items-center justify-between"
+              >
+                <Text className="block text-sm text-gray-900">
+                  {rentEndDate || '请选择结束日期'}
+                </Text>
+                <Calendar size={16} color="#6b7280" />
+              </View>
+              <Picker
+                mode="date"
                 value={rentEndDate}
-                onInput={(e: any) => setRentEndDate(e.detail.value)}
-                placeholder="YYYY-MM-DD"
-                className="mt-2"
-              />
+                onChange={handleEndDateChange}
+              >
+                <View></View>
+              </Picker>
             </View>
             <View>
               <Label>备注</Label>
