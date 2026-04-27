@@ -27,7 +27,8 @@ interface Vehicle {
   battery_life: number
   has_cold_chain: boolean
   photos: string[]
-  owner: VehicleOwner
+  owners?: VehicleOwner  // 使用 owners 字段
+  owner?: VehicleOwner   // 兼容字段
   is_available_for_rent: boolean
   rent_monthly_price: number
   rent_yearly_price: number
@@ -103,7 +104,16 @@ export default function VehicleRentalsDetail() {
   const handleContactOwner = () => {
     if (!vehicle) return
 
-    const phone = vehicle.contact_phone || vehicle.owner.phone
+    const owner = vehicle.owners || vehicle.owner
+    if (!owner) {
+      Taro.showToast({
+        title: '车主信息不存在',
+        icon: 'none'
+      })
+      return
+    }
+
+    const phone = vehicle.contact_phone || owner.phone
     const wechat = vehicle.contact_wechat
 
     if (wechat) {
@@ -127,6 +137,15 @@ export default function VehicleRentalsDetail() {
 
   const handleSubmitRental = async () => {
     if (!vehicle || !userInfo) return
+
+    const owner = vehicle.owners || vehicle.owner
+    if (!owner) {
+      Taro.showToast({
+        title: '车主信息不存在',
+        icon: 'none'
+      })
+      return
+    }
 
     // 验证日期
     if (!rentStartDate || !rentEndDate) {
@@ -152,7 +171,7 @@ export default function VehicleRentalsDetail() {
     try {
       const body: CreateRentalRequest = {
         vehicle_id: vehicle.id,
-        owner_id: vehicle.owner.id,
+        owner_id: owner.id,
         rent_type: rentalType,
         rent_start_date: startDate.toISOString(),
         rent_end_date: endDate.toISOString(),
@@ -310,7 +329,7 @@ export default function VehicleRentalsDetail() {
           <CardContent className="space-y-3">
             <View>
               <Text className="block text-sm text-gray-600">姓名</Text>
-              <Text className="block text-sm font-medium text-gray-900 mt-1">{vehicle.owner.name}</Text>
+              <Text className="block text-sm font-medium text-gray-900 mt-1">{(vehicle.owners || vehicle.owner)?.name}</Text>
             </View>
             {vehicle.contact_wechat && (
               <View>
@@ -321,7 +340,7 @@ export default function VehicleRentalsDetail() {
             <View>
               <Text className="block text-sm text-gray-600">电话</Text>
               <Text className="block text-sm font-medium text-gray-900 mt-1">
-                {vehicle.contact_phone || vehicle.owner.phone}
+                {vehicle.contact_phone || (vehicle.owners || vehicle.owner)?.phone}
               </Text>
             </View>
           </CardContent>

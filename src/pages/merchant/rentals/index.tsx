@@ -24,7 +24,8 @@ interface Vehicle {
   battery_life: number
   has_cold_chain: boolean
   photos: string[]
-  owner: VehicleOwner
+  owners?: VehicleOwner  // 使用 owners 字段
+  owner?: VehicleOwner   // 兼容字段
   is_available_for_rent: boolean
   rent_monthly_price: number
   rent_yearly_price: number
@@ -46,35 +47,53 @@ export default function VehicleRentals() {
   }, [])
 
   const loadVehicles = async () => {
+    console.log('🔄 开始加载可租赁车辆')
     setLoading(true)
     try {
       const res = await Network.request({
         url: '/api/rentals/available-vehicles'
       })
 
-      console.log('可租赁车辆响应:', res.data)
+      console.log('📦 可租赁车辆完整响应:', res)
+      console.log('📦 可租赁车辆响应数据:', res.data)
 
-      if (res.data.code === 200) {
-        setVehicles(res.data.data || [])
+      if (res.data && res.data.code === 200) {
+        const vehiclesData = res.data.data || []
+        console.log('✓ 加载成功，车辆数量:', vehiclesData.length)
+        console.log('✓ 车辆数据:', vehiclesData)
+        setVehicles(vehiclesData)
       } else {
+        console.error('✗ 接口返回错误:', res.data)
         Taro.showToast({
-          title: res.data.message || '加载失败',
-          icon: 'none'
+          title: res.data?.message || '加载失败',
+          icon: 'none',
+          duration: 2000
         })
       }
     } catch (error) {
-      console.error('加载可租赁车辆失败:', error)
+      console.error('✗ 加载可租赁车辆异常:', error)
       Taro.showToast({
         title: '加载失败，请重试',
-        icon: 'none'
+        icon: 'none',
+        duration: 2000
       })
     } finally {
+      console.log('✓ 加载完成，设置 loading 为 false')
       setLoading(false)
     }
   }
 
   const handleContactOwner = (vehicle: Vehicle) => {
-    const phone = vehicle.contact_phone || vehicle.owner.phone
+    const owner = vehicle.owners || vehicle.owner
+    if (!owner) {
+      Taro.showToast({
+        title: '车主信息不存在',
+        icon: 'none'
+      })
+      return
+    }
+
+    const phone = vehicle.contact_phone || owner.phone
     const wechat = vehicle.contact_wechat
 
     if (wechat) {
@@ -193,7 +212,7 @@ export default function VehicleRentals() {
                   <Text className="block text-sm font-medium text-gray-700 mb-2">车主信息</Text>
                   <View className="space-y-2">
                     <View className="flex items-center text-sm text-gray-600">
-                      <Text className="block">{vehicle.owner.name}</Text>
+                      <Text className="block">{(vehicle.owners || vehicle.owner)?.name || '未知'}</Text>
                     </View>
                     {vehicle.contact_wechat && (
                       <View className="flex items-center text-sm text-gray-600">
@@ -203,7 +222,7 @@ export default function VehicleRentals() {
                     )}
                     <View className="flex items-center text-sm text-gray-600">
                       <Phone size={14} className="mr-2" color="#6b7280" />
-                      <Text className="block">电话：{vehicle.contact_phone || vehicle.owner.phone}</Text>
+                      <Text className="block">电话：{vehicle.contact_phone || (vehicle.owners || vehicle.owner)?.phone}</Text>
                     </View>
                   </View>
                 </View>
