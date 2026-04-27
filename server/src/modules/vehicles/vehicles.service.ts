@@ -94,21 +94,79 @@ export class VehiclesService {
   async findByOwnerId(ownerId?: string) {
     const client = getSupabaseClient()
 
-    let query = client.from('vehicles').select('*')
+    let vehicles: any[] = []
 
     if (ownerId) {
-      query = query.eq('owner_id', ownerId)
-    }
+      // 1. 查询用户拥有的车辆
+      const { data: ownedVehicles, error: ownedError } = await client
+        .from('vehicles')
+        .select('*')
+        .eq('owner_id', ownerId)
+        .order('created_at', { ascending: false })
 
-    const { data: vehicles, error } = await query.order('created_at', { ascending: false })
+      if (ownedError) {
+        throw new BadRequestException(`查询失败: ${ownedError.message}`)
+      }
 
-    if (error) {
-      throw new BadRequestException(`查询失败: ${error.message}`)
+      // 2. 查询用户租赁的车辆（处于 active 状态的租赁）
+      const { data: activeRentals, error: rentalsError } = await client
+        .from('vehicle_rentals')
+        .select('vehicle_id, renter_id')
+        .eq('renter_id', ownerId)
+        .eq('status', 'active')
+
+      if (rentalsError) {
+        throw new BadRequestException(`查询租赁记录失败: ${rentalsError.message}`)
+      }
+
+      // 3. 获取租赁车辆的信息
+      const rentedVehicleIds = (activeRentals || []).map(r => r.vehicle_id)
+      let rentedVehicles: any[] = []
+
+      if (rentedVehicleIds.length > 0) {
+        const { data: rentedVehiclesData, error: rentedError } = await client
+          .from('vehicles')
+          .select('*')
+          .in('id', rentedVehicleIds)
+
+        if (!rentedError) {
+          rentedVehicles = rentedVehiclesData || []
+        }
+      }
+
+      // 4. 合并车辆列表，避免重复
+      const vehicleMap = new Map()
+
+      // 添加拥有的车辆，标记为 owned
+      (ownedVehicles || []).forEach(vehicle => {
+        vehicleMap.set(vehicle.id, { ...vehicle, ownership_type: 'owned' })
+      })
+
+      // 添加租赁的车辆，标记为 rented
+      rentedVehicles.forEach(vehicle => {
+        if (!vehicleMap.has(vehicle.id)) {
+          vehicleMap.set(vehicle.id, { ...vehicle, ownership_type: 'rented' })
+        }
+      })
+
+      vehicles = Array.from(vehicleMap.values())
+    } else {
+      // 如果没有指定 ownerId，返回所有车辆
+      const { data: allVehicles, error } = await client
+        .from('vehicles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        throw new BadRequestException(`查询失败: ${error.message}`)
+      }
+
+      vehicles = allVehicles || []
     }
 
     // 为每个车辆查询车主信息
     const vehiclesWithOwner = await Promise.all(
-      (vehicles || []).map(async (vehicle) => {
+      vehicles.map(async (vehicle) => {
         const { data: owner, error: ownerError } = await client
           .from('users')
           .select('id, phone, role, name')
@@ -473,6 +531,11 @@ export class VehiclesService {
     // 检查车辆审核状态，只有审核通过的车辆可以设置租赁
     if (existingVehicle.status !== 'active') {
       throw new BadRequestException('只有审核通过的车辆可以设置租赁')
+    }
+
+    // 检查是否是租赁车辆，租赁车辆不能设置为可租赁状态（防止转租）
+    if (settings.is_available_for_rent === true && existingVehicle.current_renter_id) {
+      throw new BadRequestException('租赁车辆不能设置为可租赁状态，请先归还车辆')
     }
 
     // 构建更新数据

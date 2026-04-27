@@ -31,6 +31,8 @@ interface Vehicle {
   current_renter_id: string | null
   rent_start_date: string | null
   rent_end_date: string | null
+  // 车辆归属类型
+  ownership_type: 'owned' | 'rented'
 }
 
 export default function OwnerVehicles() {
@@ -563,6 +565,12 @@ export default function OwnerVehicles() {
                             </Text>
                           </View>
                           <View className="flex items-center gap-2 mb-1 flex-wrap">
+                            {/* 车辆归属类型标签 */}
+                            <Badge className={vehicle.ownership_type === 'owned' ? 'bg-blue-600' : 'bg-purple-600'}>
+                              <Text className="text-white text-xs">
+                                {vehicle.ownership_type === 'owned' ? '自有车辆' : '租赁车辆'}
+                              </Text>
+                            </Badge>
                             <Badge className={getStatusColor(vehicle.status)}>
                               <Text className="text-white text-xs">
                                 {getStatusText(vehicle.status)}
@@ -573,8 +581,8 @@ export default function OwnerVehicles() {
                                 <Text className="text-white text-xs">冷链</Text>
                               </Badge>
                             )}
-                            {/* 租赁状态标签 */}
-                            {vehicle.status === 'active' && vehicle.is_available_for_rent && !vehicle.current_renter_id && (
+                            {/* 租赁状态标签 - 只对自有车辆显示 */}
+                            {vehicle.ownership_type === 'owned' && vehicle.status === 'active' && vehicle.is_available_for_rent && !vehicle.current_renter_id && (
                               <Badge className="bg-green-600">
                                 <Text className="text-white text-xs">可租赁</Text>
                               </Badge>
@@ -627,31 +635,42 @@ export default function OwnerVehicles() {
                           )}
                           {vehicle.status === 'active' && (
                             <>
-                              <View
-                                className="px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 active:bg-gray-100"
-                                onClick={() => {
-                                  console.log('✓✓✓ 设置租赁按钮点击！vehicleId:', vehicle.id)
-                                  const url = `/pages/owner/vehicles/rental-settings/index?vehicleId=${vehicle.id}`
-                                  console.log('准备跳转URL:', url)
-                                  Taro.navigateTo({
-                                    url,
-                                    success: () => {
-                                      console.log('✓✓✓ 跳转成功！')
-                                    },
-                                    fail: (err) => {
-                                      console.error('✗✗✗ 跳转失败:', err)
-                                      const errMsg = err.errMsg || JSON.stringify(err)
-                                      Taro.showToast({
-                                        title: `跳转失败: ${errMsg}`,
-                                        icon: 'none',
-                                        duration: 3000
-                                      })
-                                    }
-                                  })
-                                }}
-                              >
-                                <Text className="text-xs text-gray-700">设置租赁</Text>
-                              </View>
+                              {/* 设置租赁按钮 - 只对自有车辆显示 */}
+                              {vehicle.ownership_type === 'owned' && (
+                                <View
+                                  className="px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 active:bg-gray-100"
+                                  onClick={() => {
+                                    console.log('✓✓✓ 设置租赁按钮点击！vehicleId:', vehicle.id)
+                                    const url = `/pages/owner/vehicles/rental-settings/index?vehicleId=${vehicle.id}`
+                                    console.log('准备跳转URL:', url)
+                                    Taro.navigateTo({
+                                      url,
+                                      success: () => {
+                                        console.log('✓✓✓ 跳转成功！')
+                                      },
+                                      fail: (err) => {
+                                        console.error('✗✗✗ 跳转失败:', err)
+                                        const errMsg = err.errMsg || JSON.stringify(err)
+                                        Taro.showToast({
+                                          title: `跳转失败: ${errMsg}`,
+                                          icon: 'none',
+                                          duration: 3000
+                                        })
+                                      }
+                                    })
+                                  }}
+                                >
+                                  <Text className="text-xs text-gray-700">设置租赁</Text>
+                                </View>
+                              )}
+                              {/* 租赁车辆显示禁用状态提示 */}
+                              {vehicle.ownership_type === 'rented' && (
+                                <View
+                                  className="px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                                >
+                                  <Text className="text-xs text-gray-400">不可转租</Text>
+                                </View>
+                              )}
                               <View>
                                 <Text className="text-xs text-gray-500 mb-1 block">
                                   {vehicle.is_available ? '出车中' : '已出车'}
