@@ -84,10 +84,12 @@ export default function RentalsHistory() {
       console.log('租赁记录响应:', res.data)
 
       if (res.data && res.data.code === 200) {
-        setAsRenter(res.data.data.as_renter || [])
-        setAsOwner(res.data.data.as_owner || [])
+        // 过滤掉已拒绝（terminated）的记录
+        setAsRenter((res.data.data.as_renter || []).filter((r: RentalRecord) => r.status !== 'terminated'))
+        setAsOwner((res.data.data.as_owner || []).filter((r: RentalRecord) => r.status !== 'terminated'))
 
-        const totalCount = (res.data.data.as_renter?.length || 0) + (res.data.data.as_owner?.length || 0)
+        const totalCount = ((res.data.data.as_renter || []).filter((r: RentalRecord) => r.status !== 'terminated').length) +
+                          ((res.data.data.as_owner || []).filter((r: RentalRecord) => r.status !== 'terminated').length)
         if (totalCount === 0) {
           Taro.showToast({
             title: '暂无租赁记录',
