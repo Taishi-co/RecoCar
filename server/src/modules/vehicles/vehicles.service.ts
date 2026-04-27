@@ -188,7 +188,7 @@ export class VehiclesService {
             if (isOwner) {
               // 车主不能操作已出租的车辆
               canToggle = false
-              reason = '车辆已租出，无法设置出车状态'
+              reason = '车辆已租出，禁用操作'
             } else if (isRenter) {
               // 租户可以操作租赁中的车辆
               canToggle = true
@@ -207,7 +207,7 @@ export class VehiclesService {
             } else if (isRenter) {
               // 租户不能操作到期的车辆
               canToggle = false
-              reason = '租赁已到期，无法设置出车状态'
+              reason = '租赁已到期，禁用操作'
             } else {
               // 其他用户不能操作
               canToggle = false
@@ -511,14 +511,14 @@ export class VehiclesService {
       // 车辆已被租出
       if (isOwner) {
         // 车主不能操作已出租的车辆
-        throw new BadRequestException('车辆已租出，无法设置出车状态')
+        throw new BadRequestException('车辆已租出，禁用操作')
       }
       // 租户可以操作（继续执行）
     } else {
       // 车辆未被租出
       if (isRenter) {
         // 租户不能操作到期的车辆
-        throw new BadRequestException('租赁已到期，无法设置出车状态')
+        throw new BadRequestException('租赁已到期，禁用操作')
       }
       // 车主可以操作（继续执行）
     }
