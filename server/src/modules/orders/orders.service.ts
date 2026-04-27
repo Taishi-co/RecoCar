@@ -44,6 +44,15 @@ export class OrdersService {
       throw new BadRequestException('车辆不可用')
     }
 
+    // ✅ 增加调试日志
+    console.log('========== 接单权限检查 ==========')
+    console.log('1. 接单用户 ID:', owner_id)
+    console.log('2. 车辆 ID:', vehicle_id)
+    console.log('3. 车辆车主 ID:', vehicle.owner_id)
+    console.log('4. 车辆 current_renter_id:', vehicle.current_renter_id)
+    console.log('5. 车辆 ownership_type:', vehicle.ownership_type)
+    console.log('6. 车辆状态:', { status: vehicle.status, is_available: vehicle.is_available, trip_status: vehicle.trip_status })
+
     // 检查车辆是否已被出租（租赁状态检查）
     if (vehicle.current_renter_id) {
       // 查询最新的租赁关系
@@ -54,29 +63,45 @@ export class OrdersService {
         .eq('status', 'active')
         .maybeSingle()
 
+      console.log('7. 租赁关系 ID:', activeRental?.id)
+      console.log('8. 租赁关系 renter_id:', activeRental?.renter_id)
+      console.log('9. 租赁关系 owner_id:', activeRental?.owner_id)
+      console.log('10. 租赁关系 status:', activeRental?.status)
+      console.log('11. 租赁到期时间:', activeRental?.rent_end_date)
+
       if (activeRental) {
         // 如果租赁状态为 active，检查当前用户是车主还是租户
         if (owner_id === activeRental.renter_id) {
           // 当前用户是租户，可以使用租赁车辆接单
-          console.log('[OrdersService] 租户使用租赁车辆接单 - vehicle_id:', vehicle_id, 'renter_id:', owner_id)
+          console.log('✓ 权限检查通过：租户使用租赁车辆接单')
+          console.log('===================================')
         } else if (owner_id === vehicle.owner_id) {
           // 当前用户是车主，车辆已被租出，不能接单
+          console.log('✗ 权限检查失败：车主不能使用已出租的车辆')
+          console.log('===================================')
           throw new BadRequestException(
             `该车辆已租给租户，租赁到期时间为 ${activeRental.rent_end_date.split('T')[0]}，无法接单`
           )
         } else {
           // 当前用户既不是车主也不是租户，不能接单
+          console.log('✗ 权限检查失败：无权使用该车辆')
+          console.log('===================================')
           throw new BadRequestException(
             `该车辆已租给其他用户，您无权使用该车辆`
           )
         }
       } else {
         // 如果租赁状态不是 active（可能是 pending 或已归还），清除 current_renter_id
+        console.log('⚠️ 租赁关系非 active 状态，清除 current_renter_id')
+        console.log('===================================')
         await client
           .from('vehicles')
           .update({ current_renter_id: null })
           .eq('id', vehicle_id)
       }
+    } else {
+      console.log('✓ 权限检查通过：自有车辆（未出租）')
+      console.log('===================================')
     }
 
     // 创建订单

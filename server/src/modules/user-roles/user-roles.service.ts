@@ -178,10 +178,10 @@ export class UserRolesService {
       .update({ role: targetRole.role })
       .eq('id', userId)
 
-    // 获取更新后的用户信息
+    // 获取更新后的用户完整信息
     const { data: user, error: userError } = await client
       .from('users')
-      .select('id, phone, name, role, avatar_url')
+      .select('*')
       .eq('id', userId)
       .single()
 
@@ -189,12 +189,35 @@ export class UserRolesService {
       throw new ConflictException(`查询用户信息失败: ${userError.message}`)
     }
 
+    // 查询用户的所有角色
+    const { data: allRoles, error: rolesError } = await client
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+
+    if (rolesError) {
+      console.error('[UserRolesService] 查询所有角色失败:', rolesError)
+    }
+
+    console.log('[UserRolesService] 角色切换成功 - 新角色:', targetRole.role, '用户ID:', user.id)
+
+    // 返回完整的用户信息和角色列表，方便前端更新 storage
     return {
       code: 200,
       message: '角色切换成功',
       data: {
-        role: updatedRole,
-        user
+        id: user.id,
+        username: user.username,
+        phone: user.phone,
+        name: user.name,
+        role: targetRole.role, // 当前激活的角色
+        avatar_url: user.avatar_url,
+        wechat_payment_qr: user.wechat_payment_qr,
+        credit_score: user.credit_score,
+        created_at: user.created_at,
+        roles: allRoles?.map(r => r.role) || [], // 用户拥有的所有角色
+        switchTime: new Date().toISOString() // 角色切换时间
       }
     }
   }

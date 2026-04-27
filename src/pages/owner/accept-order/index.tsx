@@ -298,6 +298,17 @@ export default function AcceptOrder() {
 
     try {
       const userInfo = Taro.getStorageSync('userInfo')
+      const lastSwitchTime = Taro.getStorageSync('lastRoleSwitchTime')
+
+      // ✅ 增加调试日志
+      console.log('========== 接单调试信息 ==========')
+      console.log('1. 当前用户 ID:', userInfo?.id)
+      console.log('2. 当前用户角色:', userInfo?.role)
+      console.log('3. 选择车辆 ID:', selectedVehicleId)
+      console.log('4. 需求 ID:', demandId)
+      console.log('5. 角色切换时间:', lastSwitchTime)
+      console.log('6. 运费报价:', farePrice)
+      console.log('===================================')
 
       const res = await Network.request({
         url: `/api/demands/${demandId}/accept`,

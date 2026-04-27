@@ -86,14 +86,25 @@ export default function RoleSwitch() {
   }, [])
 
   const handleSwitchRole = async (roleId: string) => {
-    if (!userInfo) return
+    // 直接从 storage 获取用户信息，避免依赖 state 的异步更新
+    const currentUser = Taro.getStorageSync('userInfo')
+
+    if (!currentUser) {
+      Taro.showToast({
+        title: '请先登录',
+        icon: 'none'
+      })
+      return
+    }
 
     try {
+      console.log('开始切换角色 - roleId:', roleId, 'currentUser:', currentUser)
+
       const res = await Network.request({
         url: '/api/user-roles/switch',
         method: 'POST',
         data: {
-          userId: userInfo.id,
+          userId: currentUser.id,
           roleId
         }
       })
@@ -101,10 +112,18 @@ export default function RoleSwitch() {
       console.log('切换角色响应:', res.data)
 
       if (res.data && res.data.code === 200) {
-        // 更新本地存储的用户信息
-        const updatedUser = res.data.data.user
-        Taro.setStorageSync('userInfo', updatedUser)
-        setUserInfo(updatedUser)
+        // ✅ 强制更新 storage 中的完整用户信息
+        const updatedUserInfo = res.data.data
+        Taro.setStorageSync('userInfo', updatedUserInfo)
+
+        // ✅ 记录角色切换时间（用于调试）
+        Taro.setStorageSync('lastRoleSwitchTime', new Date().toISOString())
+
+        console.log('✓ userInfo 已更新:', updatedUserInfo)
+        console.log('✓ 角色切换时间:', updatedUserInfo.switchTime)
+
+        // 更新 state
+        setUserInfo(updatedUserInfo)
 
         // 重新加载角色列表
         await loadUserRoles()
