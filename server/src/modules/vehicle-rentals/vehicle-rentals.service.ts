@@ -105,21 +105,14 @@ export class VehicleRentalsService {
     // 查询用户作为租户的租赁记录
     const { data: renterRentals, error: renterError } = await client
       .from('vehicle_rentals')
-      .select(`
-        *,
-        vehicles (*)
-      `)
+      .select('*')
       .eq('renter_id', userId)
       .order('created_at', { ascending: false })
 
     // 查询用户作为车主的租赁记录
     const { data: ownerRentals, error: ownerError } = await client
       .from('vehicle_rentals')
-      .select(`
-        *,
-        vehicles (*),
-        renters:users!vehicle_rentals_renter_id_fkey (id, name, phone)
-      `)
+      .select('*')
       .eq('owner_id', userId)
       .order('created_at', { ascending: false })
 
@@ -127,12 +120,58 @@ export class VehicleRentalsService {
       throw new BadRequestException(`查询失败: ${renterError?.message || ownerError?.message}`)
     }
 
+    // 为租户的租赁记录组装车辆和车主信息
+    const renterRentalsWithDetails = await Promise.all(
+      (renterRentals || []).map(async (rental) => {
+        const { data: vehicle, error: vehicleError } = await client
+          .from('vehicles')
+          .select('*')
+          .eq('id', rental.vehicle_id)
+          .maybeSingle()
+
+        const { data: owner, error: ownerError } = await client
+          .from('users')
+          .select('id, name, phone, avatar_url')
+          .eq('id', rental.owner_id)
+          .maybeSingle()
+
+        return {
+          ...rental,
+          vehicles: vehicleError ? null : vehicle,
+          owners: ownerError ? null : owner
+        }
+      })
+    )
+
+    // 为车主的租赁记录组装车辆和租户信息
+    const ownerRentalsWithDetails = await Promise.all(
+      (ownerRentals || []).map(async (rental) => {
+        const { data: vehicle, error: vehicleError } = await client
+          .from('vehicles')
+          .select('*')
+          .eq('id', rental.vehicle_id)
+          .maybeSingle()
+
+        const { data: renter, error: renterError } = await client
+          .from('users')
+          .select('id, name, phone, avatar_url')
+          .eq('id', rental.renter_id)
+          .maybeSingle()
+
+        return {
+          ...rental,
+          vehicles: vehicleError ? null : vehicle,
+          renters: renterError ? null : renter
+        }
+      })
+    )
+
     return {
       code: 200,
       message: '查询成功',
       data: {
-        as_renter: renterRentals || [],
-        as_owner: ownerRentals || []
+        as_renter: renterRentalsWithDetails || [],
+        as_owner: ownerRentalsWithDetails || []
       }
     }
   }
@@ -142,12 +181,7 @@ export class VehicleRentalsService {
 
     const { data: rental, error } = await client
       .from('vehicle_rentals')
-      .select(`
-        *,
-        vehicles (*),
-        owners:users!vehicle_rentals_owner_id_fkey (id, name, phone),
-        renters:users!vehicle_rentals_renter_id_fkey (id, name, phone)
-      `)
+      .select('*')
       .eq('id', id)
       .maybeSingle()
 
@@ -155,10 +189,36 @@ export class VehicleRentalsService {
       throw new NotFoundException('租赁关系不存在')
     }
 
+    // 查询车辆信息
+    const { data: vehicle, error: vehicleError } = await client
+      .from('vehicles')
+      .select('*')
+      .eq('id', rental.vehicle_id)
+      .maybeSingle()
+
+    // 查询车主信息
+    const { data: owner, error: ownerError } = await client
+      .from('users')
+      .select('id, name, phone, avatar_url')
+      .eq('id', rental.owner_id)
+      .maybeSingle()
+
+    // 查询租户信息
+    const { data: renter, error: renterError } = await client
+      .from('users')
+      .select('id, name, phone, avatar_url')
+      .eq('id', rental.renter_id)
+      .maybeSingle()
+
     return {
       code: 200,
       message: '查询成功',
-      data: rental
+      data: {
+        ...rental,
+        vehicles: vehicleError ? null : vehicle,
+        owners: ownerError ? null : owner,
+        renters: renterError ? null : renter
+      }
     }
   }
 
@@ -407,11 +467,7 @@ export class VehicleRentalsService {
     // 查询车主待确认的租赁申请
     const { data: pendingRentals, error } = await client
       .from('vehicle_rentals')
-      .select(`
-        *,
-        vehicles (*),
-        renters:users!vehicle_rentals_renter_id_fkey (id, name, phone, avatar_url)
-      `)
+      .select('*')
       .eq('owner_id', ownerId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
@@ -420,10 +476,35 @@ export class VehicleRentalsService {
       throw new BadRequestException(`查询失败: ${error.message}`)
     }
 
+    // 为每个租赁关系查询车辆和租户信息
+    const pendingRentalsWithDetails = await Promise.all(
+      (pendingRentals || []).map(async (rental) => {
+        // 查询车辆信息
+        const { data: vehicle, error: vehicleError } = await client
+          .from('vehicles')
+          .select('*')
+          .eq('id', rental.vehicle_id)
+          .maybeSingle()
+
+        // 查询租户信息
+        const { data: renter, error: renterError } = await client
+          .from('users')
+          .select('id, name, phone, avatar_url')
+          .eq('id', rental.renter_id)
+          .maybeSingle()
+
+        return {
+          ...rental,
+          vehicles: vehicleError ? null : vehicle,
+          renters: renterError ? null : renter
+        }
+      })
+    )
+
     return {
       code: 200,
       message: '查询成功',
-      data: pendingRentals || []
+      data: pendingRentalsWithDetails
     }
   }
 }
