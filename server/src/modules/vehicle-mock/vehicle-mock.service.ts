@@ -36,18 +36,14 @@ export interface NinebotVehicleLocation {
 export class VehicleMockService {
   private readonly logger = new Logger(VehicleMockService.name);
 
-  // 模拟的新石器车辆
+  // 模拟的新石器车辆（唐山附近）
   private neolixVehicles = [
-    { id: 'NL-20240101-001', baseLat: 39.9042, baseLng: 116.4074 },
-    { id: 'NL-20240101-002', baseLat: 39.9142, baseLng: 116.4174 },
-    { id: 'NL-20240101-003', baseLat: 39.8942, baseLng: 116.3974 },
+    { id: 'NL-TS-001', baseLat: 39.6304, baseLng: 118.1802 }, // 唐山市中心
   ];
 
-  // 模拟的九识车辆
+  // 模拟的九识车辆（唐山附近）
   private ninebotVehicles = [
-    { sn: 'NB2024010001', baseLat: 39.9542, baseLng: 116.4574 },
-    { sn: 'NB2024010002', baseLat: 39.9442, baseLng: 116.4474 },
-    { sn: 'NB2024010003', baseLat: 39.9342, baseLng: 116.4374 },
+    { sn: 'NB-TS-001', baseLat: 39.6500, baseLng: 118.2000 }, // 唐山北部
   ];
 
   constructor(private eventEmitter: EventEmitter2) {}
