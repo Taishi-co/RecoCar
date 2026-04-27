@@ -20,6 +20,45 @@ export class UserRolesService {
       throw new NotFoundException(`查询失败: ${error.message}`)
     }
 
+    // 如果没有角色记录，获取用户的默认角色并创建一条记录
+    if (!roles || roles.length === 0) {
+      console.log('[UserRolesService] 用户没有角色记录，获取默认角色')
+
+      const { data: user, error: userError } = await client
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (userError || !user) {
+        throw new NotFoundException('用户不存在')
+      }
+
+      // 创建默认角色记录
+      const { data: newRole, error: insertError } = await client
+        .from('user_roles')
+        .insert({
+          user_id: userId,
+          role: user.role,
+          is_active: true,
+          status: 'active'
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        throw new ConflictException(`创建默认角色失败: ${insertError.message}`)
+      }
+
+      console.log('[UserRolesService] 创建默认角色记录成功:', newRole)
+
+      return {
+        code: 200,
+        message: '查询成功',
+        data: [newRole]
+      }
+    }
+
     return {
       code: 200,
       message: '查询成功',
