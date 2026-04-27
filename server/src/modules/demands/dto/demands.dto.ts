@@ -21,6 +21,7 @@ export const createDemandSchema = z.object({
   delivery_lng: z.number().optional(),
   estimated_distance: z.number().optional(),
   estimated_fare: z.number().optional(),
+  cargo_photos: z.array(z.string()).optional(), // 货品照片URL数组
 })
 
 export type CreateDemandDto = z.infer<typeof createDemandSchema>

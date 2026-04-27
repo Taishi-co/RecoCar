@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, Picker } from '@tarojs/components'
+import { View, Text, Picker, Image } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +20,7 @@ interface FormData {
   delivery_address: string
   delivery_location: { latitude: number; longitude: number } | null
   remarks: string
+  cargo_photos: string[] // 货品照片URL数组
 }
 
 interface AddressBook {
@@ -58,7 +59,8 @@ export default function PublishDemand() {
     pickup_location: null,
     delivery_address: '',
     delivery_location: null,
-    remarks: ''
+    remarks: '',
+    cargo_photos: [] // 货品照片URL数组
   })
 
   // 地址簿和线路数据
@@ -310,6 +312,101 @@ export default function PublishDemand() {
     }
   }
 
+  // 选择货品照片（拍照或从相册选择）
+  const handleChoosePhotos = async () => {
+    try {
+      const res = await Taro.chooseImage({
+        count: 9, // 最多选择9张
+        sizeType: ['compressed'], // 压缩图片
+        sourceType: ['album', 'camera'] // 相册和相机
+      })
+
+      console.log('[PublishDemand] 选择图片:', res.tempFilePaths)
+
+      // 上传所有选中的图片
+      const uploadPromises = res.tempFilePaths.map(async (tempFilePath) => {
+        try {
+          const uploadRes = await Network.uploadFile({
+            url: '/api/home/upload',
+            filePath: tempFilePath,
+            name: 'file'
+          })
+
+          console.log('[PublishDemand] 图片上传原始响应:', uploadRes)
+
+          // 检查 HTTP 状态码
+          if (uploadRes.statusCode !== 200) {
+            throw new Error(`上传失败，状态码: ${uploadRes.statusCode}`)
+          }
+
+          // 解析响应数据
+          let response: any
+          try {
+            response = JSON.parse(uploadRes.data as string)
+          } catch (parseError) {
+            console.error('[PublishDemand] JSON 解析失败:', parseError)
+            throw new Error('响应数据格式错误')
+          }
+
+          console.log('[PublishDemand] 图片上传响应:', response)
+
+          if (response.code === 200) {
+            return response.data.url // 返回图片URL
+          } else {
+            throw new Error(response.message || '上传失败')
+          }
+        } catch (error) {
+          console.error('[PublishDemand] 图片上传失败:', error)
+          return null
+        }
+      })
+
+      const uploadResults = await Promise.all(uploadPromises)
+      const successfulUploads = uploadResults.filter((url): url is string => url !== null)
+
+      if (successfulUploads.length > 0) {
+        setFormData({
+          ...formData,
+          cargo_photos: [...formData.cargo_photos, ...successfulUploads]
+        })
+
+        Taro.showToast({
+          title: `成功上传 ${successfulUploads.length} 张图片`,
+          icon: 'success'
+        })
+      } else {
+        Taro.showToast({
+          title: '图片上传失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('[PublishDemand] 选择图片失败:', error)
+      Taro.showToast({
+        title: '选择图片失败',
+        icon: 'none'
+      })
+    }
+  }
+
+  // 删除货品照片
+  const handleRemovePhoto = (index: number) => {
+    const newPhotos = [...formData.cargo_photos]
+    newPhotos.splice(index, 1)
+    setFormData({
+      ...formData,
+      cargo_photos: newPhotos
+    })
+  }
+
+  // 预览图片
+  const handlePreviewPhoto = (index: number) => {
+    Taro.previewImage({
+      current: formData.cargo_photos[index],
+      urls: formData.cargo_photos
+    })
+  }
+
   const handleSubmit = async () => {
     if (!formData.cargo_name || !formData.weight || !formData.volume ||
         !formData.pickup_time || !formData.pickup_address || !formData.delivery_address) {
@@ -359,7 +456,8 @@ export default function PublishDemand() {
           pickup_lat: formData.pickup_location.latitude,
           pickup_lng: formData.pickup_location.longitude,
           delivery_lat: formData.delivery_location.latitude,
-          delivery_lng: formData.delivery_location.longitude
+          delivery_lng: formData.delivery_location.longitude,
+          cargo_photos: formData.cargo_photos // 货品照片URL数组
         }
       })
 
@@ -530,6 +628,49 @@ export default function PublishDemand() {
                   />
                 </View>
               </View>
+            </View>
+
+            {/* 货品照片 */}
+            <View>
+              <Label className="block text-sm font-medium mb-2">
+                货品照片
+                <Text className="text-gray-400 text-xs ml-2">（可选，最多9张）</Text>
+              </Label>
+              <Button
+                size="sm"
+                className="w-full bg-blue-500"
+                onClick={handleChoosePhotos}
+                disabled={formData.cargo_photos.length >= 9}
+              >
+                <Text className="text-xs">
+                  {formData.cargo_photos.length >= 9 ? '已达到最大数量' : '📷 拍照或选择图片'}
+                </Text>
+              </Button>
+
+              {/* 图片预览 */}
+              {formData.cargo_photos.length > 0 && (
+                <View className="grid grid-cols-3 gap-2 mt-3">
+                  {formData.cargo_photos.map((photo, index) => (
+                    <View key={index} className="relative">
+                      <Image
+                        src={photo}
+                        mode="aspectFill"
+                        className="w-full h-24 rounded-lg bg-gray-200"
+                        onClick={() => handlePreviewPhoto(index)}
+                      />
+                      <View
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemovePhoto(index)
+                        }}
+                      >
+                        <Text className="text-xs">×</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
             <View>

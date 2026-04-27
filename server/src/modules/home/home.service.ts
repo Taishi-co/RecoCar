@@ -1,8 +1,85 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
+import { S3Storage } from 'coze-coding-dev-sdk'
 
 @Injectable()
 export class HomeService {
+  private storage: S3Storage
+
+  constructor() {
+    // 初始化对象存储
+    this.storage = new S3Storage({
+      endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
+      accessKey: '',
+      secretKey: '',
+      bucketName: process.env.COZE_BUCKET_NAME,
+      region: 'cn-beijing',
+    })
+  }
+
+  // 上传文件到对象存储
+  async uploadFile(file: Express.Multer.File) {
+    try {
+      console.log('[HomeService] 开始上传文件:', {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      })
+
+      if (!file || !file.buffer) {
+        throw new BadRequestException('文件不能为空')
+      }
+
+      // 验证文件类型
+      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        throw new BadRequestException('不支持的文件类型，请上传图片文件')
+      }
+
+      // 验证文件大小（最大5MB）
+      const maxSize = 5 * 1024 * 1024
+      if (file.size > maxSize) {
+        throw new BadRequestException('文件大小不能超过5MB')
+      }
+
+      // 生成文件名（使用时间戳和随机数）
+      const timestamp = Date.now()
+      const random = Math.random().toString(36).substring(2, 15)
+      const ext = file.originalname.split('.').pop()
+      const fileName = `cargo-photos/${timestamp}-${random}.${ext}`
+
+      console.log('[HomeService] 上传到对象存储:', fileName)
+
+      // 上传到对象存储
+      const fileKey = await this.storage.uploadFile({
+        fileContent: file.buffer,
+        fileName: fileName,
+        contentType: file.mimetype
+      })
+
+      console.log('[HomeService] 上传成功，fileKey:', fileKey)
+
+      // 生成可访问的URL
+      const imageUrl = await this.storage.generatePresignedUrl({
+        key: fileKey,
+        expireTime: 86400 // 24小时有效期
+      })
+
+      console.log('[HomeService] 生成URL成功:', imageUrl)
+
+      return {
+        code: 200,
+        message: '上传成功',
+        data: {
+          fileKey: fileKey,
+          url: imageUrl
+        }
+      }
+    } catch (error) {
+      console.error('[HomeService] 上传文件失败:', error)
+      throw new BadRequestException(error.message || '上传失败')
+    }
+  }
   // 脱敏函数：手机号
   private maskPhone(phone: string): string {
     if (!phone || phone.length < 11) return phone

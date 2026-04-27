@@ -306,7 +306,8 @@ export class DemandsService {
       delivery_lat,
       delivery_lng,
       estimated_distance,
-      estimated_fare
+      estimated_fare,
+      cargo_photos
     } = createDemandDto
 
     // 验证用户是否存在
@@ -348,6 +349,7 @@ export class DemandsService {
         estimated_distance: estimated_distance || null,
         estimated_fare: estimated_fare || null,
         route_type: estimated_distance ? 'non_highway' : null,
+        cargo_photos: cargo_photos || [], // 货品照片URL数组
         status: 'pending', // 默认待接单
       })
       .select()
