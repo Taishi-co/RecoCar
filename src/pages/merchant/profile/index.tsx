@@ -32,7 +32,22 @@ export default function MerchantProfile() {
       id: 'rentals',
       title: '租车大厅',
       icon: <Car size={20} color="#10b981" />,
-      onClick: () => Taro.navigateTo({ url: '/pages/merchant/rentals/index' })
+      onClick: () => {
+        console.log('点击租车大厅')
+        Taro.navigateTo({
+          url: '/pages/merchant/rentals/index',
+          success: () => {
+            console.log('导航到租车大厅成功')
+          },
+          fail: (err) => {
+            console.error('导航到租车大厅失败:', err)
+            Taro.showToast({
+              title: '跳转失败，请重试',
+              icon: 'none'
+            })
+          }
+        })
+      }
     },
     {
       id: 'demands',

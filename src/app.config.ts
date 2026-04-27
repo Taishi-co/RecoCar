@@ -75,6 +75,8 @@ export default typeof definePageConfig === 'function'
         'pages/merchant/route-map/index',      // 线路地图显示
         'pages/merchant/stats/index',          // 需求方端-统计
         'pages/merchant/profile/index',        // 需求方端-我的
+        'pages/merchant/rentals/index',        // 需求方端-租车大厅
+        'pages/merchant/rentals/detail',       // 需求方端-车辆详情
         'pages/notifications/index',           // 通知消息列表
         'pages/admin/users/index',             // 运营端-用户管理
         'pages/admin/vehicles/index',          // 运营端-车辆审核
