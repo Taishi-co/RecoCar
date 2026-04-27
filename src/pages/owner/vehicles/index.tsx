@@ -547,13 +547,22 @@ export default function OwnerVehicles() {
             <CardTitle className="text-lg font-semibold">
               我的车辆
             </CardTitle>
-            <Button
-              size="sm"
-              className="bg-blue-500"
-              onClick={handleAddVehicle}
-            >
-              <Text>注册车辆</Text>
-            </Button>
+            <View className="flex gap-2">
+              <Button
+                size="sm"
+                className="bg-green-500"
+                onClick={() => Taro.navigateTo({ url: '/pages/owner/vehicle-map/index' })}
+              >
+                <Text>地图</Text>
+              </Button>
+              <Button
+                size="sm"
+                className="bg-blue-500"
+                onClick={handleAddVehicle}
+              >
+                <Text>注册车辆</Text>
+              </Button>
+            </View>
           </CardHeader>
           <CardContent>
             {vehicles.length === 0 ? (
