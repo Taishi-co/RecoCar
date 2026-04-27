@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { Settings } from 'lucide-react-taro'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
@@ -610,15 +611,25 @@ export default function OwnerVehicles() {
                             </>
                           )}
                           {vehicle.status === 'active' && (
-                            <View>
-                              <Text className="text-xs text-gray-500 mb-1 block">
-                                {vehicle.is_available ? '出车中' : '已出车'}
-                              </Text>
-                              <Switch
-                                checked={vehicle.is_available}
-                                onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
-                              />
-                            </View>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => Taro.navigateTo({ url: `/pages/owner/vehicles/rental-settings/index?vehicleId=${vehicle.id}` })}
+                              >
+                                <Settings size={14} color="#6b7280" />
+                                <Text className="text-xs ml-1">设置租赁</Text>
+                              </Button>
+                              <View>
+                                <Text className="text-xs text-gray-500 mb-1 block">
+                                  {vehicle.is_available ? '出车中' : '已出车'}
+                                </Text>
+                                <Switch
+                                  checked={vehicle.is_available}
+                                  onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
+                                />
+                              </View>
+                            </>
                           )}
                         </View>
                       </View>
