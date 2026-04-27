@@ -21,6 +21,7 @@ import { ScheduleServiceModule } from '@/modules/schedule-service/schedule-servi
 import { VehicleRentalsModule } from '@/modules/vehicle-rentals/vehicle-rentals.module';
 import { UserRolesModule } from '@/modules/user-roles/user-roles.module';
 import { RentalRemindersModule } from '@/modules/rental-reminders/rental-reminders.module';
+import { VehicleMockModule } from '@/modules/vehicle-mock/vehicle-mock.module';
 
 @Module({
   imports: [
@@ -46,7 +47,8 @@ import { RentalRemindersModule } from '@/modules/rental-reminders/rental-reminde
     ScheduleServiceModule,
     VehicleRentalsModule,
     UserRolesModule,
-    RentalRemindersModule
+    RentalRemindersModule,
+    VehicleMockModule
   ],
   controllers: [AppController],
   providers: [AppService],
