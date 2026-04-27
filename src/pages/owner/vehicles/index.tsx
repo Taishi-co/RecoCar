@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Network } from '@/network'
 
 interface Vehicle {
@@ -572,195 +573,236 @@ export default function OwnerVehicles() {
                 {vehicles.map((vehicle) => {
                   const vehiclePhotos = parsePhotoUrls(vehicle.photos)
                   return (
-                    <View key={vehicle.id} className="bg-gray-50 rounded-lg p-4">
-                      <View className="flex justify-between items-start mb-3">
-                        <View className="flex-1">
-                          <Text className="block font-medium text-base mb-1">
-                            {vehicle.vehicle_type}
-                          </Text>
-                          <View className="flex items-center gap-2 mb-1">
-                            <Text className="text-xs text-gray-600">
-                              车牌号: {vehicle.license_plate || '未填写'}
-                            </Text>
-                          </View>
-                          <View className="flex items-center gap-2 mb-1 flex-wrap">
-                            {/* 车辆归属类型标签 */}
-                            <Badge className={vehicle.ownership_type === 'owned' ? 'bg-blue-600' : 'bg-purple-600'}>
-                              <Text className="text-white text-xs">
-                                {vehicle.ownership_type === 'owned' ? '自有车辆' : '租赁车辆'}
-                              </Text>
-                            </Badge>
-                            <Badge className={getStatusColor(vehicle.status)}>
-                              <Text className="text-white text-xs">
-                                {getStatusText(vehicle.status)}
-                              </Text>
-                            </Badge>
-                            {vehicle.has_cold_chain && (
-                              <Badge className="bg-cyan-500">
-                                <Text className="text-white text-xs">冷链</Text>
-                              </Badge>
-                            )}
-                            {/* 租赁状态标签 - 只对自有车辆显示 */}
-                            {vehicle.ownership_type === 'owned' && vehicle.status === 'active' && vehicle.is_available_for_rent && !vehicle.current_renter_id && (
-                              <Badge className="bg-green-600">
-                                <Text className="text-white text-xs">可租赁</Text>
-                              </Badge>
-                            )}
-                            {vehicle.current_renter_id && (
-                              <Badge className="bg-yellow-500">
-                                <Text className="text-white text-xs">已出租</Text>
-                              </Badge>
-                            )}
+                    <Collapsible key={vehicle.id}>
+                      <View className="bg-gray-50 rounded-lg overflow-hidden">
+                        {/* 收起状态：核心信息 */}
+                        <CollapsibleTrigger>
+                          <View className="p-4">
+                            <View className="flex justify-between items-center">
+                              <View className="flex-1">
+                                <View className="flex items-center gap-2 mb-2">
+                                  <Text className="font-medium text-base">
+                                    {vehicle.vehicle_type}
+                                  </Text>
+                                  {/* 核心状态标签 */}
+                                  <View className="flex items-center gap-1 flex-wrap">
+                                    <Badge className={vehicle.ownership_type === 'owned' ? 'bg-blue-600' : 'bg-purple-600'}>
+                                      <Text className="text-white text-xs">
+                                        {vehicle.ownership_type === 'owned' ? '自有' : '租赁'}
+                                      </Text>
+                                    </Badge>
+                                    <Badge className={getStatusColor(vehicle.status)}>
+                                      <Text className="text-white text-xs">
+                                        {getStatusText(vehicle.status)}
+                                      </Text>
+                                    </Badge>
+                                    {vehicle.has_cold_chain && (
+                                      <Badge className="bg-cyan-500">
+                                        <Text className="text-white text-xs">冷链</Text>
+                                      </Badge>
+                                    )}
+                                    {vehicle.status === 'active' && (
+                                      <Badge className={vehicle.is_available ? 'bg-green-500' : 'bg-gray-500'}>
+                                        <Text className="text-white text-xs">
+                                          {vehicle.is_available ? '出车中' : '已出车'}
+                                        </Text>
+                                      </Badge>
+                                    )}
+                                  </View>
+                                </View>
+                                <Text className="text-xs text-gray-600">
+                                  车牌: {vehicle.license_plate || '未填写'}
+                                </Text>
+                              </View>
+
+                              {/* 右侧操作区 */}
+                              <View className="flex items-center gap-2 flex-shrink-0">
+                                {vehicle.status === 'active' && (
+                                  <Switch
+                                    checked={vehicle.is_available}
+                                    onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
+                                    disabled={!vehicle.can_toggle_availability}
+                                  />
+                                )}
+                                <Text className="text-gray-400 text-sm">▼</Text>
+                              </View>
+                            </View>
+
+                            {/* 操作按钮 */}
                             {vehicle.status === 'active' && (
-                              <Badge className={vehicle.is_available ? 'bg-green-500' : 'bg-gray-500'}>
-                                <Text className="text-white text-xs">
-                                  {vehicle.is_available ? '出车' : '不出车'}
-                                </Text>
-                              </Badge>
-                            )}
-                          </View>
-                          <View className="flex items-center gap-2">
-                            <Text className="text-xs text-gray-500">
-                              载重: {vehicle.load_capacity}kg | 体积: {vehicle.volume}m³ | 续航: {vehicle.battery_life}km
-                            </Text>
-                          </View>
-                          {/* 定价信息 */}
-                          {(vehicle.base_price || vehicle.base_distance || vehicle.price_per_km) && (
-                            <View className="flex items-center gap-2 mt-1">
-                              <Text className="text-xs text-blue-600 font-medium">
-                                💰 定价: 起步¥{vehicle.base_price || 20}（{vehicle.base_distance || 3}公里）+ ¥{vehicle.price_per_km || 2}/公里
-                              </Text>
-                            </View>
-                          )}
-                          {/* 已出租车辆显示租赁到期时间 */}
-                          {vehicle.current_renter_id && vehicle.rent_end_date && (
-                            <View className="flex items-center gap-2 mt-1">
-                              <Text className="text-xs text-orange-600 font-medium">
-                                ⚠️ 车辆已租出，到期时间：{vehicle.rent_end_date.split('T')[0]}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <View className="flex gap-2">
-                          {vehicle.status === 'rejected' && (
-                            <>
-                              <Button
-                                size="sm"
-                                className="bg-blue-500"
-                                onClick={() => handleEditVehicle(vehicle)}
-                              >
-                                <Text className="text-xs">编辑</Text>
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="bg-green-500"
-                                onClick={() => handleResubmit(vehicle.id)}
-                              >
-                                <Text className="text-xs">重新提交</Text>
-                              </Button>
-                            </>
-                          )}
-                          {vehicle.status === 'active' && (
-                            <>
-                              {/* 设置租赁按钮 - 只对自有车辆且未出租的车辆显示 */}
-                              {vehicle.ownership_type === 'owned' && !vehicle.current_renter_id && (
-                                <View
-                                  className="px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 active:bg-gray-100"
-                                  onClick={() => {
-                                    console.log('✓✓✓ 设置租赁按钮点击！vehicleId:', vehicle.id)
-                                    const url = `/pages/owner/vehicles/rental-settings/index?vehicleId=${vehicle.id}`
-                                    console.log('准备跳转URL:', url)
-                                    Taro.navigateTo({
-                                      url,
-                                      success: () => {
-                                        console.log('✓✓✓ 跳转成功！')
-                                      },
-                                      fail: (err) => {
-                                        console.error('✗✗✗ 跳转失败:', err)
-                                        const errMsg = err.errMsg || JSON.stringify(err)
-                                        Taro.showToast({
-                                          title: `跳转失败: ${errMsg}`,
-                                          icon: 'none',
-                                          duration: 3000
-                                        })
-                                      }
-                                    })
-                                  }}
-                                >
-                                  <Text className="text-xs text-gray-700">设置租赁</Text>
-                                </View>
-                              )}
-                              {/* 租赁车辆显示禁用状态提示 */}
-                              {vehicle.ownership_type === 'rented' && (
-                                <View
-                                  className="px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
-                                >
-                                  <Text className="text-xs text-gray-400">不可转租</Text>
-                                </View>
-                              )}
-                              {/* 已出租车辆显示禁用状态提示 */}
-                              {vehicle.ownership_type === 'owned' && vehicle.current_renter_id && (
-                                <View
-                                  className="px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
-                                >
-                                  <Text className="text-xs text-gray-400">已出租禁用</Text>
-                                </View>
-                              )}
-                              <View>
-                                <Text className="text-xs text-gray-500 mb-1 block">
-                                  {vehicle.is_available ? '出车中' : '已出车'}
-                                </Text>
-                                <Switch
-                                  checked={vehicle.is_available}
-                                  onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
-                                  disabled={!vehicle.can_toggle_availability}
-                                />
+                              <View className="flex items-center gap-2 mt-3">
+                                {vehicle.ownership_type === 'owned' && !vehicle.current_renter_id && (
+                                  <Button
+                                    size="sm"
+                                    className="bg-blue-500"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      console.log('✓✓✓ 设置租赁按钮点击！vehicleId:', vehicle.id)
+                                      const url = `/pages/owner/vehicles/rental-settings/index?vehicleId=${vehicle.id}`
+                                      console.log('准备跳转URL:', url)
+                                      Taro.navigateTo({
+                                        url,
+                                        success: () => {
+                                          console.log('✓✓✓ 跳转成功！')
+                                        },
+                                        fail: (err) => {
+                                          console.error('✗✗✗ 跳转失败:', err)
+                                          const errMsg = err.errMsg || JSON.stringify(err)
+                                          Taro.showToast({
+                                            title: `跳转失败: ${errMsg}`,
+                                            icon: 'none',
+                                            duration: 3000
+                                          })
+                                        }
+                                      })
+                                    }}
+                                  >
+                                    <Text className="text-xs">设置租赁</Text>
+                                  </Button>
+                                )}
                                 {!vehicle.can_toggle_availability && vehicle.availability_control_reason && (
-                                  <Text className="text-xs text-gray-400 mt-1">
+                                  <Text className="text-xs text-gray-400">
                                     {vehicle.availability_control_reason}
                                   </Text>
                                 )}
                               </View>
-                            </>
-                          )}
-                        </View>
-                      </View>
-
-                      {/* 显示车辆照片 */}
-                      {vehiclePhotos.length > 0 && (
-                        <View className="mb-2">
-                          <Text className="block text-xs text-gray-500 mb-2">车辆照片</Text>
-                          <View className="flex gap-2 flex-wrap">
-                            {vehiclePhotos.map((photoUrl, idx) => (
-                              <Image
-                                key={idx}
-                                src={photoUrl}
-                                mode="aspectFill"
-                                className="w-20 h-20 rounded-lg bg-gray-200"
-                                onClick={() => Taro.previewImage({
-                                  current: idx,
-                                  urls: vehiclePhotos
-                                })}
-                              />
-                            ))}
+                            )}
+                            {vehicle.status === 'rejected' && (
+                              <View className="flex items-center gap-2 mt-3">
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-500"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleEditVehicle(vehicle)
+                                  }}
+                                >
+                                  <Text className="text-xs">编辑</Text>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="bg-green-500"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleResubmit(vehicle.id)
+                                  }}
+                                >
+                                  <Text className="text-xs">重新提交</Text>
+                                </Button>
+                              </View>
+                            )}
                           </View>
-                        </View>
-                      )}
+                        </CollapsibleTrigger>
 
-                      {vehicle.remarks && (
-                        <View className="mb-2 p-2 bg-red-50 rounded">
-                          <Text className="text-xs text-red-600 font-medium mb-1">
-                            拒绝原因：
-                          </Text>
-                          <Text className="text-xs text-red-500">
-                            {vehicle.remarks}
-                          </Text>
-                        </View>
-                      )}
-                      <Text className="text-xs text-gray-400">
-                        注册时间: {new Date(vehicle.created_at).toLocaleString()}
-                      </Text>
-                    </View>
+                        {/* 展开状态：完整详情 */}
+                        <CollapsibleContent>
+                          <View className="px-4 pb-4 border-t border-gray-200 pt-3">
+                            {/* 规格参数 */}
+                            <View className="mb-3 p-3 bg-white rounded-lg">
+                              <Text className="text-xs font-medium text-gray-700 mb-2 block">
+                                🚚 规格参数
+                              </Text>
+                              <View className="flex items-center gap-3 flex-wrap">
+                                <Text className="text-xs text-gray-600">
+                                  载重: {vehicle.load_capacity}kg
+                                </Text>
+                                <Text className="text-xs text-gray-600">
+                                  体积: {vehicle.volume}m³
+                                </Text>
+                                <Text className="text-xs text-gray-600">
+                                  续航: {vehicle.battery_life}km
+                                </Text>
+                              </View>
+                            </View>
+
+                            {/* 定价信息 */}
+                            {(vehicle.base_price || vehicle.base_distance || vehicle.price_per_km) && (
+                              <View className="mb-3 p-3 bg-white rounded-lg">
+                                <Text className="text-xs font-medium text-gray-700 mb-2 block">
+                                  💰 定价信息
+                                </Text>
+                                <Text className="text-xs text-blue-600">
+                                  起步¥{vehicle.base_price || 20}（{vehicle.base_distance || 3}公里）+ ¥{vehicle.price_per_km || 2}/公里
+                                </Text>
+                              </View>
+                            )}
+
+                            {/* 租赁状态 */}
+                            {vehicle.ownership_type === 'owned' && (
+                              <View className="mb-3 p-3 bg-white rounded-lg">
+                                <Text className="text-xs font-medium text-gray-700 mb-2 block">
+                                  📋 租赁状态
+                                </Text>
+                                {vehicle.is_available_for_rent && !vehicle.current_renter_id && (
+                                  <Text className="text-xs text-green-600">
+                                    ✓ 可租赁
+                                  </Text>
+                                )}
+                                {vehicle.current_renter_id && (
+                                  <Text className="text-xs text-orange-600">
+                                    ⚠️ 已出租
+                                  </Text>
+                                )}
+                                {!vehicle.is_available_for_rent && !vehicle.current_renter_id && (
+                                  <Text className="text-xs text-gray-500">
+                                    未开启租赁
+                                  </Text>
+                                )}
+                              </View>
+                            )}
+
+                            {/* 租赁到期信息 */}
+                            {vehicle.current_renter_id && vehicle.rent_end_date && (
+                              <View className="mb-3 p-3 bg-orange-50 rounded-lg">
+                                <Text className="text-xs text-orange-600">
+                                  ⚠️ 车辆已租出，到期时间：{vehicle.rent_end_date.split('T')[0]}
+                                </Text>
+                              </View>
+                            )}
+
+                            {/* 车辆照片 */}
+                            {vehiclePhotos.length > 0 && (
+                              <View className="mb-3 p-3 bg-white rounded-lg">
+                                <Text className="text-xs font-medium text-gray-700 mb-2 block">
+                                  📷 车辆照片
+                                </Text>
+                                <View className="flex gap-2 flex-wrap">
+                                  {vehiclePhotos.map((photoUrl, idx) => (
+                                    <Image
+                                      key={idx}
+                                      src={photoUrl}
+                                      mode="aspectFill"
+                                      className="w-20 h-20 rounded-lg bg-gray-200"
+                                      onClick={() => Taro.previewImage({
+                                        current: idx,
+                                        urls: vehiclePhotos
+                                      })}
+                                    />
+                                  ))}
+                                </View>
+                              </View>
+                            )}
+
+                            {/* 拒绝原因 */}
+                            {vehicle.remarks && (
+                              <View className="mb-3 p-3 bg-red-50 rounded-lg">
+                                <Text className="text-xs text-red-600 font-medium mb-1 block">
+                                  ❌ 拒绝原因
+                                </Text>
+                                <Text className="text-xs text-red-500">
+                                  {vehicle.remarks}
+                                </Text>
+                              </View>
+                            )}
+
+                            {/* 注册时间 */}
+                            <Text className="text-xs text-gray-400">
+                              注册时间: {new Date(vehicle.created_at).toLocaleString()}
+                            </Text>
+                          </View>
+                        </CollapsibleContent>
+                      </View>
+                    </Collapsible>
                   )
                 })}
               </View>
