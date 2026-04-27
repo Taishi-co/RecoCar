@@ -97,8 +97,8 @@ export class VehiclesController {
   }
 
   @Get()
-  async getVehicles(@Query('owner_id') ownerId?: string) {
-    return this.vehiclesService.findByOwnerId(ownerId)
+  async getVehicles(@Query('owner_id') ownerId?: string, @Query('user_id') userId?: string) {
+    return this.vehiclesService.findByOwnerId(ownerId, userId)
   }
 
   @Get(':id')
@@ -143,10 +143,11 @@ export class VehiclesController {
   @Put(':id/availability')
   async updateAvailability(
     @Param('id') id: string,
-    @Body('is_available') isAvailable: boolean
+    @Body('is_available') isAvailable: boolean,
+    @Body('user_id') userId?: string
   ) {
-    console.log('[VehiclesController] 切换车辆运营状态 - id:', id, 'isAvailable:', isAvailable)
-    return this.vehiclesService.updateAvailability(id, isAvailable)
+    console.log('[VehiclesController] 切换车辆运营状态 - id:', id, 'isAvailable:', isAvailable, 'userId:', userId)
+    return this.vehiclesService.updateAvailability(id, isAvailable, userId)
   }
 
   @Get(':id/rental-settings')

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { CreateVehicleDto, UpdateVehicleDto } from './dto/vehicles.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
 import { S3Storage } from 'coze-coding-dev-sdk'
@@ -91,8 +91,10 @@ export class VehiclesService {
     }
   }
 
-  async findByOwnerId(ownerId?: string) {
+  async findByOwnerId(ownerId?: string, userId?: string) {
     const client = getSupabaseClient()
+
+    console.log('[VehiclesService] 根据车主ID查询车辆 - ownerId:', ownerId, 'userId:', userId)
 
     let vehicles: any[] = []
 
@@ -164,7 +166,7 @@ export class VehiclesService {
       vehicles = allVehicles || []
     }
 
-    // 为每个车辆查询车主信息
+    // 为每个车辆查询车主信息，并计算权限
     const vehiclesWithOwner = await Promise.all(
       vehicles.map(async (vehicle) => {
         const { data: owner, error: ownerError } = await client
@@ -173,9 +175,56 @@ export class VehiclesService {
           .eq('id', vehicle.owner_id)
           .maybeSingle()
 
+        // 计算出车状态控制权限
+        let canToggle = false
+        let reason: string | null = null
+
+        if (userId) {
+          const isOwner = vehicle.owner_id === userId
+          const isRenter = vehicle.current_renter_id === userId
+
+          if (vehicle.current_renter_id) {
+            // 车辆已被租出
+            if (isOwner) {
+              // 车主不能操作已出租的车辆
+              canToggle = false
+              reason = '车辆已租出，无法设置出车状态'
+            } else if (isRenter) {
+              // 租户可以操作租赁中的车辆
+              canToggle = true
+              reason = null
+            } else {
+              // 其他用户不能操作
+              canToggle = false
+              reason = '您无权操作该车辆'
+            }
+          } else {
+            // 车辆未被租出
+            if (isOwner) {
+              // 车主可以操作未租出的车辆
+              canToggle = true
+              reason = null
+            } else if (isRenter) {
+              // 租户不能操作到期的车辆
+              canToggle = false
+              reason = '租赁已到期，无法设置出车状态'
+            } else {
+              // 其他用户不能操作
+              canToggle = false
+              reason = '您无权操作该车辆'
+            }
+          }
+        } else {
+          // 没有提供用户ID，默认可以操作（兼容旧版本）
+          canToggle = true
+          reason = null
+        }
+
         return {
           ...vehicle,
-          owner: ownerError ? null : owner
+          owner: ownerError ? null : owner,
+          can_toggle_availability: canToggle,
+          availability_control_reason: reason
         }
       })
     )
@@ -429,7 +478,7 @@ export class VehiclesService {
     }
   }
 
-  async updateAvailability(id: string, isAvailable: boolean) {
+  async updateAvailability(id: string, isAvailable: boolean, userId?: string) {
     const client = getSupabaseClient()
 
     // 检查车辆是否存在
@@ -441,6 +490,37 @@ export class VehiclesService {
 
     if (checkError || !existingVehicle) {
       throw new NotFoundException('车辆不存在')
+    }
+
+    // 验证用户ID
+    if (!userId) {
+      throw new BadRequestException('用户ID不能为空')
+    }
+
+    // 判断用户身份
+    const isOwner = existingVehicle.owner_id === userId
+    const isRenter = existingVehicle.current_renter_id === userId
+
+    // 检查权限
+    if (!isOwner && !isRenter) {
+      throw new ForbiddenException('您无权操作该车辆')
+    }
+
+    // 检查车辆状态和用户身份的组合
+    if (existingVehicle.current_renter_id) {
+      // 车辆已被租出
+      if (isOwner) {
+        // 车主不能操作已出租的车辆
+        throw new BadRequestException('车辆已租出，无法设置出车状态')
+      }
+      // 租户可以操作（继续执行）
+    } else {
+      // 车辆未被租出
+      if (isRenter) {
+        // 租户不能操作到期的车辆
+        throw new BadRequestException('租赁已到期，无法设置出车状态')
+      }
+      // 车主可以操作（继续执行）
     }
 
     // 检查车辆审核状态，只有审核通过的车辆可以切换运营状态

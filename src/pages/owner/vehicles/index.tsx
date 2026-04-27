@@ -33,6 +33,9 @@ interface Vehicle {
   rent_end_date: string | null
   // 车辆归属类型
   ownership_type: 'owned' | 'rented'
+  // 出车状态控制权限
+  can_toggle_availability: boolean
+  availability_control_reason: string | null
 }
 
 export default function OwnerVehicles() {
@@ -85,7 +88,10 @@ export default function OwnerVehicles() {
     try {
       const res = await Network.request({
         url: '/api/vehicles',
-        data: { owner_id: userInfo.id }
+        data: { 
+          owner_id: userInfo.id,
+          user_id: userInfo.id
+        }
       })
 
       console.log('车辆列表响应:', res.data)
@@ -433,10 +439,14 @@ export default function OwnerVehicles() {
 
   const handleToggleAvailability = async (vehicleId: string, newAvailability: boolean) => {
     try {
+      const userInfo = Taro.getStorageSync('userInfo')
       const res = await Network.request({
         url: `/api/vehicles/${vehicleId}/availability?id=${vehicleId}`,
         method: 'PUT',
-        data: { is_available: newAvailability }
+        data: { 
+          is_available: newAvailability,
+          user_id: userInfo.id
+        }
       })
 
       console.log('切换运营状态响应:', res.data)
@@ -703,8 +713,13 @@ export default function OwnerVehicles() {
                                 <Switch
                                   checked={vehicle.is_available}
                                   onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
-                                  disabled={!!vehicle.current_renter_id}  // 已出租车辆禁用开关
+                                  disabled={!vehicle.can_toggle_availability}
                                 />
+                                {!vehicle.can_toggle_availability && vehicle.availability_control_reason && (
+                                  <Text className="text-xs text-gray-400 mt-1">
+                                    {vehicle.availability_control_reason}
+                                  </Text>
+                                )}
                               </View>
                             </>
                           )}
