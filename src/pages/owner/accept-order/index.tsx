@@ -141,13 +141,27 @@ export default function AcceptOrder() {
       console.log('路线数据响应:', res.data)
 
       if (res.data.code === 200 && res.data.data) {
-        const points = res.data.data.polyline.map((point: any) => ({
-          latitude: point.latitude,
-          longitude: point.longitude
-        }))
-        setRoutePolyline(points)
-        setRouteDistance(res.data.data.distance_text || '')
-        setRouteDuration(res.data.data.duration_text || '')
+        // 设置距离和时间
+        const distanceText = res.data.data.distance_text || ''
+        const durationText = res.data.data.duration_text || ''
+        setRouteDistance(distanceText)
+        setRouteDuration(durationText)
+        console.log('设置路线信息:', { distanceText, durationText })
+
+        // 提取路线坐标点
+        if (res.data.data.polyline && Array.isArray(res.data.data.polyline)) {
+          const points = res.data.data.polyline.map((point: any) => ({
+            latitude: point.latitude,
+            longitude: point.longitude
+          }))
+          setRoutePolyline(points)
+          console.log('路线点数:', points.length)
+        } else {
+          setRoutePolyline([])
+          console.log('没有路线数据，使用降级方案')
+        }
+      } else {
+        console.log('路线数据返回错误:', res.data)
       }
     } catch (error) {
       console.error('获取路线数据失败:', error)
@@ -475,6 +489,19 @@ export default function AcceptOrder() {
                   </View>
                 )}
               </View>
+
+              {/* 距离和时间信息 */}
+              {(routeDistance || routeDuration) && (
+                <View className="mt-2 flex items-center justify-center">
+                  <Text className="text-xs text-gray-600 text-center">
+                    {routeDistance && routeDuration
+                      ? `${routeDistance} · ${routeDuration}`
+                      : routeDistance || routeDuration
+                    }
+                  </Text>
+                </View>
+              )}
+
               <View className="mt-2 flex items-center justify-center">
                 <Text className="text-xs text-blue-500 text-center">
                   💡 双击地图可查看全屏路线
@@ -671,9 +698,16 @@ export default function AcceptOrder() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>路线详情</Text>
-                <Text style={{ fontSize: '12px', color: '#666' }}>
-                  {routeDistance && routeDuration && `${routeDistance} · ${routeDuration}`}
-                </Text>
+                {routeDistance || routeDuration ? (
+                  <Text style={{ fontSize: '12px', color: '#666' }}>
+                    {routeDistance && routeDuration
+                      ? `${routeDistance} · ${routeDuration}`
+                      : routeDistance || routeDuration
+                    }
+                  </Text>
+                ) : (
+                  <Text style={{ fontSize: '12px', color: '#999' }}>计算中...</Text>
+                )}
               </View>
               <View
                 style={{
