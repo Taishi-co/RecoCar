@@ -250,14 +250,13 @@ export default function AcceptOrder() {
       const userInfo = Taro.getStorageSync('userInfo')
 
       const res = await Network.request({
-        url: '/api/accept-demand',
+        url: `/api/demands/${demandId}/accept`,
         method: 'POST',
         data: {
-          demand_id: demandId,
-          owner_id: userInfo.id,
-          vehicle_id: selectedVehicleId,
-          fare_price: parseFloat(farePrice),
-          remarks: acceptNote
+          ownerId: userInfo.id,
+          vehicleId: selectedVehicleId,
+          farePrice: parseFloat(farePrice),
+          note: acceptNote
         }
       })
 
