@@ -21,6 +21,9 @@ interface Vehicle {
   base_price?: number
   base_distance?: number
   price_per_km?: number
+  // 租赁相关字段
+  ownership_type?: 'owned' | 'rented'
+  current_renter_id?: string | null
 }
 
 interface Demand {
@@ -96,11 +99,34 @@ export default function AcceptOrder() {
         url: `/api/vehicles?owner_id=${userInfo.id}`
       })
 
+      console.log('加载车辆列表响应:', res.data)
+
       if (res.data.code === 200) {
         const vehicleList = res.data.data || []
-        const availableVehicles = vehicleList.filter((v: Vehicle) =>
-          v.status === 'active' && v.is_available === true && v.trip_status === 'idle'
-        )
+
+        // 过滤可用车辆
+        // 1. 自有车辆：不能已出租（current_renter_id 为空）
+        // 2. 租赁车辆：必须已租给当前用户（current_renter_id === userInfo.id）
+        // 3. 通用条件：激活状态 + 出车中 + 空闲中
+        const availableVehicles = vehicleList.filter((v: Vehicle) => {
+          // 基础条件：激活、出车中、空闲
+          const basicCondition = v.status === 'active' && v.is_available === true && v.trip_status === 'idle'
+          if (!basicCondition) return false
+
+          // 租赁权限检查
+          if (v.ownership_type === 'owned') {
+            // 自有车辆：不能已出租
+            return !v.current_renter_id
+          } else if (v.ownership_type === 'rented') {
+            // 租赁车辆：必须已租给当前用户
+            return v.current_renter_id === userInfo.id
+          }
+
+          // 兼容旧数据：如果没有 ownership_type 字段，当作自有车辆处理
+          return !v.current_renter_id
+        })
+
+        console.log('可用车辆列表:', availableVehicles)
         setVehicles(availableVehicles)
       }
     } catch (error) {
@@ -477,7 +503,7 @@ export default function AcceptOrder() {
                   暂无可用车辆
                 </Text>
                 <Text className="text-gray-400 text-xs">
-                  请前往车辆管理页面设置车辆为出车状态
+                  请确保车辆状态为：已激活 + 出车中 + 空闲中{'\n'}自有车辆不能已出租
                 </Text>
               </View>
             ) : (
@@ -492,9 +518,19 @@ export default function AcceptOrder() {
                   >
                     <View className="flex items-center justify-between">
                       <View className="flex-1">
-                        <Text className="font-medium text-sm mb-2">
-                          {vehicle.vehicle_type}
-                        </Text>
+                        <View className="flex items-center gap-2 mb-2">
+                          <Text className="font-medium text-sm">
+                            {vehicle.vehicle_type}
+                          </Text>
+                          {/* 车辆归属类型标签 */}
+                          {vehicle.ownership_type && (
+                            <Badge className={vehicle.ownership_type === 'owned' ? 'bg-blue-600' : 'bg-purple-600'}>
+                              <Text className="text-white text-xs">
+                                {vehicle.ownership_type === 'owned' ? '自有' : '租赁'}
+                              </Text>
+                            </Badge>
+                          )}
+                        </View>
                         <View className="flex items-center gap-2 mb-2">
                           <Text className="text-xs text-gray-600">
                             车牌: {vehicle.license_plate || '未填写'}
