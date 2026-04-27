@@ -87,9 +87,53 @@ export default function DemandsList() {
   }
 
   const handleCancelDemand = (demand: Demand) => {
-    setSelectedDemand(demand)
-    setShowCancelDialog(true)
-    setCancelReason('')
+    // 待接单状态的需求可以取消，不需要填写原因
+    if (demand.status === 'pending') {
+      Taro.showModal({
+        title: '确认取消',
+        content: '确定要取消这个需求吗？',
+        success: async (res) => {
+          if (res.confirm) {
+            setLoading(true)
+            try {
+              const resCancel = await Network.request({
+                url: `/api/demands/${demand.id}/cancel?id=${demand.id}`,
+                method: 'POST',
+                data: {} // 待接单状态不需要填写取消原因
+              })
+
+              console.log('取消需求响应:', resCancel.data)
+
+              if (resCancel.data.code === 200) {
+                Taro.showToast({
+                  title: '需求已取消',
+                  icon: 'success'
+                })
+                loadDemands()
+              } else {
+                Taro.showToast({
+                  title: resCancel.data.message || '取消失败',
+                  icon: 'none'
+                })
+              }
+            } catch (error) {
+              console.error('取消需求失败:', error)
+              Taro.showToast({
+                title: '网络错误，请重试',
+                icon: 'none'
+              })
+            } finally {
+              setLoading(false)
+            }
+          }
+        }
+      })
+    } else {
+      // 其他状态需要填写取消原因
+      setSelectedDemand(demand)
+      setShowCancelDialog(true)
+      setCancelReason('')
+    }
   }
 
   const handleEditDemand = (demand: Demand) => {

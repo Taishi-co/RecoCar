@@ -491,7 +491,7 @@ export class DemandsService {
     }
   }
 
-  async cancel(id: string, reason: string) {
+  async cancel(id: string, reason?: string) {
     const client = getSupabaseClient()
 
     // 检查需求是否存在
@@ -511,11 +511,12 @@ export class DemandsService {
     }
 
     // 更新需求状态为已取消
+    // 待接单状态的取消不需要保存取消原因
     const { data: demand, error: updateError } = await client
       .from('demands')
       .update({
-        status: 'cancelled',
-        remarks: reason || '用户主动取消'
+        status: 'cancelled'
+        // 不更新 remarks 字段，不保存取消原因
       })
       .eq('id', id)
       .select()
