@@ -615,7 +615,24 @@ export default function OwnerVehicles() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => Taro.navigateTo({ url: `/pages/owner/vehicles/rental-settings/index?vehicleId=${vehicle.id}` })}
+                                onClick={() => {
+                                  console.log('点击设置租赁，vehicleId:', vehicle.id)
+                                  const url = `/pages/owner/vehicles/rental-settings/index?vehicleId=${vehicle.id}`
+                                  console.log('跳转URL:', url)
+                                  Taro.navigateTo({
+                                    url,
+                                    success: () => {
+                                      console.log('跳转到车辆租赁设置成功')
+                                    },
+                                    fail: (err) => {
+                                      console.error('跳转到车辆租赁设置失败:', err)
+                                      Taro.showToast({
+                                        title: '跳转失败，请重试',
+                                        icon: 'none'
+                                      })
+                                    }
+                                  })
+                                }}
                               >
                                 <Settings size={14} color="#6b7280" />
                                 <Text className="text-xs ml-1">设置租赁</Text>

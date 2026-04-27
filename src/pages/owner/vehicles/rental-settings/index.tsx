@@ -39,8 +39,17 @@ export default function VehicleRentalSettings() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
+    console.log('车辆租赁设置页面初始化，vehicleId:', vehicleId)
     if (vehicleId) {
       loadSettings()
+    } else {
+      Taro.showToast({
+        title: '缺少车辆ID',
+        icon: 'none'
+      })
+      setTimeout(() => {
+        Taro.navigateBack()
+      }, 1500)
     }
   }, [vehicleId])
 
@@ -82,6 +91,7 @@ export default function VehicleRentalSettings() {
   }
 
   const handleSaveSettings = async () => {
+    console.log('开始保存租赁设置，vehicleId:', vehicleId, 'settings:', settings)
     setSaving(true)
     try {
       const res = await Network.request({
