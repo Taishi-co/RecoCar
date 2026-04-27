@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -6,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 import { useNotificationPolling } from '@/hooks/useNotificationPolling'
 
@@ -85,6 +85,11 @@ export default function MerchantOrders() {
   useEffect(() => {
     loadOrders()
   }, [filterStatus])
+
+  // 页面显示时刷新订单列表（从付款页面返回时需要刷新）
+  useDidShow(() => {
+    loadOrders()
+  })
 
   const loadOrders = async () => {
     setLoading(true)
