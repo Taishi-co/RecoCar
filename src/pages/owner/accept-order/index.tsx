@@ -346,26 +346,27 @@ export default function AcceptOrder() {
           {(selectedDemand.pickup_lat && selectedDemand.pickup_lng) && (
             <View className="bg-white rounded-lg p-4">
               <Text className="font-medium mb-3 text-sm">路线地图</Text>
-              <View className="rounded-lg overflow-hidden bg-gray-100">
+              <View className="rounded-lg overflow-hidden bg-gray-100 relative">
                 {Taro.getEnv() === Taro.ENV_TYPE.WEAPP ? (
-                  <Map
-                    id="accept-map"
-                    className="w-full"
-                    style={{ height: '400px' }}
-                    latitude={parseFloat(selectedDemand.pickup_lat)}
-                    longitude={parseFloat(selectedDemand.pickup_lng)}
-                    scale={10}
-                    showLocation
-                    enableZoom
-                    enableScroll
-                    onError={(e) => console.log('地图加载失败:', e)}
-                    markers={([
-                      {
-                        id: 1,
-                        latitude: parseFloat(selectedDemand.pickup_lat),
-                        longitude: parseFloat(selectedDemand.pickup_lng),
-                        title: selectedDemand.pickup_address || '取货点',
-                        iconPath: '',
+                  <>
+                    <Map
+                      id="accept-map"
+                      className="w-full"
+                      style={{ height: '400px' }}
+                      latitude={parseFloat(selectedDemand.pickup_lat)}
+                      longitude={parseFloat(selectedDemand.pickup_lng)}
+                      scale={10}
+                      showLocation
+                      enableZoom
+                      enableScroll
+                      onError={(e) => console.log('地图加载失败:', e)}
+                      markers={([
+                        {
+                          id: 1,
+                          latitude: parseFloat(selectedDemand.pickup_lat),
+                          longitude: parseFloat(selectedDemand.pickup_lng),
+                          title: selectedDemand.pickup_address || '取货点',
+                          iconPath: '',
                         width: 24,
                         height: 24,
                         callout: {
@@ -403,7 +404,7 @@ export default function AcceptOrder() {
                         }
                       }] : [])
                     ] as any)}
-                    polyline={
+                      polyline={
                       routePolyline.length > 0
                         ? [
                             {
@@ -433,7 +434,51 @@ export default function AcceptOrder() {
                             ]
                           : []
                     }
-                  />
+                    />
+
+                    {/* 地图上的距离和时间信息 */}
+                    {(routeDistance || routeDuration) && (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: 10,
+                          left: 10,
+                          right: 10,
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          borderRadius: 8,
+                          padding: 8,
+                          zIndex: 10
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <View style={{ flex: 1 }}>
+                            {routeDistance && (
+                              <Text style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+                                {routeDistance}
+                              </Text>
+                            )}
+                            {routeDuration && (
+                              <Text style={{ fontSize: '12px', color: '#666', marginTop: 2 }}>
+                                预计 {routeDuration}
+                              </Text>
+                            )}
+                          </View>
+                          <View
+                            style={{
+                              backgroundColor: '#3b82f6',
+                              borderRadius: 12,
+                              padding: '4px 8px',
+                              marginLeft: 8
+                            }}
+                          >
+                            <Text style={{ fontSize: '10px', color: '#fff', fontWeight: 'bold' }}>
+                              📍 路线信息
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                  </>
                 ) : (
                   <View className="flex items-center justify-center h-48">
                     <Text className="text-sm text-gray-500 text-center">
@@ -695,18 +740,19 @@ export default function AcceptOrder() {
 
           {/* 全屏地图 */}
           {Taro.getEnv() === Taro.ENV_TYPE.WEAPP ? (
-            <Map
-              id="full-map"
-              className="w-full"
-              style={{ height: '100vh' }}
-              latitude={selectedDemand.pickup_lat ? parseFloat(selectedDemand.pickup_lat) : 39.9042}
-              longitude={selectedDemand.pickup_lng ? parseFloat(selectedDemand.pickup_lng) : 116.4074}
-              scale={11}
-              showLocation
-              enableZoom
-              enableScroll
-              onError={(e) => console.log('地图加载失败:', e)}
-              markers={([
+            <>
+              <Map
+                id="full-map"
+                className="w-full"
+                style={{ height: '100vh' }}
+                latitude={selectedDemand.pickup_lat ? parseFloat(selectedDemand.pickup_lat) : 39.9042}
+                longitude={selectedDemand.pickup_lng ? parseFloat(selectedDemand.pickup_lng) : 116.4074}
+                scale={11}
+                showLocation
+                enableZoom
+                enableScroll
+                onError={(e) => console.log('地图加载失败:', e)}
+                markers={([
                 {
                   id: 1,
                   latitude: selectedDemand.pickup_lat ? parseFloat(selectedDemand.pickup_lat) : 39.9042,
@@ -750,7 +796,7 @@ export default function AcceptOrder() {
                   }
                 }] : [])
               ] as any)}
-              polyline={
+                polyline={
                 routePolyline.length > 0
                   ? [
                       {
@@ -780,7 +826,51 @@ export default function AcceptOrder() {
                       ]
                     : []
               }
-            />
+              />
+
+              {/* 地图上的距离和时间信息 */}
+              {(routeDistance || routeDuration) && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 150,
+                    left: 10,
+                    right: 10,
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderRadius: 12,
+                    padding: 12,
+                    zIndex: 10
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1 }}>
+                      {routeDistance && (
+                        <Text style={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
+                          {routeDistance}
+                        </Text>
+                      )}
+                      {routeDuration && (
+                        <Text style={{ fontSize: '14px', color: '#666', marginTop: 4 }}>
+                          预计行驶 {routeDuration}
+                        </Text>
+                      )}
+                    </View>
+                    <View
+                      style={{
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 16,
+                        padding: '8px 12px',
+                        marginLeft: 12
+                      }}
+                    >
+                      <Text style={{ fontSize: '12px', color: '#fff', fontWeight: 'bold' }}>
+                        📍 路线信息
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </>
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontSize: '14px', color: '#999', textAlign: 'center' }}>
