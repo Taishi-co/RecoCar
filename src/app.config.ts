@@ -50,6 +50,7 @@ export default typeof definePageConfig === 'function'
       pages: [
         'pages/index/index',                    // 登录/注册页面（默认首页）
         'pages/owner/vehicles/index',          // 车主端-车辆管理
+        'pages/owner/vehicles/rental-settings/index', // 车主端-车辆租赁设置
         'pages/owner/demands/index',           // 车主端-需求列表
         'pages/owner/accept-order/index',      // 车主端-确认接单
         'pages/owner/orders/index',            // 车主端-订单管理

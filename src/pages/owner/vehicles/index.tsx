@@ -624,10 +624,11 @@ export default function OwnerVehicles() {
                                     },
                                     fail: (err) => {
                                       console.error('✗✗✗ 跳转失败:', err)
+                                      const errMsg = err.errMsg || JSON.stringify(err)
                                       Taro.showToast({
-                                        title: '跳转失败',
+                                        title: `跳转失败: ${errMsg}`,
                                         icon: 'none',
-                                        duration: 2000
+                                        duration: 3000
                                       })
                                     }
                                   })
