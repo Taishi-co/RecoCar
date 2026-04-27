@@ -60,6 +60,23 @@ export class VehicleRentalsService {
       throw new BadRequestException('租户ID不能为空')
     }
 
+    // 检查是否已经存在该用户对该车辆的租赁申请（pending 或 active 状态）
+    const { data: existingRental, error: existingError } = await client
+      .from('vehicle_rentals')
+      .select('*')
+      .eq('vehicle_id', vehicle_id)
+      .eq('renter_id', renterId)
+      .in('status', ['pending', 'active'])
+      .maybeSingle()
+
+    if (!existingError && existingRental) {
+      if (existingRental.status === 'pending') {
+        throw new BadRequestException('您已经申请过该车辆，请等待车主确认')
+      } else if (existingRental.status === 'active') {
+        throw new BadRequestException('您已经租赁了该车辆，无法重复申请')
+      }
+    }
+
     console.log('[VehicleRentalsService] 准备插入租赁关系 - renter_id:', renterId)
 
     // 创建租赁关系
@@ -372,7 +389,7 @@ export class VehicleRentalsService {
     }
   }
 
-  async getAvailableVehicles() {
+  async getAvailableVehicles(renterId?: string) {
     const client = getSupabaseClient()
 
     // 查询可租赁车辆
@@ -388,7 +405,7 @@ export class VehicleRentalsService {
       throw new BadRequestException(`查询失败: ${error.message}`)
     }
 
-    // 为每个车辆查询车主信息
+    // 为每个车辆查询车主信息，并检查是否已被申请
     const vehiclesWithOwner = await Promise.all(
       (vehicles || []).map(async (vehicle) => {
         const { data: owner, error: ownerError } = await client
@@ -397,9 +414,30 @@ export class VehicleRentalsService {
           .eq('id', vehicle.owner_id)
           .maybeSingle()
 
+        // 如果提供了租户ID，检查该车是否已被该租户申请
+        let hasApplied = false
+        let applicationStatus: string | null = null
+
+        if (renterId) {
+          const { data: existingRental } = await client
+            .from('vehicle_rentals')
+            .select('status')
+            .eq('vehicle_id', vehicle.id)
+            .eq('renter_id', renterId)
+            .in('status', ['pending', 'active'])
+            .maybeSingle()
+
+          if (existingRental) {
+            hasApplied = true
+            applicationStatus = existingRental.status
+          }
+        }
+
         return {
           ...vehicle,
-          owners: ownerError ? null : owner
+          owners: ownerError ? null : owner,
+          has_applied: hasApplied,
+          application_status: applicationStatus
         }
       })
     )

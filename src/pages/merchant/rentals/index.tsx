@@ -32,6 +32,8 @@ interface Vehicle {
   rent_deposit: number
   contact_phone?: string
   contact_wechat?: string
+  has_applied: boolean
+  application_status: string | null
 }
 
 export default function VehicleRentals() {
@@ -50,8 +52,12 @@ export default function VehicleRentals() {
     console.log('🔄 开始加载可租赁车辆')
     setLoading(true)
     try {
+      const userInfo = Taro.getStorageSync('userInfo')
+      const userId = userInfo?.id
+
       const res = await Network.request({
-        url: '/api/rentals/available-vehicles'
+        url: '/api/rentals/available-vehicles',
+        data: userId ? { user_id: userId } : {}
       })
 
       console.log('📦 可租赁车辆完整响应:', res)
@@ -164,9 +170,17 @@ export default function VehicleRentals() {
                   <CardTitle className="text-base font-semibold">
                     {getVehicleTypeLabel(vehicle.vehicle_type)}（{vehicle.license_plate}）
                   </CardTitle>
-                  {vehicle.has_cold_chain && (
-                    <Badge className="bg-blue-500">冷链</Badge>
-                  )}
+                  <View className="flex gap-2">
+                    {vehicle.has_cold_chain && (
+                      <Badge className="bg-blue-500">冷链</Badge>
+                    )}
+                    {vehicle.has_applied && vehicle.application_status === 'pending' && (
+                      <Badge className="bg-orange-500">已申请</Badge>
+                    )}
+                    {vehicle.has_applied && vehicle.application_status === 'active' && (
+                      <Badge className="bg-green-500">已租赁</Badge>
+                    )}
+                  </View>
                 </View>
               </CardHeader>
 

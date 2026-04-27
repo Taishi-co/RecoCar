@@ -62,6 +62,8 @@ export default function VehicleRentalsDetail() {
   const [rentEndDate, setRentEndDate] = useState('')
   const [notes, setNotes] = useState('')
   const [userInfo, setUserInfo] = useState<any>(null)
+  const [hasApplied, setHasApplied] = useState(false)
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null)
 
   useEffect(() => {
     const user = Taro.getStorageSync('userInfo')
@@ -71,6 +73,12 @@ export default function VehicleRentalsDetail() {
       loadVehicleDetail()
     }
   }, [vehicleId])
+
+  useEffect(() => {
+    if (vehicle && userInfo) {
+      checkApplicationStatus()
+    }
+  }, [vehicle, userInfo])
 
   const loadVehicleDetail = async () => {
     setLoading(true)
@@ -97,6 +105,33 @@ export default function VehicleRentalsDetail() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkApplicationStatus = async () => {
+    if (!userInfo || !userInfo.id) return
+
+    try {
+      const res = await Network.request({
+        url: '/api/rentals/my',
+        data: { user_id: userInfo.id }
+      })
+
+      console.log('我的租赁记录响应:', res.data)
+
+      if (res.data.code === 200) {
+        const myRentals = res.data.data.as_renter || []
+        const existingRental = myRentals.find(
+          (r: any) => r.vehicle_id === vehicleId && ['pending', 'active'].includes(r.status)
+        )
+
+        if (existingRental) {
+          setHasApplied(true)
+          setApplicationStatus(existingRental.status)
+        }
+      }
+    } catch (error) {
+      console.error('检查申请状态失败:', error)
     }
   }
 
@@ -382,10 +417,24 @@ export default function VehicleRentalsDetail() {
           <Button
             className="flex-1"
             onClick={handleConfirmRental}
+            disabled={hasApplied}
           >
-            确认租赁
+            {hasApplied
+              ? applicationStatus === 'pending'
+                ? '已申请'
+                : '已租赁'
+              : '确认租赁'}
           </Button>
         </View>
+        {hasApplied && (
+          <View className="mt-3 p-3 bg-orange-50 rounded-lg">
+            <Text className="block text-sm text-orange-700">
+              {applicationStatus === 'pending'
+                ? '您已申请该车辆，请等待车主确认'
+                : '您已租赁该车辆'}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* 确认租赁对话框 */}

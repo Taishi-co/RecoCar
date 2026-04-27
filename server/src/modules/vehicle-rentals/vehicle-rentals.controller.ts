@@ -7,9 +7,9 @@ export class VehicleRentalsController {
   constructor(private readonly vehicleRentalsService: VehicleRentalsService) {}
 
   @Get('available-vehicles')
-  async getAvailableVehicles() {
-    console.log('[VehicleRentalsController] 获取可租赁车辆列表')
-    return this.vehicleRentalsService.getAvailableVehicles()
+  async getAvailableVehicles(@Query('user_id') userId?: string) {
+    console.log('[VehicleRentalsController] 获取可租赁车辆列表 - userId:', userId)
+    return this.vehicleRentalsService.getAvailableVehicles(userId)
   }
 
   @Get('pending-for-owner')
