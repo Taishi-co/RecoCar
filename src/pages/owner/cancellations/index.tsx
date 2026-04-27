@@ -43,6 +43,7 @@ export default function OwnerCancellations() {
   const [responseReason, setResponseReason] = useState('')
 
   // 启用通知轮询
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useNotificationPolling(30000)
 
   useEffect(() => {

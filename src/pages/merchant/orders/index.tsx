@@ -64,6 +64,7 @@ export default function MerchantOrders() {
   const [cancelReason, setCancelReason] = useState('')
 
   // 启用通知轮询
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useNotificationPolling(30000) // 每30秒检查一次新通知
 
   useEffect(() => {
