@@ -47,8 +47,13 @@ export default function AcceptOrder() {
   const [calculatedFare, setCalculatedFare] = useState<number | null>(null)
   const [fareCalculationDetail, setFareCalculationDetail] = useState<any>(null)
   const [routePolyline, setRoutePolyline] = useState<any[]>([])
+  const [routeDistance, setRouteDistance] = useState<string>('')
+  const [routeDuration, setRouteDuration] = useState<string>('')
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(false)
+  const [showFullMap, setShowFullMap] = useState(false)
+  const [mapClickCount, setMapClickCount] = useState(0)
+  const [mapClickTimer, setMapClickTimer] = useState<any>(null)
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router?.params
@@ -56,6 +61,13 @@ export default function AcceptOrder() {
       setDemandId(params.demandId)
       loadDemandDetail(params.demandId)
       loadVehicles()
+    }
+
+    // 清理定时器
+    return () => {
+      if (mapClickTimer) {
+        clearTimeout(mapClickTimer)
+      }
     }
   }, [])
 
@@ -128,16 +140,45 @@ export default function AcceptOrder() {
 
       console.log('路线数据响应:', res.data)
 
-      if (res.data.code === 200 && res.data.data && res.data.data.polyline) {
+      if (res.data.code === 200 && res.data.data) {
         const points = res.data.data.polyline.map((point: any) => ({
           latitude: point.latitude,
           longitude: point.longitude
         }))
         setRoutePolyline(points)
+        setRouteDistance(res.data.data.distance_text || '')
+        setRouteDuration(res.data.data.duration_text || '')
       }
     } catch (error) {
       console.error('获取路线数据失败:', error)
     }
+  }
+
+  // 处理地图双击事件
+  const handleMapTap = () => {
+    setMapClickCount((prev) => prev + 1)
+
+    if (mapClickCount === 1) {
+      // 第一次点击，启动定时器
+      const timer = setTimeout(() => {
+        setMapClickCount(0)
+        setMapClickTimer(null)
+      }, 300) // 300ms内为双击
+      setMapClickTimer(timer)
+    } else {
+      // 第二次点击，清除定时器并触发双击事件
+      if (mapClickTimer) {
+        clearTimeout(mapClickTimer)
+        setMapClickTimer(null)
+      }
+      setShowFullMap(true)
+      setMapClickCount(0)
+    }
+  }
+
+  // 关闭全屏地图
+  const handleCloseFullMap = () => {
+    setShowFullMap(false)
   }
 
   // 选择车辆
@@ -373,6 +414,7 @@ export default function AcceptOrder() {
                     showLocation
                     enableZoom
                     enableScroll
+                    onClick={handleMapTap}
                     onError={(e) => console.log('地图加载失败:', e)}
                     markers={([
                       {
@@ -432,6 +474,11 @@ export default function AcceptOrder() {
                     </Text>
                   </View>
                 )}
+              </View>
+              <View className="mt-2 flex items-center justify-center">
+                <Text className="text-xs text-blue-500 text-center">
+                  💡 双击地图可查看全屏路线
+                </Text>
               </View>
             </View>
           )}
@@ -594,6 +641,158 @@ export default function AcceptOrder() {
           <Text>{loading ? '接单中...' : '确认接单'}</Text>
         </Button>
       </View>
+
+      {/* 全屏地图 */}
+      {showFullMap && selectedDemand && (
+        <View
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            backgroundColor: '#fff'
+          }}
+        >
+          {/* 顶部信息栏 */}
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              padding: '12px 16px',
+              zIndex: 10000,
+              borderBottom: '1px solid #e5e5e5'
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>路线详情</Text>
+                <Text style={{ fontSize: '12px', color: '#666' }}>
+                  {routeDistance && routeDuration && `${routeDistance} · ${routeDuration}`}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: '#f5f5f5',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: '12px'
+                }}
+                onClick={handleCloseFullMap}
+              >
+                <Text style={{ fontSize: '20px', color: '#666' }}>✕</Text>
+              </View>
+            </View>
+            {/* 取货和送货地址 */}
+            <View style={{ marginTop: '8px' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: '4px' }}>
+                <Text style={{ fontSize: '12px', color: '#666', width: '40px' }}>取货:</Text>
+                <Text style={{ fontSize: '12px', color: '#333', flex: 1 }}>{selectedDemand.pickup_address}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: '12px', color: '#666', width: '40px' }}>送货:</Text>
+                <Text style={{ fontSize: '12px', color: '#333', flex: 1 }}>{selectedDemand.delivery_address}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* 全屏地图 */}
+          {Taro.getEnv() === Taro.ENV_TYPE.WEAPP ? (
+            <Map
+              id="full-map"
+              className="w-full"
+              style={{ height: '100vh' }}
+              latitude={selectedDemand.pickup_lat ? parseFloat(selectedDemand.pickup_lat) : 39.9042}
+              longitude={selectedDemand.pickup_lng ? parseFloat(selectedDemand.pickup_lng) : 116.4074}
+              scale={11}
+              showLocation
+              enableZoom
+              enableScroll
+              onError={(e) => console.log('地图加载失败:', e)}
+              markers={([
+                {
+                  id: 1,
+                  latitude: selectedDemand.pickup_lat ? parseFloat(selectedDemand.pickup_lat) : 39.9042,
+                  longitude: selectedDemand.pickup_lng ? parseFloat(selectedDemand.pickup_lng) : 116.4074,
+                  title: '取货点',
+                  iconPath: '',
+                  width: 32,
+                  height: 32
+                },
+                ...(selectedDemand.delivery_lat && selectedDemand.delivery_lng ? [{
+                  id: 2,
+                  latitude: parseFloat(selectedDemand.delivery_lat),
+                  longitude: parseFloat(selectedDemand.delivery_lng),
+                  title: '送货点',
+                  iconPath: '',
+                  width: 32,
+                  height: 32
+                }] : [])
+              ] as any)}
+              polyline={
+                routePolyline.length > 0
+                  ? [
+                      {
+                        points: routePolyline,
+                        color: '#3b82f6',
+                        width: 6,
+                        dottedLine: false
+                      }
+                    ]
+                  : selectedDemand.delivery_lat && selectedDemand.delivery_lng
+                    ? [
+                        {
+                          points: [
+                            {
+                              latitude: selectedDemand.pickup_lat ? parseFloat(selectedDemand.pickup_lat) : 39.9042,
+                              longitude: selectedDemand.pickup_lng ? parseFloat(selectedDemand.pickup_lng) : 116.4074
+                            },
+                            {
+                              latitude: parseFloat(selectedDemand.delivery_lat),
+                              longitude: parseFloat(selectedDemand.delivery_lng)
+                            }
+                          ],
+                          color: '#3b82f6',
+                          width: 6,
+                          dottedLine: true
+                        }
+                      ]
+                    : []
+              }
+            />
+          ) : (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: '14px', color: '#999', textAlign: 'center' }}>
+                地图功能仅在小程序中可用
+              </Text>
+            </View>
+          )}
+
+          {/* 底部提示 */}
+          <View
+            style={{
+              position: 'absolute',
+              bottom: '20px',
+              left: '16px',
+              right: '16px',
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              padding: '8px 12px',
+              borderRadius: '8px'
+            }}
+          >
+            <Text style={{ fontSize: '12px', color: '#fff', textAlign: 'center' }}>
+              再次点击右上角关闭按钮退出全屏
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   )
 }
