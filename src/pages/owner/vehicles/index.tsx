@@ -707,18 +707,16 @@ export default function OwnerVehicles() {
                                 </View>
                               )}
                               <View>
-                                <View className="flex items-center justify-between mb-1">
-                                  <Text className="text-xs text-gray-500">
-                                    {vehicle.is_available ? '出车中' : '已出车'}
-                                  </Text>
-                                  <Switch
-                                    checked={vehicle.is_available}
-                                    onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
-                                    disabled={!vehicle.can_toggle_availability}
-                                  />
-                                </View>
+                                <Text className="text-xs text-gray-500 mb-1 block">
+                                  {vehicle.is_available ? '出车中' : '已出车'}
+                                </Text>
+                                <Switch
+                                  checked={vehicle.is_available}
+                                  onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
+                                  disabled={!vehicle.can_toggle_availability}
+                                />
                                 {!vehicle.can_toggle_availability && vehicle.availability_control_reason && (
-                                  <Text className="text-xs text-orange-500 mt-1 block">
+                                  <Text className="text-xs text-gray-400 mt-1">
                                     {vehicle.availability_control_reason}
                                   </Text>
                                 )}
