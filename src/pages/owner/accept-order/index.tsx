@@ -367,7 +367,19 @@ export default function AcceptOrder() {
                         title: selectedDemand.pickup_address || '取货点',
                         iconPath: '',
                         width: 24,
-                        height: 24
+                        height: 24,
+                        callout: {
+                          content: '起点',
+                          color: '#fff',
+                          fontSize: 12,
+                          borderRadius: 4,
+                          bgColor: '#3b82f6',
+                          padding: 4,
+                          display: 'ALWAYS',
+                          textAlign: 'center',
+                          anchorX: 0,
+                          anchorY: 0
+                        }
                       },
                       ...(selectedDemand.delivery_lat && selectedDemand.delivery_lng ? [{
                         id: 2,
@@ -376,7 +388,19 @@ export default function AcceptOrder() {
                         title: selectedDemand.delivery_address || '送货点',
                         iconPath: '',
                         width: 24,
-                        height: 24
+                        height: 24,
+                        callout: {
+                          content: '终点',
+                          color: '#fff',
+                          fontSize: 12,
+                          borderRadius: 4,
+                          bgColor: '#ef4444',
+                          padding: 4,
+                          display: 'ALWAYS',
+                          textAlign: 'center',
+                          anchorX: 0,
+                          anchorY: 0
+                        }
                       }] : [])
                     ] as any)}
                     polyline={
@@ -690,7 +714,19 @@ export default function AcceptOrder() {
                   title: selectedDemand.pickup_address || '取货点',
                   iconPath: '',
                   width: 32,
-                  height: 32
+                  height: 32,
+                  callout: {
+                    content: '起点',
+                    color: '#fff',
+                    fontSize: 14,
+                    borderRadius: 4,
+                    bgColor: '#3b82f6',
+                    padding: 6,
+                    display: 'ALWAYS',
+                    textAlign: 'center',
+                    anchorX: 0,
+                    anchorY: 0
+                  }
                 },
                 ...(selectedDemand.delivery_lat && selectedDemand.delivery_lng ? [{
                   id: 2,
@@ -699,7 +735,19 @@ export default function AcceptOrder() {
                   title: selectedDemand.delivery_address || '送货点',
                   iconPath: '',
                   width: 32,
-                  height: 32
+                  height: 32,
+                  callout: {
+                    content: '终点',
+                    color: '#fff',
+                    fontSize: 14,
+                    borderRadius: 4,
+                    bgColor: '#ef4444',
+                    padding: 6,
+                    display: 'ALWAYS',
+                    textAlign: 'center',
+                    anchorX: 0,
+                    anchorY: 0
+                  }
                 }] : [])
               ] as any)}
               polyline={
