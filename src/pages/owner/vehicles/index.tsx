@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { View, Text, Image } from '@tarojs/components'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
 interface Vehicle {
@@ -70,6 +70,15 @@ export default function OwnerVehicles() {
     }
     loadVehicles()
   }, [])
+
+  // 页面显示时刷新数据（包括从子页面返回时）
+  useDidShow(() => {
+    const userInfo = Taro.getStorageSync('userInfo')
+    if (userInfo && userInfo.role === 'owner') {
+      console.log('页面显示，刷新车辆列表')
+      loadVehicles()
+    }
+  })
 
   const loadVehicles = async () => {
     const userInfo = Taro.getStorageSync('userInfo')
