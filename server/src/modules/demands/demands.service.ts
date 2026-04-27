@@ -510,26 +510,20 @@ export class DemandsService {
       throw new BadRequestException('只有待接单的需求可以取消')
     }
 
-    // 更新需求状态为已取消
-    // 待接单状态的取消不需要保存取消原因
-    const { data: demand, error: updateError } = await client
+    // 物理删除需求（不保留数据）
+    const { error: deleteError } = await client
       .from('demands')
-      .update({
-        status: 'cancelled'
-        // 不更新 remarks 字段，不保存取消原因
-      })
+      .delete()
       .eq('id', id)
-      .select()
-      .single()
 
-    if (updateError) {
-      throw new BadRequestException(`取消失败: ${updateError.message}`)
+    if (deleteError) {
+      throw new BadRequestException(`删除失败: ${deleteError.message}`)
     }
 
     return {
       code: 200,
-      message: '需求已取消',
-      data: demand
+      message: '需求已删除',
+      data: { id }
     }
   }
 

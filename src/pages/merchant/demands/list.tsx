@@ -106,7 +106,7 @@ export default function DemandsList() {
 
               if (resCancel.data.code === 200) {
                 Taro.showToast({
-                  title: '需求已取消',
+                  title: '需求已删除',
                   icon: 'success'
                 })
                 loadDemands()
