@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { Bell, LogOut, FileText, Package, ChartArea, MapPin, Route, Copy, Clock } from 'lucide-react-taro'
+import { Bell, LogOut, FileText, Package, ChartArea, MapPin, Route, Copy, Clock, Car } from 'lucide-react-taro'
 
 interface UserInfo {
   id: string
@@ -27,6 +27,12 @@ export default function MerchantProfile() {
       title: '发布需求',
       icon: <FileText size={20} color="#3b82f6" />,
       onClick: () => Taro.navigateTo({ url: '/pages/merchant/demands/publish' })
+    },
+    {
+      id: 'rentals',
+      title: '租车大厅',
+      icon: <Car size={20} color="#10b981" />,
+      onClick: () => Taro.navigateTo({ url: '/pages/merchant/rentals/index' })
     },
     {
       id: 'demands',
