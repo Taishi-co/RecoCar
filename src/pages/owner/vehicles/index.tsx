@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { Settings } from 'lucide-react-taro'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 
@@ -612,31 +611,30 @@ export default function OwnerVehicles() {
                           )}
                           {vehicle.status === 'active' && (
                             <>
-                              <Button
-                                size="sm"
-                                variant="outline"
+                              <View
+                                className="px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 active:bg-gray-100"
                                 onClick={() => {
-                                  console.log('点击设置租赁，vehicleId:', vehicle.id)
+                                  console.log('✓✓✓ 设置租赁按钮点击！vehicleId:', vehicle.id)
                                   const url = `/pages/owner/vehicles/rental-settings/index?vehicleId=${vehicle.id}`
-                                  console.log('跳转URL:', url)
+                                  console.log('准备跳转URL:', url)
                                   Taro.navigateTo({
                                     url,
                                     success: () => {
-                                      console.log('跳转到车辆租赁设置成功')
+                                      console.log('✓✓✓ 跳转成功！')
                                     },
                                     fail: (err) => {
-                                      console.error('跳转到车辆租赁设置失败:', err)
+                                      console.error('✗✗✗ 跳转失败:', err)
                                       Taro.showToast({
-                                        title: '跳转失败，请重试',
-                                        icon: 'none'
+                                        title: '跳转失败',
+                                        icon: 'none',
+                                        duration: 2000
                                       })
                                     }
                                   })
                                 }}
                               >
-                                <Settings size={14} color="#6b7280" />
-                                <Text className="text-xs ml-1">设置租赁</Text>
-                              </Button>
+                                <Text className="text-xs text-gray-700">设置租赁</Text>
+                              </View>
                               <View>
                                 <Text className="text-xs text-gray-500 mb-1 block">
                                   {vehicle.is_available ? '出车中' : '已出车'}
