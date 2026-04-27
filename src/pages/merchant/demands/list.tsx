@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Pencil, Save, FileText } from 'lucide-react-taro'
 import { Network } from '@/network'
 // import { useNotificationPolling } from '@/hooks/useNotificationPolling'
@@ -36,6 +37,7 @@ export default function DemandsList() {
   const [cancelReason, setCancelReason] = useState('')
   const [templateName, setTemplateName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('all') // 当前选中的状态 Tab：all, pending, in_progress, completed, cancelled
 
   // 启用通知轮询（暂时注释，避免白屏问题）
   // useNotificationPolling(30000) // 每30秒检查一次新通知
@@ -44,6 +46,11 @@ export default function DemandsList() {
   useDidShow(() => {
     loadDemands()
   })
+
+  // 监听状态 Tab 变化，重新加载数据
+  useEffect(() => {
+    loadDemands()
+  }, [activeTab])
 
   useEffect(() => {
     const userInfo = Taro.getStorageSync('userInfo')
@@ -71,9 +78,16 @@ export default function DemandsList() {
   const loadDemands = async () => {
     const userInfo = Taro.getStorageSync('userInfo')
     try {
+      const params: any = { merchant_id: userInfo.id }
+
+      // 根据选中的 Tab 添加状态筛选
+      if (activeTab !== 'all') {
+        params.status = activeTab
+      }
+
       const res = await Network.request({
         url: '/api/demands',
-        data: { merchant_id: userInfo.id }
+        data: params
       })
 
       console.log('需求列表响应:', res.data)
@@ -376,18 +390,41 @@ export default function DemandsList() {
 
       <View className="px-4 py-4">
         <Card className="bg-white rounded-lg shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">
-              我的需求
-            </CardTitle>
-            <Button
-              size="sm"
-              className="bg-blue-500"
-              onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/publish' })}
-            >
-              <Plus size={16} color="#fff" />
-              <Text className="ml-1">发布需求</Text>
-            </Button>
+          <CardHeader className="flex flex-col items-start justify-between pb-3">
+            <View className="w-full flex items-center justify-between mb-3">
+              <CardTitle className="text-lg font-semibold">
+                我的需求
+              </CardTitle>
+              <Button
+                size="sm"
+                className="bg-blue-500"
+                onClick={() => Taro.navigateTo({ url: '/pages/merchant/demands/publish' })}
+              >
+                <Plus size={16} color="#fff" />
+                <Text className="ml-1">发布需求</Text>
+              </Button>
+            </View>
+
+            {/* 状态筛选 Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="w-full justify-start bg-gray-100 p-1">
+                <TabsTrigger value="all" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  <Text className="text-xs">全部</Text>
+                </TabsTrigger>
+                <TabsTrigger value="pending" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  <Text className="text-xs">待接单</Text>
+                </TabsTrigger>
+                <TabsTrigger value="in_progress" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  <Text className="text-xs">进行中</Text>
+                </TabsTrigger>
+                <TabsTrigger value="completed" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  <Text className="text-xs">已完成</Text>
+                </TabsTrigger>
+                <TabsTrigger value="cancelled" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  <Text className="text-xs">已取消</Text>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
           <CardContent>
             {demands.length === 0 ? (
