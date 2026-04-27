@@ -20,6 +20,7 @@ import { DemandSchedulesModule } from '@/modules/demand-schedules/demand-schedul
 import { ScheduleServiceModule } from '@/modules/schedule-service/schedule-service.module';
 import { VehicleRentalsModule } from '@/modules/vehicle-rentals/vehicle-rentals.module';
 import { UserRolesModule } from '@/modules/user-roles/user-roles.module';
+import { RentalRemindersModule } from '@/modules/rental-reminders/rental-reminders.module';
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { UserRolesModule } from '@/modules/user-roles/user-roles.module';
     DemandSchedulesModule,
     ScheduleServiceModule,
     VehicleRentalsModule,
-    UserRolesModule
+    UserRolesModule,
+    RentalRemindersModule
   ],
   controllers: [AppController],
   providers: [AppService],
