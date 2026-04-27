@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { Camera, Settings, MessageCircle, LogOut, CreditCard, Bell, MapPin, Route, DollarSign } from 'lucide-react-taro'
+import { Camera, Settings, MessageCircle, LogOut, CreditCard, Bell, MapPin, Route, DollarSign, Clock, Users, FileText } from 'lucide-react-taro'
 
 interface UserInfo {
   id: string
@@ -348,6 +348,36 @@ export default function OwnerProfile() {
               <View className="flex items-center gap-3">
                 <DollarSign size={20} color="#10b981" />
                 <Text className="block text-sm">收益统计</Text>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
+            </View>
+            <View
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 active:bg-gray-50"
+              onClick={() => Taro.navigateTo({ url: '/pages/owner/rentals/pending/index' })}
+            >
+              <View className="flex items-center gap-3">
+                <Clock size={20} color="#f59e0b" />
+                <Text className="block text-sm">待确认租赁</Text>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
+            </View>
+            <View
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 active:bg-gray-50"
+              onClick={() => Taro.navigateTo({ url: '/pages/rentals-history/index' })}
+            >
+              <View className="flex items-center gap-3">
+                <FileText size={20} color="#10b981" />
+                <Text className="block text-sm">我的租赁</Text>
+              </View>
+              <Text className="block text-gray-400 text-sm">›</Text>
+            </View>
+            <View
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 active:bg-gray-50"
+              onClick={() => Taro.navigateTo({ url: '/pages/role-switch/index' })}
+            >
+              <View className="flex items-center gap-3">
+                <Users size={20} color="#8b5cf6" />
+                <Text className="block text-sm">角色管理</Text>
               </View>
               <Text className="block text-gray-400 text-sm">›</Text>
             </View>

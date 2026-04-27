@@ -398,4 +398,32 @@ export class VehicleRentalsService {
       }
     }
   }
+
+  async getPendingRentalsForOwner(ownerId: string) {
+    console.log('[VehicleRentalsService] 获取车主待确认租赁申请 - ownerId:', ownerId)
+
+    const client = getSupabaseClient()
+
+    // 查询车主待确认的租赁申请
+    const { data: pendingRentals, error } = await client
+      .from('vehicle_rentals')
+      .select(`
+        *,
+        vehicles (*),
+        renters:users!vehicle_rentals_renter_id_fkey (id, name, phone, avatar_url)
+      `)
+      .eq('owner_id', ownerId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw new BadRequestException(`查询失败: ${error.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '查询成功',
+      data: pendingRentals || []
+    }
+  }
 }

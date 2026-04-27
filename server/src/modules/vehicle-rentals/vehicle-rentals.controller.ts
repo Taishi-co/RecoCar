@@ -12,6 +12,12 @@ export class VehicleRentalsController {
     return this.vehicleRentalsService.getAvailableVehicles()
   }
 
+  @Get('pending-for-owner')
+  async getPendingRentalsForOwner(@Query('owner_id') ownerId: string) {
+    console.log('[VehicleRentalsController] 获取车主待确认租赁申请 - ownerId:', ownerId)
+    return this.vehicleRentalsService.getPendingRentalsForOwner(ownerId)
+  }
+
   @Get('vehicle/:vehicleId/info')
   async getVehicleRentalInfo(@Param('vehicleId') vehicleId: string) {
     console.log('[VehicleRentalsController] 获取车辆租赁信息 - vehicleId:', vehicleId)

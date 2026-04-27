@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { Bell, LogOut, FileText, Package, ChartArea, MapPin, Route, Copy, Clock, Car } from 'lucide-react-taro'
+import { Bell, LogOut, FileText, Package, ChartArea, MapPin, Route, Copy, Clock, Car, Users } from 'lucide-react-taro'
 
 interface UserInfo {
   id: string
@@ -48,6 +48,12 @@ export default function MerchantProfile() {
           }
         })
       }
+    },
+    {
+      id: 'rentals-history',
+      title: '我的租赁',
+      icon: <FileText size={20} color="#f59e0b" />,
+      onClick: () => Taro.navigateTo({ url: '/pages/rentals-history/index' })
     },
     {
       id: 'demands',
@@ -112,6 +118,12 @@ export default function MerchantProfile() {
       title: '数据统计',
       icon: <ChartArea size={20} color="#3b82f6" />,
       onClick: () => Taro.navigateTo({ url: '/pages/merchant/stats/index' })
+    },
+    {
+      id: 'role-switch',
+      title: '角色管理',
+      icon: <Users size={20} color="#8b5cf6" />,
+      onClick: () => Taro.navigateTo({ url: '/pages/role-switch/index' })
     }
   ]
 

@@ -31,6 +31,9 @@ export default typeof definePageConfig === 'function'
         'pages/merchant/profile/index',        // 需求方端-我的
         'pages/merchant/rentals/index',        // 需求方端-租车大厅
         'pages/merchant/rentals/detail',       // 需求方端-车辆详情
+        'pages/owner/rentals/pending/index',   // 运力方端-待确认租赁
+        'pages/role-switch/index',             // 角色管理
+        'pages/rentals-history/index',         // 我的租赁记录
         'pages/notifications/index',           // 通知消息列表
         'pages/admin/users/index',             // 运营端-用户管理
         'pages/admin/vehicles/index',          // 运营端-车辆审核
