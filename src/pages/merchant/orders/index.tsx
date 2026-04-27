@@ -172,12 +172,19 @@ export default function MerchantOrders() {
     }
   }
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string, payment_status?: string) => {
+    // 特殊处理 transport_completed 状态，根据 payment_status 显示不同文本
+    if (status === 'transport_completed') {
+      if (payment_status === 'paid') {
+        return '运输完成（已付款）'
+      }
+      return '运输完成（待付款）'
+    }
+
     const statuses: Record<string, string> = {
       pending: '待接单',
       accepted: '已接单',
       in_transit: '运输中',
-      transport_completed: '运输完成（待付款）',
       payment_confirmed: '收款已确认',
       commission_pending: '佣金待审核',
       completed: '已完成',
@@ -186,12 +193,19 @@ export default function MerchantOrders() {
     return statuses[status] || status
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, payment_status?: string) => {
+    // 特殊处理 transport_completed 状态，根据 payment_status 显示不同颜色
+    if (status === 'transport_completed') {
+      if (payment_status === 'paid') {
+        return 'bg-blue-500' // 已付款用蓝色
+      }
+      return 'bg-yellow-500' // 待付款用黄色
+    }
+
     const colors: Record<string, string> = {
       pending: 'bg-orange-500',
       accepted: 'bg-blue-500',
       in_transit: 'bg-cyan-500',
-      transport_completed: 'bg-yellow-500',
       payment_confirmed: 'bg-purple-500',
       commission_pending: 'bg-pink-500',
       completed: 'bg-green-500',
@@ -550,9 +564,9 @@ export default function MerchantOrders() {
                               </Text>
                             </Badge>
                           )}
-                          <Badge className={getStatusColor(order.status)}>
+                          <Badge className={getStatusColor(order.status, order.payment_status)}>
                             <Text className="text-white text-xs">
-                              {getStatusText(order.status)}
+                              {getStatusText(order.status, order.payment_status)}
                             </Text>
                           </Badge>
                           {/* 显示取消申请状态 */}
