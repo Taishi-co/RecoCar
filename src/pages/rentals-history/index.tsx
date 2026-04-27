@@ -69,8 +69,12 @@ export default function RentalsHistory() {
   }, [])
 
   const loadRentalsHistory = async () => {
-    if (!userInfo) return
+    if (!userInfo) {
+      console.log('⚠️ userInfo 为空，跳过加载')
+      return
+    }
 
+    console.log('✓ 开始加载租赁记录 - userId:', userInfo.id, 'userRole:', userInfo.role)
     setLoading(true)
     try {
       const res = await Network.request({
@@ -81,15 +85,20 @@ export default function RentalsHistory() {
         }
       })
 
-      console.log('租赁记录响应:', res.data)
+      console.log('✓ 租赁记录响应:', res.data)
 
       if (res.data && res.data.code === 200) {
         // 过滤掉已拒绝（terminated）的记录
-        setAsRenter((res.data.data.as_renter || []).filter((r: RentalRecord) => r.status !== 'terminated'))
-        setAsOwner((res.data.data.as_owner || []).filter((r: RentalRecord) => r.status !== 'terminated'))
+        const filteredRenter = (res.data.data.as_renter || []).filter((r: RentalRecord) => r.status !== 'terminated')
+        const filteredOwner = (res.data.data.as_owner || []).filter((r: RentalRecord) => r.status !== 'terminated')
 
-        const totalCount = ((res.data.data.as_renter || []).filter((r: RentalRecord) => r.status !== 'terminated').length) +
-                          ((res.data.data.as_owner || []).filter((r: RentalRecord) => r.status !== 'terminated').length)
+        console.log('✓ 过滤后租户记录数:', filteredRenter.length)
+        console.log('✓ 过滤后车主记录数:', filteredOwner.length)
+
+        setAsRenter(filteredRenter)
+        setAsOwner(filteredOwner)
+
+        const totalCount = filteredRenter.length + filteredOwner.length
         if (totalCount === 0) {
           Taro.showToast({
             title: '暂无租赁记录',
@@ -97,14 +106,14 @@ export default function RentalsHistory() {
           })
         }
       } else {
-        console.error('加载租赁记录失败:', res.data)
+        console.error('✗ 加载租赁记录失败:', res.data)
         Taro.showToast({
           title: res.data?.message || '加载失败',
           icon: 'none'
         })
       }
     } catch (error) {
-      console.error('加载租赁记录失败:', error)
+      console.error('✗ 加载租赁记录失败:', error)
       Taro.showToast({
         title: '加载失败，请重试',
         icon: 'none'
@@ -255,6 +264,14 @@ export default function RentalsHistory() {
       <View className="bg-white p-4 border-b border-gray-200">
         <Text className="text-xl font-bold text-gray-900 block">我的租赁记录</Text>
         <Text className="block text-sm text-gray-500 mt-1">查看租赁历史和状态</Text>
+        {/* 当前用户信息提示 */}
+        {userInfo && (
+          <View className="mt-2 p-2 bg-blue-50 rounded-lg">
+            <Text className="block text-xs text-blue-700">
+              当前用户：{userInfo.name} ({userInfo.phone})
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* 标签页 */}
