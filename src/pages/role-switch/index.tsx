@@ -29,20 +29,22 @@ export default function RoleSwitch() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    loadUserInfo()
-    loadUserRoles()
-  }, [])
-
   const loadUserInfo = () => {
     const user = Taro.getStorageSync('userInfo')
     if (user) {
       setUserInfo(user)
     }
+    return user
   }
 
   const loadUserRoles = async () => {
-    if (!userInfo) return
+    // 直接从存储中读取用户信息，避免依赖 userInfo 状态的异步更新
+    const currentUser = Taro.getStorageSync('userInfo')
+
+    if (!currentUser) {
+      console.log('用户信息不存在，无法加载角色')
+      return
+    }
 
     setLoading(true)
     try {
@@ -50,14 +52,22 @@ export default function RoleSwitch() {
         url: '/api/user-roles/my-roles',
         method: 'GET',
         data: {
-          userId: userInfo.id
+          userId: currentUser.id
         }
       })
 
       console.log('用户角色列表:', res.data)
 
       if (res.data && res.data.code === 200) {
-        setRoles(res.data.data || [])
+        const rolesList = res.data.data || []
+        console.log('设置角色列表，数量:', rolesList.length)
+        setRoles(rolesList)
+
+        if (rolesList.length === 0) {
+          console.log('角色列表为空')
+        }
+      } else {
+        console.error('加载角色失败，响应码:', res.data?.code)
       }
     } catch (error) {
       console.error('加载用户角色失败:', error)
@@ -69,6 +79,11 @@ export default function RoleSwitch() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadUserInfo()
+    loadUserRoles()
+  }, [])
 
   const handleSwitchRole = async (roleId: string) => {
     if (!userInfo) return
