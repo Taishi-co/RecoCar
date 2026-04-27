@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
-import { View, Text, Picker } from '@tarojs/components'
+import { View, Text, Picker, Image } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +23,7 @@ interface Demand {
   remarks: string
   estimated_distance: number | null
   estimated_fare: number | null
+  cargo_photos: string[] // 货品照片URL数组
 }
 
 interface AddressBook {
@@ -141,7 +142,8 @@ export default function EditDemand() {
           delivery_location: deliveryLocation,
           remarks: demand.remarks || '',
           estimated_distance: demand.estimated_distance,
-          estimated_fare: demand.estimated_fare
+          estimated_fare: demand.estimated_fare,
+          cargo_photos: demand.cargo_photos || [] // 货品照片URL数组
         })
       } else {
         setError(res.data.message || '需求不存在')
@@ -173,6 +175,101 @@ export default function EditDemand() {
     } catch (err) {
       console.error('[EditDemand] 加载地址数据失败:', err)
     }
+  }
+
+  // 选择货品照片（拍照或从相册选择）
+  const handleChoosePhotos = async () => {
+    try {
+      const res = await Taro.chooseImage({
+        count: 9 - (formData.cargo_photos?.length || 0), // 剩余可上传数量
+        sizeType: ['compressed'], // 压缩图片
+        sourceType: ['album', 'camera'] // 相册和相机
+      })
+
+      console.log('[EditDemand] 选择图片:', res.tempFilePaths)
+
+      // 上传所有选中的图片
+      const uploadPromises = res.tempFilePaths.map(async (tempFilePath) => {
+        try {
+          const uploadRes = await Network.uploadFile({
+            url: '/api/home/upload',
+            filePath: tempFilePath,
+            name: 'file'
+          })
+
+          console.log('[EditDemand] 图片上传原始响应:', uploadRes)
+
+          // 检查 HTTP 状态码
+          if (uploadRes.statusCode !== 200) {
+            throw new Error(`上传失败，状态码: ${uploadRes.statusCode}`)
+          }
+
+          // 解析响应数据
+          let response: any
+          try {
+            response = JSON.parse(uploadRes.data as string)
+          } catch (parseError) {
+            console.error('[EditDemand] JSON 解析失败:', parseError)
+            throw new Error('响应数据格式错误')
+          }
+
+          console.log('[EditDemand] 图片上传响应:', response)
+
+          if (response.code === 200) {
+            return response.data.url // 返回图片URL
+          } else {
+            throw new Error(response.message || '上传失败')
+          }
+        } catch (uploadError) {
+          console.error('[EditDemand] 图片上传失败:', uploadError)
+          return null
+        }
+      })
+
+      const uploadResults = await Promise.all(uploadPromises)
+      const successfulUploads = uploadResults.filter((url): url is string => url !== null)
+
+      if (successfulUploads.length > 0) {
+        setFormData({
+          ...formData,
+          cargo_photos: [...(formData.cargo_photos || []), ...successfulUploads]
+        })
+
+        Taro.showToast({
+          title: `成功上传 ${successfulUploads.length} 张图片`,
+          icon: 'success'
+        })
+      } else {
+        Taro.showToast({
+          title: '图片上传失败',
+          icon: 'none'
+        })
+      }
+    } catch (chooseError) {
+      console.error('[EditDemand] 选择图片失败:', chooseError)
+      Taro.showToast({
+        title: '选择图片失败',
+        icon: 'none'
+      })
+    }
+  }
+
+  // 删除货品照片
+  const handleRemovePhoto = (index: number) => {
+    const newPhotos = [...(formData.cargo_photos || [])]
+    newPhotos.splice(index, 1)
+    setFormData({
+      ...formData,
+      cargo_photos: newPhotos
+    })
+  }
+
+  // 预览图片
+  const handlePreviewPhoto = (index: number) => {
+    Taro.previewImage({
+      current: formData.cargo_photos?.[index] || '',
+      urls: formData.cargo_photos || []
+    })
   }
 
   const handlePickupDateSelect = (e) => {
@@ -261,7 +358,8 @@ export default function EditDemand() {
         delivery_lat: formData.delivery_location.latitude,
         delivery_lng: formData.delivery_location.longitude,
         estimated_distance: formData.estimated_distance,
-        estimated_fare: formData.estimated_fare
+        estimated_fare: formData.estimated_fare,
+        cargo_photos: formData.cargo_photos || [] // 货品照片URL数组
       }
 
       const res = await Network.request({
@@ -445,6 +543,49 @@ export default function EditDemand() {
                   />
                 </View>
               </View>
+            </View>
+
+            {/* 货品照片 */}
+            <View>
+              <Label className="block text-sm font-medium mb-2">
+                货品照片
+                <Text className="text-gray-400 text-xs ml-2">（可选，最多9张）</Text>
+              </Label>
+              <Button
+                size="sm"
+                className="w-full bg-blue-500"
+                onClick={handleChoosePhotos}
+                disabled={(formData.cargo_photos?.length || 0) >= 9}
+              >
+                <Text className="text-xs">
+                  {(formData.cargo_photos?.length || 0) >= 9 ? '已达到最大数量' : '📷 拍照或选择图片'}
+                </Text>
+              </Button>
+
+              {/* 图片预览 */}
+              {formData.cargo_photos && formData.cargo_photos.length > 0 && (
+                <View className="grid grid-cols-3 gap-2 mt-3">
+                  {formData.cargo_photos.map((photo, index) => (
+                    <View key={index} className="relative">
+                      <Image
+                        src={photo}
+                        mode="aspectFill"
+                        className="w-full h-24 rounded-lg bg-gray-200"
+                        onClick={() => handlePreviewPhoto(index)}
+                      />
+                      <View
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemovePhoto(index)
+                        }}
+                      >
+                        <Text className="text-xs">×</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
             <View>

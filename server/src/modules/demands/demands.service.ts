@@ -474,6 +474,9 @@ export class DemandsService {
     if (updateDemandDto.estimated_fare !== undefined) {
       updateData.estimated_fare = updateDemandDto.estimated_fare
     }
+    if (updateDemandDto.cargo_photos !== undefined) {
+      updateData.cargo_photos = updateDemandDto.cargo_photos
+    }
 
     const { data: demand, error: updateError } = await client
       .from('demands')
