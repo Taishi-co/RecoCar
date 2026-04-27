@@ -57,7 +57,7 @@ interface Order {
 export default function MerchantOrders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(false)
-  const [filterStatus, setFilterStatus] = useState('')
+  const [filterStatus, setFilterStatus] = useState('accepted')
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [showRequestCancelDialog, setShowRequestCancelDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
