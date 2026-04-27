@@ -76,8 +76,8 @@ export class VehicleMockService {
       this.vehicleStates.set(vehicleId, state);
     }
 
-    // 模拟连续移动：速度更快（30-60 km/h）
-    const speedKmh = 30 + Math.random() * 30; // 30-60 km/h
+    // 模拟连续移动：速度更快（90-180 km/h，提升三倍）
+    const speedKmh = 90 + Math.random() * 90; // 90-180 km/h
     const speedMs = speedKmh * 1000 / 3600; // 转换为 m/s
     const distance = speedMs * 5; // 5秒移动的距离
 
@@ -93,8 +93,8 @@ export class VehicleMockService {
     state.lat += latChange;
     state.lng += lngChange;
 
-    // 限制在基准坐标附近5公里范围内
-    const maxOffset = 0.045; // 约5公里
+    // 限制在基准坐标附近10公里范围内
+    const maxOffset = 0.09; // 约10公里
     state.lat = Math.max(vehicle.baseLat - maxOffset, Math.min(vehicle.baseLat + maxOffset, state.lat));
     state.lng = Math.max(vehicle.baseLng - maxOffset, Math.min(vehicle.baseLng + maxOffset, state.lng));
 
@@ -139,8 +139,8 @@ export class VehicleMockService {
       this.vehicleStates.set(vehicleSn, state);
     }
 
-    // 模拟连续移动：速度更快（30-60 km/h）
-    const speedKmh = 30 + Math.random() * 30; // 30-60 km/h
+    // 模拟连续移动：速度更快（90-180 km/h，提升三倍）
+    const speedKmh = 90 + Math.random() * 90; // 90-180 km/h
     const speedMs = speedKmh * 1000 / 3600; // 转换为 m/s
     const distance = speedMs * 5; // 5秒移动的距离
 
@@ -156,8 +156,8 @@ export class VehicleMockService {
     state.lat += latChange;
     state.lng += lngChange;
 
-    // 限制在基准坐标附近5公里范围内
-    const maxOffset = 0.045; // 约5公里
+    // 限制在基准坐标附近10公里范围内
+    const maxOffset = 0.09; // 约10公里
     state.lat = Math.max(vehicle.baseLat - maxOffset, Math.min(vehicle.baseLat + maxOffset, state.lat));
     state.lng = Math.max(vehicle.baseLng - maxOffset, Math.min(vehicle.baseLng + maxOffset, state.lng));
 
