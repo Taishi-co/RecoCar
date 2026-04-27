@@ -69,20 +69,39 @@ export default function DemandsList() {
   }, [])
 
   const loadDemands = async () => {
+    setLoading(true)
     const userInfo = Taro.getStorageSync('userInfo')
     try {
+      console.log('[DemandsList] 开始加载需求列表')
+      console.log('[DemandsList] 当前用户ID:', userInfo?.id)
+
       const res = await Network.request({
         url: '/api/demands',
         data: { merchant_id: userInfo.id }
       })
 
-      console.log('需求列表响应:', res.data)
+      console.log('[DemandsList] 需求列表响应:', res.data)
 
       if (res.data.code === 200) {
-        setDemands(res.data.data)
+        const demandList = res.data.data || []
+        console.log('[DemandsList] 需求数量:', demandList.length)
+
+        // 统计各状态数量
+        const statusCount = demandList.reduce((acc, demand) => {
+          acc[demand.status] = (acc[demand.status] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        console.log('[DemandsList] 状态统计:', statusCount)
+
+        setDemands(demandList)
+      } else {
+        console.error('[DemandsList] 加载需求列表失败:', res.data?.message)
       }
     } catch (error) {
-      console.error('加载需求列表失败:', error)
+      console.error('[DemandsList] 加载需求列表失败:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
