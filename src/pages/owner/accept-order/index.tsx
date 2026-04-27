@@ -52,8 +52,6 @@ export default function AcceptOrder() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(false)
   const [showFullMap, setShowFullMap] = useState(false)
-  const [mapClickCount, setMapClickCount] = useState(0)
-  const [mapClickTimer, setMapClickTimer] = useState<any>(null)
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router?.params
@@ -61,13 +59,6 @@ export default function AcceptOrder() {
       setDemandId(params.demandId)
       loadDemandDetail(params.demandId)
       loadVehicles()
-    }
-
-    // 清理定时器
-    return () => {
-      if (mapClickTimer) {
-        clearTimeout(mapClickTimer)
-      }
     }
   }, [])
 
@@ -165,28 +156,6 @@ export default function AcceptOrder() {
       }
     } catch (error) {
       console.error('获取路线数据失败:', error)
-    }
-  }
-
-  // 处理地图双击事件
-  const handleMapTap = () => {
-    setMapClickCount((prev) => prev + 1)
-
-    if (mapClickCount === 1) {
-      // 第一次点击，启动定时器
-      const timer = setTimeout(() => {
-        setMapClickCount(0)
-        setMapClickTimer(null)
-      }, 300) // 300ms内为双击
-      setMapClickTimer(timer)
-    } else {
-      // 第二次点击，清除定时器并触发双击事件
-      if (mapClickTimer) {
-        clearTimeout(mapClickTimer)
-        setMapClickTimer(null)
-      }
-      setShowFullMap(true)
-      setMapClickCount(0)
     }
   }
 
@@ -373,45 +342,6 @@ export default function AcceptOrder() {
       {/* 可滚动内容区域 */}
       <ScrollView scrollY className="flex-1">
         <View className="p-4 space-y-4">
-          {/* 需求信息 */}
-          <View className="bg-white rounded-lg p-4">
-            <Text className="font-medium mb-3 text-sm">需求信息</Text>
-            <View className="space-y-2">
-              <View className="flex items-start">
-                <Text className="text-xs text-gray-500 w-16 flex-shrink-0">取货:</Text>
-                <Text className="text-xs text-gray-700 flex-1">
-                  {selectedDemand.pickup_address}
-                </Text>
-              </View>
-              <View className="flex items-start">
-                <Text className="text-xs text-gray-500 w-16 flex-shrink-0">送货:</Text>
-                <Text className="text-xs text-gray-700 flex-1">
-                  {selectedDemand.delivery_address}
-                </Text>
-              </View>
-              <View className="flex items-start">
-                <Text className="text-xs text-gray-500 w-16 flex-shrink-0">时间:</Text>
-                <Text className="text-xs text-gray-700 flex-1">
-                  {new Date(selectedDemand.pickup_time).toLocaleString()}
-                </Text>
-              </View>
-              <View className="flex items-start">
-                <Text className="text-xs text-gray-500 w-16 flex-shrink-0">规格:</Text>
-                <Text className="text-xs text-gray-700 flex-1">
-                  {selectedDemand.weight}kg / {selectedDemand.volume}m³
-                </Text>
-              </View>
-              {selectedDemand.cargo_description && (
-                <View className="flex items-start">
-                  <Text className="text-xs text-gray-500 w-16 flex-shrink-0">描述:</Text>
-                  <Text className="text-xs text-gray-700 flex-1">
-                    {selectedDemand.cargo_description}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
           {/* 地图展示 */}
           {(selectedDemand.pickup_lat && selectedDemand.pickup_lng) && (
             <View className="bg-white rounded-lg p-4">
@@ -421,14 +351,13 @@ export default function AcceptOrder() {
                   <Map
                     id="accept-map"
                     className="w-full"
-                    style={{ height: '200px' }}
+                    style={{ height: '400px' }}
                     latitude={parseFloat(selectedDemand.pickup_lat)}
                     longitude={parseFloat(selectedDemand.pickup_lng)}
                     scale={10}
                     showLocation
                     enableZoom
                     enableScroll
-                    onClick={handleMapTap}
                     onError={(e) => console.log('地图加载失败:', e)}
                     markers={([
                       {
@@ -503,8 +432,11 @@ export default function AcceptOrder() {
               )}
 
               <View className="mt-2 flex items-center justify-center">
-                <Text className="text-xs text-blue-500 text-center">
-                  💡 双击地图可查看全屏路线
+                <Text
+                  className="text-xs text-blue-500 text-center"
+                  onClick={() => setShowFullMap(true)}
+                >
+                  🔍 点击查看全屏路线
                 </Text>
               </View>
             </View>
