@@ -26,6 +26,11 @@ interface Vehicle {
   base_price?: number
   base_distance?: number
   price_per_km?: number
+  // 租赁字段
+  is_available_for_rent: boolean
+  current_renter_id: string | null
+  rent_start_date: string | null
+  rent_end_date: string | null
 }
 
 export default function OwnerVehicles() {
@@ -557,7 +562,7 @@ export default function OwnerVehicles() {
                               车牌号: {vehicle.license_plate || '未填写'}
                             </Text>
                           </View>
-                          <View className="flex items-center gap-2 mb-1">
+                          <View className="flex items-center gap-2 mb-1 flex-wrap">
                             <Badge className={getStatusColor(vehicle.status)}>
                               <Text className="text-white text-xs">
                                 {getStatusText(vehicle.status)}
@@ -566,6 +571,17 @@ export default function OwnerVehicles() {
                             {vehicle.has_cold_chain && (
                               <Badge className="bg-cyan-500">
                                 <Text className="text-white text-xs">冷链</Text>
+                              </Badge>
+                            )}
+                            {/* 租赁状态标签 */}
+                            {vehicle.status === 'active' && vehicle.is_available_for_rent && !vehicle.current_renter_id && (
+                              <Badge className="bg-green-600">
+                                <Text className="text-white text-xs">可租赁</Text>
+                              </Badge>
+                            )}
+                            {vehicle.current_renter_id && (
+                              <Badge className="bg-yellow-500">
+                                <Text className="text-white text-xs">已出租</Text>
                               </Badge>
                             )}
                             {vehicle.status === 'active' && (

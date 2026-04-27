@@ -44,6 +44,11 @@ export class OrdersService {
       throw new BadRequestException('车辆不可用')
     }
 
+    // 检查车辆是否已被出租（租赁状态检查）
+    if (vehicle.current_renter_id) {
+      throw new BadRequestException('该车辆已被出租，无法接单')
+    }
+
     // 创建订单
     const { data: order, error: insertError } = await client
       .from('orders')
