@@ -436,38 +436,32 @@ export default function VehicleRentalsDetail() {
             </View>
             <View>
               <Label>开始日期</Label>
-              <View
-                className="mt-2 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200 flex items-center justify-between"
-              >
-                <Text className="block text-sm text-gray-900">
-                  {rentStartDate || '请选择开始日期'}
-                </Text>
-                <Calendar size={16} color="#6b7280" />
-              </View>
               <Picker
                 mode="date"
                 value={rentStartDate}
                 onChange={handleStartDateChange}
               >
-                <View></View>
+                <View className="mt-2 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200 flex items-center justify-between">
+                  <Text className="block text-sm text-gray-900">
+                    {rentStartDate || '请选择开始日期'}
+                  </Text>
+                  <Calendar size={16} color="#6b7280" />
+                </View>
               </Picker>
             </View>
             <View>
               <Label>结束日期</Label>
-              <View
-                className="mt-2 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200 flex items-center justify-between"
-              >
-                <Text className="block text-sm text-gray-900">
-                  {rentEndDate || '请选择结束日期'}
-                </Text>
-                <Calendar size={16} color="#6b7280" />
-              </View>
               <Picker
                 mode="date"
                 value={rentEndDate}
                 onChange={handleEndDateChange}
               >
-                <View></View>
+                <View className="mt-2 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200 flex items-center justify-between">
+                  <Text className="block text-sm text-gray-900">
+                    {rentEndDate || '请选择结束日期'}
+                  </Text>
+                  <Calendar size={16} color="#6b7280" />
+                </View>
               </Picker>
             </View>
             <View>
