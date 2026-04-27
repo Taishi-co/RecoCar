@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Network } from '@/network'
 
+// 平台检测：判断是否在小程序环境
+const currentEnv = Taro.getEnv()
+const isMiniApp = currentEnv === Taro.ENV_TYPE.WEAPP || currentEnv === Taro.ENV_TYPE.TT
+
 interface VehicleLocation {
   id: string
   manufacturer: 'neolix' | 'ninebot'
@@ -76,6 +80,14 @@ export default function VehicleMap() {
 
   // 定位到我的位置
   const handleLocateToMe = () => {
+    if (!isMiniApp) {
+      Taro.showToast({
+        title: '定位功能仅在小程序中可用',
+        icon: 'none'
+      })
+      return
+    }
+
     Taro.getLocation({
       type: 'gcj02',
       success: (res) => {
@@ -189,38 +201,62 @@ export default function VehicleMap() {
     <View className="min-h-screen bg-gray-100">
       {/* 地图区域 */}
       <View className="relative w-full" style={{ height: '60vh' }}>
-        <Map
-          id="vehicleMap"
-          className="w-full h-full"
-          longitude={mapCenter.longitude}
-          latitude={mapCenter.latitude}
-          scale={14}
-          markers={markers}
-          onMarkerTap={handleMarkerTap}
-          onError={handleMapError}
-          showLocation
-          enableZoom
-          enableScroll
-        />
+        {isMiniApp ? (
+          // 小程序端：显示地图
+          <Map
+            id="vehicleMap"
+            className="w-full h-full"
+            longitude={mapCenter.longitude}
+            latitude={mapCenter.latitude}
+            scale={14}
+            markers={markers}
+            onMarkerTap={handleMarkerTap}
+            onError={handleMapError}
+            showLocation
+            enableZoom
+            enableScroll
+          />
+        ) : (
+          // H5端：显示降级提示
+          <View className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <View className="text-center px-4">
+              <Text className="block text-lg font-semibold text-gray-700 mb-2">
+                地图功能仅在小程序中可用
+              </Text>
+              <Text className="block text-sm text-gray-600 mb-4">
+                H5 端暂不支持地图显示，请使用微信小程序或抖音小程序查看车辆实时位置
+              </Text>
+              <Button
+                className="bg-blue-500"
+                onClick={loadVehicleLocations}
+                disabled={loading}
+              >
+                <Text>刷新数据</Text>
+              </Button>
+            </View>
+          </View>
+        )}
 
-        {/* 地图控制按钮 */}
-        <View className="absolute top-4 right-4 space-y-2">
-          <Button
-            size="sm"
-            className="bg-white shadow-lg"
-            onClick={loadVehicleLocations}
-            disabled={loading}
-          >
-            <Text className="text-xs text-gray-700">刷新</Text>
-          </Button>
-          <Button
-            size="sm"
-            className="bg-white shadow-lg"
-            onClick={handleLocateToMe}
-          >
-            <Text className="text-xs text-gray-700">定位</Text>
-          </Button>
-        </View>
+        {/* 地图控制按钮（仅小程序端显示） */}
+        {isMiniApp && (
+          <View className="absolute top-4 right-4 space-y-2">
+            <Button
+              size="sm"
+              className="bg-white shadow-lg"
+              onClick={loadVehicleLocations}
+              disabled={loading}
+            >
+              <Text className="text-xs text-gray-700">刷新</Text>
+            </Button>
+            <Button
+              size="sm"
+              className="bg-white shadow-lg"
+              onClick={handleLocateToMe}
+            >
+              <Text className="text-xs text-gray-700">定位</Text>
+            </Button>
+          </View>
+        )}
 
         {/* 车辆数量提示 */}
         <View className="absolute top-4 left-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg shadow">
