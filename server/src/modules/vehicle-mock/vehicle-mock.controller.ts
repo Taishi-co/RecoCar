@@ -104,4 +104,29 @@ export class VehicleMockController {
       data: unified,
     };
   }
+
+  /**
+   * 获取所有车辆轨迹
+   * GET /api/mock/vehicles/trajectories
+   */
+  @Get('vehicles/trajectories')
+  getAllTrajectories() {
+    const trajectories = this.vehicleMockService.getAllTrajectories();
+
+    // 统一格式
+    const unified: Record<string, Array<{latitude: number, longitude: number, time: number}>> = {};
+    Object.entries(trajectories).forEach(([vehicleId, points]) => {
+      unified[vehicleId] = points.map(p => ({
+        latitude: p.lat,
+        longitude: p.lng,
+        time: p.time
+      }));
+    });
+
+    return {
+      code: 200,
+      message: 'success',
+      data: unified,
+    };
+  }
 }

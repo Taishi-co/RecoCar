@@ -25,23 +25,32 @@ interface VehicleLocation {
 
 export default function VehicleMap() {
   const [vehicles, setVehicles] = useState<VehicleLocation[]>([])
+  const [trajectories, setTrajectories] = useState<Record<string, Array<{latitude: number, longitude: number, time: number}>>>({})
   const [loading, setLoading] = useState(false)
-  const [mapCenter, setMapCenter] = useState({ latitude: 39.9042, longitude: 116.4074 })
+  const [mapCenter, setMapCenter] = useState({ latitude: 39.6304, longitude: 118.1802 })
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLocation | null>(null)
 
   // 加载车辆位置数据
   const loadVehicleLocations = async () => {
     setLoading(true)
     try {
-      const res = await Network.request({
-        url: '/api/mock/vehicles/all',
-        method: 'GET'
-      })
+      // 并行请求位置数据和轨迹数据
+      const [locationRes, trajectoryRes] = await Promise.all([
+        Network.request({
+          url: '/api/mock/vehicles/all',
+          method: 'GET'
+        }),
+        Network.request({
+          url: '/api/mock/vehicles/trajectories',
+          method: 'GET'
+        })
+      ])
 
-      console.log('车辆位置数据:', res.data)
+      console.log('车辆位置数据:', locationRes.data)
+      console.log('车辆轨迹数据:', trajectoryRes.data)
 
-      if (res.data.code === 200) {
-        const vehicleData = res.data.data || []
+      if (locationRes.data.code === 200) {
+        const vehicleData = locationRes.data.data || []
         setVehicles(vehicleData)
 
         // 如果有车辆数据，设置地图中心为第一辆车的位置
@@ -51,11 +60,10 @@ export default function VehicleMap() {
             longitude: vehicleData[0].longitude
           })
         }
-      } else {
-        Taro.showToast({
-          title: res.data.message || '加载失败',
-          icon: 'none'
-        })
+      }
+
+      if (trajectoryRes.data.code === 200) {
+        setTrajectories(trajectoryRes.data.data || {})
       }
     } catch (error) {
       console.error('加载车辆位置失败:', error)
@@ -170,6 +178,25 @@ export default function VehicleMap() {
     }
   }))
 
+  // 生成车辆轨迹线
+  const polylines = vehicles
+    .map((vehicle) => {
+      const trajectory = trajectories[vehicle.id]
+      if (!trajectory || trajectory.length < 2) return null
+
+      return {
+        points: trajectory.map(p => ({
+          latitude: p.latitude,
+          longitude: p.longitude
+        })),
+        color: vehicle.manufacturer === 'neolix' ? '#8B5CF6' : '#06B6D4', // 紫色=新石器，青色=九识
+        width: 4,
+        dottedLine: false,
+        arrowLine: true
+      }
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null)
+
   // 点击标记点
   const handleMarkerTap = (e: any) => {
     const markerIndex = e.detail.markerId
@@ -210,6 +237,7 @@ export default function VehicleMap() {
             latitude={mapCenter.latitude}
             scale={14}
             markers={markers}
+            polyline={polylines}
             onMarkerTap={handleMarkerTap}
             onError={handleMapError}
             showLocation
