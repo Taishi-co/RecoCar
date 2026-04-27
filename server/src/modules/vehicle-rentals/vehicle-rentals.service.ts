@@ -305,14 +305,15 @@ export class VehicleRentalsService {
       throw new BadRequestException(`更新失败: ${updateError.message}`)
     }
 
-    // 更新车辆状态
+    // 更新车辆状态：设置租户ID并自动设置为不出车
     const { error: vehicleError } = await client
       .from('vehicles')
       .update({
         current_renter_id: rental.renter_id,
         rent_start_date: rental.rent_start_date,
         rent_end_date: rental.rent_end_date,
-        rent_type: rental.rent_type
+        rent_type: rental.rent_type,
+        is_available: false  // 自动设置为不出车，防止车主用该车接单
       })
       .eq('id', rental.vehicle_id)
 
@@ -367,14 +368,15 @@ export class VehicleRentalsService {
       throw new BadRequestException(`更新失败: ${updateError.message}`)
     }
 
-    // 清除车辆租赁状态
+    // 清除车辆租赁状态并自动设置为出车
     const { error: vehicleError } = await client
       .from('vehicles')
       .update({
         current_renter_id: null,
         rent_start_date: null,
         rent_end_date: null,
-        rent_type: null
+        rent_type: null,
+        is_available: true  // 自动设置为出车，允许车主再次使用该车接单
       })
       .eq('id', rental.vehicle_id)
 

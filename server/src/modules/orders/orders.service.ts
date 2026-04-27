@@ -46,7 +46,26 @@ export class OrdersService {
 
     // 检查车辆是否已被出租（租赁状态检查）
     if (vehicle.current_renter_id) {
-      throw new BadRequestException('该车辆已被出租，无法接单')
+      // 查询最新的租赁关系
+      const { data: activeRental } = await client
+        .from('vehicle_rentals')
+        .select('*')
+        .eq('vehicle_id', vehicle_id)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (activeRental) {
+        // 如果租赁状态为 active，拒绝接单
+        throw new BadRequestException(
+          `该车辆已租给租户，租赁到期时间为 ${activeRental.rent_end_date.split('T')[0]}，无法接单`
+        )
+      } else {
+        // 如果租赁状态不是 active（可能是 pending 或已归还），清除 current_renter_id
+        await client
+          .from('vehicles')
+          .update({ current_renter_id: null })
+          .eq('id', vehicle_id)
+      }
     }
 
     // 创建订单

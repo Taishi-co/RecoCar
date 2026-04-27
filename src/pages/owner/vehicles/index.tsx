@@ -613,6 +613,14 @@ export default function OwnerVehicles() {
                               </Text>
                             </View>
                           )}
+                          {/* 已出租车辆显示租赁到期时间 */}
+                          {vehicle.current_renter_id && vehicle.rent_end_date && (
+                            <View className="flex items-center gap-2 mt-1">
+                              <Text className="text-xs text-orange-600 font-medium">
+                                ⚠️ 车辆已租出，到期时间：{vehicle.rent_end_date.split('T')[0]}
+                              </Text>
+                            </View>
+                          )}
                         </View>
                         <View className="flex gap-2">
                           {vehicle.status === 'rejected' && (
@@ -635,8 +643,8 @@ export default function OwnerVehicles() {
                           )}
                           {vehicle.status === 'active' && (
                             <>
-                              {/* 设置租赁按钮 - 只对自有车辆显示 */}
-                              {vehicle.ownership_type === 'owned' && (
+                              {/* 设置租赁按钮 - 只对自有车辆且未出租的车辆显示 */}
+                              {vehicle.ownership_type === 'owned' && !vehicle.current_renter_id && (
                                 <View
                                   className="px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 active:bg-gray-100"
                                   onClick={() => {
@@ -671,6 +679,14 @@ export default function OwnerVehicles() {
                                   <Text className="text-xs text-gray-400">不可转租</Text>
                                 </View>
                               )}
+                              {/* 已出租车辆显示禁用状态提示 */}
+                              {vehicle.ownership_type === 'owned' && vehicle.current_renter_id && (
+                                <View
+                                  className="px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                                >
+                                  <Text className="text-xs text-gray-400">已出租禁用</Text>
+                                </View>
+                              )}
                               <View>
                                 <Text className="text-xs text-gray-500 mb-1 block">
                                   {vehicle.is_available ? '出车中' : '已出车'}
@@ -678,6 +694,7 @@ export default function OwnerVehicles() {
                                 <Switch
                                   checked={vehicle.is_available}
                                   onCheckedChange={(checked) => handleToggleAvailability(vehicle.id, checked)}
+                                  disabled={!!vehicle.current_renter_id}  // 已出租车辆禁用开关
                                 />
                               </View>
                             </>
