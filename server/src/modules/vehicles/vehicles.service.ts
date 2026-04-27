@@ -135,7 +135,7 @@ export class VehiclesService {
       }
 
       // 4. 合并车辆列表，避免重复
-      const vehicleMap = new Map()
+      const vehicleMap = new Map();
 
       // 添加拥有的车辆，标记为 owned
       (ownedVehicles || []).forEach(vehicle => {
