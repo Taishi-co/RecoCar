@@ -55,10 +55,21 @@ export class OrdersService {
         .maybeSingle()
 
       if (activeRental) {
-        // 如果租赁状态为 active，拒绝接单
-        throw new BadRequestException(
-          `该车辆已租给租户，租赁到期时间为 ${activeRental.rent_end_date.split('T')[0]}，无法接单`
-        )
+        // 如果租赁状态为 active，检查当前用户是车主还是租户
+        if (owner_id === activeRental.renter_id) {
+          // 当前用户是租户，可以使用租赁车辆接单
+          console.log('[OrdersService] 租户使用租赁车辆接单 - vehicle_id:', vehicle_id, 'renter_id:', owner_id)
+        } else if (owner_id === vehicle.owner_id) {
+          // 当前用户是车主，车辆已被租出，不能接单
+          throw new BadRequestException(
+            `该车辆已租给租户，租赁到期时间为 ${activeRental.rent_end_date.split('T')[0]}，无法接单`
+          )
+        } else {
+          // 当前用户既不是车主也不是租户，不能接单
+          throw new BadRequestException(
+            `该车辆已租给其他用户，您无权使用该车辆`
+          )
+        }
       } else {
         // 如果租赁状态不是 active（可能是 pending 或已归还），清除 current_renter_id
         await client
