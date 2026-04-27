@@ -413,4 +413,118 @@ export class VehiclesService {
       data: vehicle
     }
   }
+
+  async getRentalSettings(id: string) {
+    const client = getSupabaseClient()
+
+    const { data: vehicle, error } = await client
+      .from('vehicles')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (error || !vehicle) {
+      throw new NotFoundException('车辆不存在')
+    }
+
+    // 返回租赁相关字段
+    return {
+      code: 200,
+      message: '查询成功',
+      data: {
+        id: vehicle.id,
+        is_available_for_rent: vehicle.is_available_for_rent || false,
+        rent_monthly_price: vehicle.rent_monthly_price || 0,
+        rent_yearly_price: vehicle.rent_yearly_price || 0,
+        rent_deposit: vehicle.rent_deposit || 0,
+        contact_phone: vehicle.contact_phone,
+        contact_wechat: vehicle.contact_wechat,
+        current_renter_id: vehicle.current_renter_id,
+        rent_start_date: vehicle.rent_start_date,
+        rent_end_date: vehicle.rent_end_date,
+        rent_type: vehicle.rent_type,
+        rental_notes: vehicle.rental_notes
+      }
+    }
+  }
+
+  async updateRentalSettings(id: string, settings: {
+    is_available_for_rent?: boolean
+    rent_monthly_price?: number
+    rent_yearly_price?: number
+    rent_deposit?: number
+    contact_phone?: string
+    contact_wechat?: string
+    notes?: string
+  }) {
+    const client = getSupabaseClient()
+
+    // 检查车辆是否存在
+    const { data: existingVehicle, error: checkError } = await client
+      .from('vehicles')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (checkError || !existingVehicle) {
+      throw new NotFoundException('车辆不存在')
+    }
+
+    // 检查车辆审核状态，只有审核通过的车辆可以设置租赁
+    if (existingVehicle.status !== 'active') {
+      throw new BadRequestException('只有审核通过的车辆可以设置租赁')
+    }
+
+    // 构建更新数据
+    const updateData: any = {}
+
+    if (settings.is_available_for_rent !== undefined) {
+      updateData.is_available_for_rent = settings.is_available_for_rent
+    }
+    if (settings.rent_monthly_price !== undefined) {
+      updateData.rent_monthly_price = settings.rent_monthly_price
+    }
+    if (settings.rent_yearly_price !== undefined) {
+      updateData.rent_yearly_price = settings.rent_yearly_price
+    }
+    if (settings.rent_deposit !== undefined) {
+      updateData.rent_deposit = settings.rent_deposit
+    }
+    if (settings.contact_phone !== undefined) {
+      updateData.contact_phone = settings.contact_phone
+    }
+    if (settings.contact_wechat !== undefined) {
+      updateData.contact_wechat = settings.contact_wechat
+    }
+    if (settings.notes !== undefined) {
+      updateData.rental_notes = settings.notes
+    }
+
+    // 更新车辆租赁设置
+    const { data: vehicle, error: updateError } = await client
+      .from('vehicles')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException(`更新租赁设置失败: ${updateError.message}`)
+    }
+
+    return {
+      code: 200,
+      message: '租赁设置已更新',
+      data: {
+        id: vehicle.id,
+        is_available_for_rent: vehicle.is_available_for_rent,
+        rent_monthly_price: vehicle.rent_monthly_price,
+        rent_yearly_price: vehicle.rent_yearly_price,
+        rent_deposit: vehicle.rent_deposit,
+        contact_phone: vehicle.contact_phone,
+        contact_wechat: vehicle.contact_wechat,
+        rental_notes: vehicle.rental_notes
+      }
+    }
+  }
 }

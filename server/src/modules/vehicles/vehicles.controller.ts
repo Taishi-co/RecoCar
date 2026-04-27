@@ -148,4 +148,27 @@ export class VehiclesController {
     console.log('[VehiclesController] 切换车辆运营状态 - id:', id, 'isAvailable:', isAvailable)
     return this.vehiclesService.updateAvailability(id, isAvailable)
   }
+
+  @Get(':id/rental-settings')
+  async getRentalSettings(@Param('id') id: string) {
+    console.log('[VehiclesController] 获取车辆租赁设置 - id:', id)
+    return this.vehiclesService.getRentalSettings(id)
+  }
+
+  @Put(':id/rental-settings')
+  async updateRentalSettings(
+    @Param('id') id: string,
+    @Body() body: {
+      is_available_for_rent?: boolean
+      rent_monthly_price?: number
+      rent_yearly_price?: number
+      rent_deposit?: number
+      contact_phone?: string
+      contact_wechat?: string
+      notes?: string
+    }
+  ) {
+    console.log('[VehiclesController] 更新车辆租赁设置 - id:', id, 'body:', body)
+    return this.vehiclesService.updateRentalSettings(id, body)
+  }
 }

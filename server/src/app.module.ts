@@ -18,6 +18,7 @@ import { FareCalculationModule } from '@/modules/fare-calculation/fare-calculati
 import { DemandTemplatesModule } from '@/modules/demand-templates/demand-templates.module';
 import { DemandSchedulesModule } from '@/modules/demand-schedules/demand-schedules.module';
 import { ScheduleServiceModule } from '@/modules/schedule-service/schedule-service.module';
+import { VehicleRentalsModule } from '@/modules/vehicle-rentals/vehicle-rentals.module';
 
 @Module({
   imports: [
@@ -40,7 +41,8 @@ import { ScheduleServiceModule } from '@/modules/schedule-service/schedule-servi
     FareCalculationModule,
     DemandTemplatesModule,
     DemandSchedulesModule,
-    ScheduleServiceModule
+    ScheduleServiceModule,
+    VehicleRentalsModule
   ],
   controllers: [AppController],
   providers: [AppService],
