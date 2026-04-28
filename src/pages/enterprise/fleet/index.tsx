@@ -414,7 +414,7 @@ const EnterpriseFleetPage: FC = () => {
                         </Badge>
                       </View>
                       <Text className="text-sm text-gray-600">
-                        {vehicle.vehicle_type} · {vehicle.load_capacity}吨
+                        {vehicle.vehicle_type} · {vehicle.load_capacity * 1000}公斤
                       </Text>
                     </View>
                   </View>
