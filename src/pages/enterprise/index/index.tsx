@@ -41,6 +41,23 @@ const EnterpriseHomePage: FC = () => {
     })
   }
 
+  const navigateToStats = () => {
+    console.log('点击数据统计 - 开始跳转')
+    Taro.navigateTo({
+      url: '/pages/enterprise/stats/index',
+      success: () => {
+        console.log('跳转成功')
+      },
+      fail: (err) => {
+        console.error('跳转失败:', err)
+        Taro.showToast({
+          title: '跳转失败',
+          icon: 'none',
+        })
+      }
+    })
+  }
+
   return (
     <View className="enterprise-home min-h-screen bg-gray-50 pb-20">
       {/* 顶部信息栏 */}
@@ -121,7 +138,7 @@ const EnterpriseHomePage: FC = () => {
               奶站管理
             </Button>
           </View>
-          <View className="h-20">
+          <View className="h-20" onClick={navigateToStats}>
             <Button className="w-full h-full" variant="outline">
               <Text className="text-gray-900 text-sm">数据统计</Text>
             </Button>
