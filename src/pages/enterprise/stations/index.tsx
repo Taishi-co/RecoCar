@@ -1,12 +1,10 @@
-import { View, Text, ScrollView } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import { useEffect, useState } from 'react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Network } from '@/network'
@@ -28,6 +26,12 @@ const EnterpriseStationsPage: FC = () => {
   const [loading, setLoading] = useState(true)
   const [keyword, setKeyword] = useState('')
   const [enterpriseId, setEnterpriseId] = useState('')
+  
+  // 新增奶站弹窗状态
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [newStationName, setNewStationName] = useState('')
+  const [newStationAddress, setNewStationAddress] = useState('')
+  const [newStationPhone, setNewStationPhone] = useState('')
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -41,25 +45,14 @@ const EnterpriseStationsPage: FC = () => {
         return
       }
 
-      console.log('加载企业信息，用户ID:', userInfo.id)
-
       const enterpriseRes = await Network.request({
         url: `/api/enterprise/admin/${userInfo.id}`,
       })
 
-      console.log('企业信息响应:', JSON.stringify(enterpriseRes.data, null, 2))
-
       if (enterpriseRes.data.code === 200) {
         const entId = enterpriseRes.data.data.id
-        console.log('获取到的企业ID:', entId)
         setEnterpriseId(entId)
         loadStations(entId)
-      } else {
-        console.error('获取企业信息失败:', enterpriseRes.data.message)
-        Taro.showToast({
-          title: '获取企业信息失败',
-          icon: 'none',
-        })
       }
     } catch (error) {
       console.error('加载企业信息失败:', error)
@@ -77,16 +70,9 @@ const EnterpriseStationsPage: FC = () => {
         },
       })
 
-      console.log('奶站列表完整响应:', JSON.stringify(res.data, null, 2))
-      console.log('enterpriseId:', entId)
-      console.log('返回的列表数据:', res.data.data?.list)
-
       if (res.data.code === 200) {
         const list = res.data.data?.list || []
-        console.log('设置到 stations 的数据:', list.length, '条')
         setStations(list)
-      } else {
-        console.error('返回码不是200:', res.data.code, res.data.message)
       }
     } catch (error) {
       console.error('加载奶站列表失败:', error)
@@ -106,144 +92,215 @@ const EnterpriseStationsPage: FC = () => {
   }
 
   const handleDelete = async (stationId: string, stationName: string) => {
-    Taro.showModal({
-      title: '确认删除',
-      content: `确定要删除"${stationName}"吗？`,
-      success: async (res) => {
-        if (res.confirm) {
-          try {
-            const delRes = await Network.request({
-              url: `/api/station/${stationId}`,
-              method: 'DELETE',
-            })
+    try {
+      const res = await Taro.showModal({
+        title: '确认删除',
+        content: `确定要删除"${stationName}"吗？`,
+      })
 
-            if (delRes.data.code === 200) {
-              Taro.showToast({
-                title: '删除成功',
-                icon: 'success',
-              })
-              loadStations(enterpriseId)
-            } else {
-              Taro.showToast({
-                title: delRes.data.message || '删除失败',
-                icon: 'none',
-              })
-            }
-          } catch (error) {
-            console.error('删除失败:', error)
-            Taro.showToast({
-              title: '删除失败',
-              icon: 'none',
-            })
-          }
+      if (res.confirm) {
+        const delRes = await Network.request({
+          url: `/api/station/${stationId}`,
+          method: 'DELETE',
+        })
+
+        if (delRes.data.code === 200) {
+          Taro.showToast({
+            title: '删除成功',
+            icon: 'success',
+          })
+          loadStations(enterpriseId)
+        } else {
+          Taro.showToast({
+            title: delRes.data.message || '删除失败',
+            icon: 'none',
+          })
         }
-      },
-    })
-  }
-
-  const handleCreate = () => {
-    Taro.showToast({
-      title: '功能开发中',
-      icon: 'none',
-    })
-  }
-
-  const getStatusText = (status: string) => {
-    const statusMap = {
-      active: '运营中',
-      inactive: '已停用',
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      Taro.showToast({
+        title: '删除失败',
+        icon: 'none',
+      })
     }
-    return statusMap[status] || status
   }
 
-  const getStatusColor = (status: string) => {
-    const colorMap = {
-      active: 'text-green-600',
-      inactive: 'text-gray-500',
+  const handleAddStation = async () => {
+    if (!newStationName || !newStationAddress || !newStationPhone) {
+      Taro.showToast({
+        title: '请填写完整信息',
+        icon: 'none',
+      })
+      return
     }
-    return colorMap[status] || ''
+
+    try {
+      const res = await Network.request({
+        url: '/api/station',
+        method: 'POST',
+        data: {
+          enterpriseId: enterpriseId,
+          name: newStationName,
+          address: newStationAddress,
+          phone: newStationPhone,
+          location: {
+            lat: 39.6,
+            lng: 118.2,
+          },
+          status: 'active',
+        },
+      })
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '添加成功',
+          icon: 'success',
+        })
+        setShowAddDialog(false)
+        // 清空表单
+        setNewStationName('')
+        setNewStationAddress('')
+        setNewStationPhone('')
+        // 刷新列表
+        loadStations(enterpriseId)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '添加失败',
+          icon: 'none',
+        })
+      }
+    } catch (error) {
+      console.error('添加失败:', error)
+      Taro.showToast({
+        title: '添加失败',
+        icon: 'none',
+      })
+    }
   }
 
   return (
     <View className="enterprise-stations min-h-screen bg-gray-50 pb-20">
-      <ScrollView scrollY className="h-full">
-        <View className="p-4">
-          {/* 搜索栏 */}
-          <View className="flex gap-2 mb-4">
-            <View className="flex-1">
-              <Input
-                className="w-full"
-                placeholder="搜索奶站名称或地址"
-                value={keyword}
-                onInput={(e) => setKeyword(e.detail.value)}
-              />
-            </View>
-            <Button className="flex-shrink-0" onClick={handleSearch}>
-              <Text>搜索</Text>
-            </Button>
-            <Button className="flex-shrink-0" onClick={handleCreate}>
-              <Text>新增</Text>
-            </Button>
-          </View>
+      <View className="p-4">
+        <Text className="text-2xl font-bold block mb-4">奶站管理</Text>
 
-          {/* 奶站列表 */}
-          {loading ? (
-            <View className="text-center py-8">
-              <Text className="text-gray-500">加载中...</Text>
-            </View>
-          ) : stations.length === 0 ? (
-            <Card className="mb-4">
-              <CardContent className="p-8 text-center">
-                <Text className="text-gray-500 text-sm block">
-                  {keyword ? '未找到匹配的奶站' : '暂无奶站'}
-                </Text>
-              </CardContent>
-            </Card>
-          ) : (
-            stations.map((station) => (
-              <Card key={station.id} className="mb-4">
-                <CardHeader>
-                  <View className="flex justify-between items-center">
-                    <CardTitle className="text-base flex-1">
-                      {station.name}
-                    </CardTitle>
-                    <Text className={`text-xs ${getStatusColor(station.status)}`}>
-                      {getStatusText(station.status)}
-                    </Text>
-                  </View>
-                </CardHeader>
-                <CardContent>
-                  <View className="text-sm text-gray-600 mb-3">
-                    <Text className="block mb-1">📍 {station.address}</Text>
-                    {station.phone && (
-                      <Text className="block">📞 {station.phone}</Text>
-                    )}
-                  </View>
+        {/* 搜索框和新增按钮 */}
+        <View className="flex gap-2 mb-4">
+          <Input
+            placeholder="搜索奶站名称或地址"
+            value={keyword}
+            onInput={(e) => setKeyword(e.detail.value)}
+          />
+          <Button onClick={handleSearch}>搜索</Button>
+        </View>
 
-                  <View className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleCreate()}
-                    >
-                      <Text className="text-xs">编辑</Text>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="flex-1"
-                      onClick={() => handleDelete(station.id, station.name)}
-                    >
-                      <Text className="text-xs">删除</Text>
-                    </Button>
+        {/* 新增按钮 */}
+        <View className="mb-4">
+          <Button 
+            className="w-full" 
+            onClick={() => setShowAddDialog(true)}
+          >
+            <Text>新增奶站</Text>
+          </Button>
+        </View>
+
+        {/* 奶站列表 */}
+        {loading ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Text className="text-gray-500 text-sm">加载中...</Text>
+            </CardContent>
+          </Card>
+        ) : stations.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Text className="text-gray-500 text-sm">暂无奶站数据</Text>
+            </CardContent>
+          </Card>
+        ) : (
+          <View className="space-y-3">
+            {stations.map((station) => (
+              <Card key={station.id}>
+                <CardContent className="p-4">
+                  <View className="flex justify-between items-start">
+                    <View className="flex-1">
+                      <Text className="text-base font-medium text-gray-900 block mb-1">
+                        {station.name}
+                      </Text>
+                      <Text className="text-sm text-gray-600 block mb-1">
+                        {station.address}
+                      </Text>
+                      <Text className="text-sm text-gray-500 block">
+                        电话: {station.phone || '未设置'}
+                      </Text>
+                    </View>
+                    <View className="flex flex-col gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(station.id, station.name)}
+                      >
+                        <Text className="text-xs">删除</Text>
+                      </Button>
+                    </View>
                   </View>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </View>
-      </ScrollView>
+            ))}
+          </View>
+        )}
+
+        {/* 新增奶站弹窗 */}
+        {showAddDialog && (
+          <View className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <View className="bg-white rounded-lg p-6 w-11/12 max-w-md">
+              <Text className="text-xl font-bold block mb-4">新增奶站</Text>
+              
+              <View className="space-y-4">
+                <View>
+                  <Text className="text-sm text-gray-600 block mb-2">奶站名称</Text>
+                  <Input
+                    placeholder="请输入奶站名称"
+                    value={newStationName}
+                    onInput={(e) => setNewStationName(e.detail.value)}
+                  />
+                </View>
+
+                <View>
+                  <Text className="text-sm text-gray-600 block mb-2">奶站地址</Text>
+                  <Input
+                    placeholder="请输入奶站地址"
+                    value={newStationAddress}
+                    onInput={(e) => setNewStationAddress(e.detail.value)}
+                  />
+                </View>
+
+                <View>
+                  <Text className="text-sm text-gray-600 block mb-2">联系电话</Text>
+                  <Input
+                    placeholder="请输入联系电话"
+                    value={newStationPhone}
+                    onInput={(e) => setNewStationPhone(e.detail.value)}
+                  />
+                </View>
+
+                <View className="flex gap-3 mt-6">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowAddDialog(false)}
+                  >
+                    <Text>取消</Text>
+                  </Button>
+                  <Button className="flex-1" onClick={handleAddStation}>
+                    <Text>确认添加</Text>
+                  </Button>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
     </View>
   )
 }
