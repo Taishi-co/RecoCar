@@ -16,7 +16,7 @@
 }
 
 .header-title {
-  font-size: 18px;
+  font-size: 36px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -26,7 +26,7 @@
 }
 
 .section-title {
-  font-size: 16px;
+  font-size: 32px;
   font-weight: 600;
   color: #1f2937;
   margin-bottom: 12px;
@@ -58,7 +58,7 @@
 }
 
 .vehicle-name {
-  font-size: 18px;
+  font-size: 36px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -81,18 +81,18 @@
 }
 
 .detail-label {
-  font-size: 14px;
+  font-size: 28px;
   color: #6b7280;
 }
 
 .detail-value {
-  font-size: 14px;
+  font-size: 28px;
   color: #1f2937;
   font-weight: 500;
 }
 
 .detail-text {
-  font-size: 14px;
+  font-size: 28px;
   color: #374151;
 }
 
@@ -104,7 +104,7 @@
 }
 
 .recommended-title {
-  font-size: 14px;
+  font-size: 28px;
   font-weight: 600;
   color: #1f2937;
   margin-bottom: 8px;
@@ -130,7 +130,7 @@
 }
 
 .order-title {
-  font-size: 14px;
+  font-size: 28px;
   font-weight: 500;
   color: #1f2937;
   margin-bottom: 4px;
@@ -138,13 +138,13 @@
 }
 
 .order-meta {
-  font-size: 12px;
+  font-size: 24px;
   color: #6b7280;
   display: block;
 }
 
 .order-action {
-  font-size: 13px;
+  font-size: 26px;
   font-weight: 500;
   color: #1890ff;
   padding: 4px 12px;

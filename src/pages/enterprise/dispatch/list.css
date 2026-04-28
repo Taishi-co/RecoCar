@@ -22,7 +22,7 @@
 }
 
 .title-text {
-  font-size: 18px;
+  font-size: 36px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -55,7 +55,7 @@
 }
 
 .tab-text {
-  font-size: 14px;
+  font-size: 28px;
   font-weight: 500;
   color: #6b7280;
 }
@@ -94,7 +94,7 @@
 }
 
 .order-title {
-  font-size: 16px;
+  font-size: 32px;
   font-weight: 600;
   color: #1f2937;
   margin-bottom: 6px;
@@ -108,7 +108,7 @@
 }
 
 .meta-text {
-  font-size: 13px;
+  font-size: 26px;
   color: #6b7280;
 }
 
@@ -132,17 +132,17 @@
 }
 
 .detail-text {
-  font-size: 14px;
+  font-size: 28px;
   color: #374151;
 }
 
 .detail-label {
-  font-size: 14px;
+  font-size: 28px;
   color: #6b7280;
 }
 
 .detail-value {
-  font-size: 14px;
+  font-size: 28px;
   color: #1f2937;
   font-weight: 500;
 }
@@ -155,7 +155,7 @@
 }
 
 .suggestion-label {
-  font-size: 13px;
+  font-size: 26px;
   color: #1890ff;
   font-weight: 500;
   display: block;
@@ -163,7 +163,7 @@
 }
 
 .suggestion-value {
-  font-size: 14px;
+  font-size: 28px;
   color: #1f2937;
   font-weight: 600;
   display: block;
