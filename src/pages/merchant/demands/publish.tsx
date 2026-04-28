@@ -551,6 +551,49 @@ export default function PublishDemand() {
         </CardHeader>
         <CardContent>
           <View className="space-y-4">
+            {/* 货品照片 */}
+            <View>
+              <Label className="block text-sm font-medium mb-2">
+                货品照片
+                <Text className="text-gray-400 text-xs ml-2">（可选，最多9张）</Text>
+              </Label>
+              <Button
+                size="sm"
+                className="w-full bg-blue-500"
+                onClick={handleChoosePhotos}
+                disabled={formData.cargo_photos.length >= 9}
+              >
+                <Text className="text-xs">
+                  {formData.cargo_photos.length >= 9 ? '已达到最大数量' : '📷 拍照或选择图片'}
+                </Text>
+              </Button>
+
+              {/* 图片预览 */}
+              {formData.cargo_photos.length > 0 && (
+                <View className="grid grid-cols-3 gap-2 mt-3">
+                  {formData.cargo_photos.map((photo, index) => (
+                    <View key={index} className="relative">
+                      <Image
+                        src={photo}
+                        mode="aspectFill"
+                        className="w-full h-24 rounded-lg bg-gray-200"
+                        onClick={() => handlePreviewPhoto(index)}
+                      />
+                      <View
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemovePhoto(index)
+                        }}
+                      >
+                        <Text className="text-xs">×</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
             <View>
               <Label className="block text-sm font-medium mb-2">
                 <Text className="text-red-500">*</Text>货品名称
@@ -628,49 +671,6 @@ export default function PublishDemand() {
                   />
                 </View>
               </View>
-            </View>
-
-            {/* 货品照片 */}
-            <View>
-              <Label className="block text-sm font-medium mb-2">
-                货品照片
-                <Text className="text-gray-400 text-xs ml-2">（可选，最多9张）</Text>
-              </Label>
-              <Button
-                size="sm"
-                className="w-full bg-blue-500"
-                onClick={handleChoosePhotos}
-                disabled={formData.cargo_photos.length >= 9}
-              >
-                <Text className="text-xs">
-                  {formData.cargo_photos.length >= 9 ? '已达到最大数量' : '📷 拍照或选择图片'}
-                </Text>
-              </Button>
-
-              {/* 图片预览 */}
-              {formData.cargo_photos.length > 0 && (
-                <View className="grid grid-cols-3 gap-2 mt-3">
-                  {formData.cargo_photos.map((photo, index) => (
-                    <View key={index} className="relative">
-                      <Image
-                        src={photo}
-                        mode="aspectFill"
-                        className="w-full h-24 rounded-lg bg-gray-200"
-                        onClick={() => handlePreviewPhoto(index)}
-                      />
-                      <View
-                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleRemovePhoto(index)
-                        }}
-                      >
-                        <Text className="text-xs">×</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
             </View>
 
             <View>
