@@ -55,7 +55,7 @@
 }
 
 .tab-text {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: #6b7280;
 }
@@ -114,6 +114,7 @@
 
 .priority-badge {
   flex-shrink: 0;
+  font-size: 13px;
 }
 
 .order-details {
@@ -163,7 +164,7 @@
 }
 
 .suggestion-value {
-  font-size: 14px;
+  font-size: 15px;
   color: #1f2937;
   font-weight: 600;
   display: block;
@@ -178,6 +179,7 @@
   flex: 1;
   border-radius: 8px;
   padding: 10px;
+  font-size: 15px;
 }
 
 .action-button.primary {
