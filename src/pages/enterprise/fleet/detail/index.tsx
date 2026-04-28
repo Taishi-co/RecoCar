@@ -65,15 +65,6 @@ const VehicleDetailPage: FC = () => {
     }
   }
 
-  const getUsageModeText = (mode: string) => {
-    const modeMap = {
-      internal: '内部',
-      external: '对外',
-      both: '内外',
-    }
-    return modeMap[mode] || mode
-  }
-
   const getTripStatusText = (status: string) => {
     const statusMap = {
       idle: '空闲',
@@ -90,16 +81,6 @@ const VehicleDetailPage: FC = () => {
       maintenance: 'bg-red-100 text-red-600',
     }
     return colorMap[status] || ''
-  }
-
-  const handleViewLocation = () => {
-    if (!vehicle) return
-    Taro.openLocation({
-      latitude: 39.63, // 使用实际位置
-      longitude: 118.18,
-      name: vehicle.vehicle_code,
-      address: vehicle.current_location,
-    })
   }
 
   if (loading) {
@@ -138,9 +119,6 @@ const VehicleDetailPage: FC = () => {
                   <Badge className={getTripStatusColor(vehicle.trip_status)}>
                     {getTripStatusText(vehicle.trip_status)}
                   </Badge>
-                  <Badge variant="outline">
-                    {getUsageModeText(vehicle.usage_mode)}
-                  </Badge>
                 </View>
               </View>
             </CardHeader>
@@ -150,15 +128,6 @@ const VehicleDetailPage: FC = () => {
                   <Text className="text-gray-600">载重</Text>
                   <Text className="font-medium">{vehicle.load_capacity}吨</Text>
                 </View>
-                <View className="flex justify-between">
-                  <Text className="text-gray-600">当前位置</Text>
-                  <Text className="font-medium text-blue-600" onClick={handleViewLocation}>
-                    查看
-                  </Text>
-                </View>
-                <Text className="text-gray-600">
-                  {vehicle.current_location}
-                </Text>
                 <View className="flex justify-between">
                   <Text className="text-gray-600">创建时间</Text>
                   <Text className="font-medium text-xs">
@@ -195,20 +164,6 @@ const VehicleDetailPage: FC = () => {
                   <Text className="text-xs text-gray-500 mt-1 block">行驶距离</Text>
                 </View>
               </View>
-            </CardContent>
-          </Card>
-
-          {/* 运营模式说明 */}
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-base">运营模式</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Text className="text-sm text-gray-600 block mb-2">
-                {vehicle.usage_mode === 'internal' && '内部专用：仅用于企业内部订单配送'}
-                {vehicle.usage_mode === 'external' && '对外接单：用于外部订单配送'}
-                {vehicle.usage_mode === 'both' && '内外兼顾：可同时接内部和外部订单'}
-              </Text>
             </CardContent>
           </Card>
         </View>

@@ -421,9 +421,6 @@ const EnterpriseFleetPage: FC = () => {
 
                   <View className="text-xs text-gray-600 mb-3">
                     <Text className="block">
-                      位置：{vehicle.current_location}
-                    </Text>
-                    <Text className="block">
                       今日订单：{vehicle.today_internal_orders + vehicle.today_external_orders}单 · {vehicle.today_distance}km
                     </Text>
                   </View>
