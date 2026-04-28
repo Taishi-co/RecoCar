@@ -65,7 +65,6 @@
 
 .status-badge {
   flex-shrink: 0;
-  font-size: 13px;
 }
 
 .vehicle-details {
@@ -105,7 +104,7 @@
 }
 
 .recommended-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #1f2937;
   margin-bottom: 8px;
@@ -139,13 +138,13 @@
 }
 
 .order-meta {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
   display: block;
 }
 
 .order-action {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #1890ff;
   padding: 4px 12px;

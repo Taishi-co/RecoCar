@@ -77,7 +77,6 @@
 
 .status-badge {
   flex-shrink: 0;
-  font-size: 13px;
 }
 
 .vehicle-details {
@@ -120,14 +119,14 @@
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
   display: block;
   margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1890ff;
   display: block;
