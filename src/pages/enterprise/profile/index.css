@@ -30,15 +30,15 @@
 }
 
 .user-name {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: #1f2937;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   display: block;
 }
 
 .user-role {
-  font-size: 14px;
+  font-size: 15px;
   color: #6b7280;
   display: block;
 }
@@ -56,14 +56,14 @@
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 14px;
+  padding: 18px;
   background-color: white;
 }
 
 .menu-icon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background-color: #e6f7ff;
   border-radius: 8px;
   display: flex;
@@ -73,7 +73,7 @@
 
 .menu-text {
   flex: 1;
-  font-size: 15px;
+  font-size: 16px;
   color: #1f2937;
 }
 
