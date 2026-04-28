@@ -337,22 +337,19 @@ export default function PublishDemand() {
       if (res.data.code === 200 && res.data.data) {
         const analysis = res.data.data
 
-        // 根据AI分析结果自动填充表单
-        if (analysis.cargo_name && !formData.cargo_name) {
-          setFormData(prev => ({ ...prev, cargo_name: analysis.cargo_name }))
-        }
-        if (analysis.cargo_type && !formData.cargo_type) {
-          setFormData(prev => ({ ...prev, cargo_type: analysis.cargo_type }))
-        }
-        if (analysis.weight && !formData.weight) {
-          setFormData(prev => ({ ...prev, weight: analysis.weight.toString() }))
-        }
-        if (analysis.volume && !formData.volume) {
-          setFormData(prev => ({ ...prev, volume: analysis.volume.toString() }))
+        // 根据AI分析结果自动填充表单（强制更新，支持更换图片后重新分析）
+        const updates: Partial<typeof formData> = {}
+        if (analysis.cargo_name) updates.cargo_name = analysis.cargo_name
+        if (analysis.cargo_type) updates.cargo_type = analysis.cargo_type
+        if (analysis.weight) updates.weight = analysis.weight.toString()
+        if (analysis.volume) updates.volume = analysis.volume.toString()
+
+        if (Object.keys(updates).length > 0) {
+          setFormData(prev => ({ ...prev, ...updates }))
         }
 
         Taro.showToast({
-          title: 'AI分析完成',
+          title: 'AI分析完成，已更新货品信息',
           icon: 'success'
         })
       } else {
