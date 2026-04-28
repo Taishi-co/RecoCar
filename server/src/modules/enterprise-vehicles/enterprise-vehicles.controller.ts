@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { EnterpriseVehiclesService } from './enterprise-vehicles.service';
 
 @Controller('enterprise-vehicles')
@@ -108,5 +108,69 @@ export class EnterpriseVehiclesController {
       message: 'success',
       data: await this.enterpriseVehiclesService.updateVehicleTodayStats(id, body),
     };
+  }
+
+  /**
+   * 获取车辆详情
+   */
+  @Get(':id')
+  async getVehicleDetail(@Param('id') id: string) {
+    const vehicle = await this.enterpriseVehiclesService.getVehicleById(id);
+    if (!vehicle) {
+      return {
+        code: 404,
+        message: '车辆不存在',
+        data: null,
+      };
+    }
+    return {
+      code: 200,
+      message: 'success',
+      data: vehicle,
+    };
+  }
+
+  /**
+   * 更新车辆状态
+   */
+  @Put(':id/status')
+  async updateVehicleStatus(
+    @Param('id') id: string,
+    @Body('trip_status') tripStatus: 'idle' | 'in_transit' | 'maintenance',
+  ) {
+    const vehicle = await this.enterpriseVehiclesService.updateVehicleStatus(id, tripStatus);
+    if (!vehicle) {
+      return {
+        code: 404,
+        message: '车辆不存在',
+        data: null,
+      };
+    }
+    return {
+      code: 200,
+      message: 'success',
+      data: vehicle,
+    };
+  }
+
+  /**
+   * 删除车辆
+   */
+  @Delete(':id')
+  async deleteVehicle(@Param('id') id: string) {
+    try {
+      await this.enterpriseVehiclesService.deleteVehicle(id);
+      return {
+        code: 200,
+        message: '删除成功',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        code: 500,
+        message: error.message || '删除失败',
+        data: null,
+      };
+    }
   }
 }

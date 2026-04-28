@@ -117,7 +117,7 @@ export class EnterpriseVehiclesService {
       in_transit: vehicles?.filter(v => v.trip_status === 'in_transit').length || 0,
       idle: vehicles?.filter(v => v.trip_status === 'idle').length || 0,
       internal: vehicles?.filter(v => v.usage_mode === 'internal').length || 0,
-      external: vehicles?.filter(v => v.usage_mode === 'external').length || 0,
+      external: vehicles?.filter(v => v.usage_mode === 'external' || v.usage_mode === 'both').length || 0,
       both: vehicles?.filter(v => v.usage_mode === 'both').length || 0,
     };
 
@@ -151,5 +151,65 @@ export class EnterpriseVehiclesService {
     }
 
     return { success: true };
+  }
+
+  /**
+   * 根据ID获取车辆
+   */
+  async getVehicleById(vehicleId: string) {
+    const client = getSupabaseClient();
+
+    const { data: vehicle, error } = await client
+      .from('vehicles')
+      .select('*')
+      .eq('id', vehicleId)
+      .maybeSingle();
+
+    if (error) {
+      throw new BadRequestException(`查询失败: ${error.message}`);
+    }
+
+    return vehicle;
+  }
+
+  /**
+   * 更新车辆状态
+   */
+  async updateVehicleStatus(
+    vehicleId: string,
+    tripStatus: 'idle' | 'in_transit' | 'maintenance',
+  ) {
+    const client = getSupabaseClient();
+
+    const { data: vehicle, error } = await client
+      .from('vehicles')
+      .update({ trip_status: tripStatus })
+      .eq('id', vehicleId)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      throw new BadRequestException(`更新失败: ${error.message}`);
+    }
+
+    return vehicle;
+  }
+
+  /**
+   * 删除车辆
+   */
+  async deleteVehicle(vehicleId: string) {
+    const client = getSupabaseClient();
+
+    const { error } = await client
+      .from('vehicles')
+      .delete()
+      .eq('id', vehicleId);
+
+    if (error) {
+      throw new BadRequestException(`删除失败: ${error.message}`);
+    }
+
+    return true;
   }
 }

@@ -6,6 +6,7 @@ export default typeof definePageConfig === 'function'
         'pages/enterprise/dispatch/index',     // 企业端-调度中心
         'pages/enterprise/dispatch/detail/index', // 企业端-配送详情
         'pages/enterprise/fleet/index',        // 企业端-车队管理
+        'pages/enterprise/fleet/detail/index', // 企业端-车辆详情
         'pages/enterprise/stations/index',     // 企业端-奶站管理
         'pages/enterprise/stats/index',        // 企业端-数据统计
         'pages/enterprise/publish/index',      // 企业端-发布配送
@@ -65,6 +66,7 @@ export default typeof definePageConfig === 'function'
         'pages/enterprise/dispatch/index',     // 企业端-调度中心
         'pages/enterprise/dispatch/detail/index', // 企业端-配送详情
         'pages/enterprise/fleet/index',        // 企业端-车队管理
+        'pages/enterprise/fleet/detail/index', // 企业端-车辆详情
         'pages/enterprise/stations/index',     // 企业端-奶站管理
         'pages/enterprise/stats/index',        // 企业端-数据统计
         'pages/enterprise/publish/index',      // 企业端-发布配送

@@ -1,0 +1,230 @@
+import { View, Text, ScrollView } from '@tarojs/components'
+import { useEffect, useState } from 'react'
+import type { FC } from 'react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Network } from '@/network'
+import Taro from '@tarojs/taro'
+
+interface Vehicle {
+  id: string
+  vehicle_code: string
+  vehicle_type: string
+  load_capacity: number
+  current_location: string
+  usage_mode: 'internal' | 'external' | 'both'
+  trip_status: 'idle' | 'in_transit' | 'maintenance'
+  today_internal_orders: number
+  today_external_orders: number
+  today_distance: number
+  created_at: string
+}
+
+const VehicleDetailPage: FC = () => {
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const params = Taro.getCurrentInstance().router?.params
+    if (params?.id) {
+      loadVehicleDetail(params.id)
+    }
+  }, [])
+
+  const loadVehicleDetail = async (vehicleId: string) => {
+    setLoading(true)
+    try {
+      const res = await Network.request({
+        url: `/api/enterprise-vehicles/${vehicleId}`,
+      })
+
+      if (res.data.code === 200) {
+        setVehicle(res.data.data)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '加载失败',
+          icon: 'none',
+        })
+        Taro.navigateBack()
+      }
+    } catch (error) {
+      console.error('加载详情失败:', error)
+      Taro.showToast({
+        title: '加载失败',
+        icon: 'none',
+      })
+      Taro.navigateBack()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getUsageModeText = (mode: string) => {
+    const modeMap = {
+      internal: '内部',
+      external: '对外',
+      both: '内外',
+    }
+    return modeMap[mode] || mode
+  }
+
+  const getTripStatusText = (status: string) => {
+    const statusMap = {
+      idle: '空闲',
+      in_transit: '执行中',
+      maintenance: '维护中',
+    }
+    return statusMap[status] || status
+  }
+
+  const getTripStatusColor = (status: string) => {
+    const colorMap = {
+      idle: 'bg-green-100 text-green-600',
+      in_transit: 'bg-orange-100 text-orange-600',
+      maintenance: 'bg-red-100 text-red-600',
+    }
+    return colorMap[status] || ''
+  }
+
+  const handleViewLocation = () => {
+    if (!vehicle) return
+    Taro.openLocation({
+      latitude: 39.63, // 使用实际位置
+      longitude: 118.18,
+      name: vehicle.vehicle_code,
+      address: vehicle.current_location,
+    })
+  }
+
+  if (loading) {
+    return (
+      <View className="min-h-screen bg-gray-50 p-4">
+        <Text className="text-center text-gray-500">加载中...</Text>
+      </View>
+    )
+  }
+
+  if (!vehicle) {
+    return (
+      <View className="min-h-screen bg-gray-50 p-4">
+        <Text className="text-center text-gray-500">未找到车辆信息</Text>
+      </View>
+    )
+  }
+
+  return (
+    <View className="min-h-screen bg-gray-50 pb-20">
+      <ScrollView scrollY className="h-full">
+        <View className="p-4">
+          {/* 基本信息 */}
+          <Card className="mb-4">
+            <CardHeader>
+              <View className="flex justify-between items-start">
+                <View className="flex-1">
+                  <CardTitle className="text-lg mb-2">
+                    {vehicle.vehicle_code}
+                  </CardTitle>
+                  <Text className="text-sm text-gray-600">
+                    {vehicle.vehicle_type}
+                  </Text>
+                </View>
+                <View className="flex flex-col gap-2">
+                  <Badge className={getTripStatusColor(vehicle.trip_status)}>
+                    {getTripStatusText(vehicle.trip_status)}
+                  </Badge>
+                  <Badge variant="outline">
+                    {getUsageModeText(vehicle.usage_mode)}
+                  </Badge>
+                </View>
+              </View>
+            </CardHeader>
+            <CardContent>
+              <View className="text-sm space-y-2">
+                <View className="flex justify-between">
+                  <Text className="text-gray-600">载重</Text>
+                  <Text className="font-medium">{vehicle.load_capacity}吨</Text>
+                </View>
+                <View className="flex justify-between">
+                  <Text className="text-gray-600">当前位置</Text>
+                  <Text className="font-medium text-blue-600" onClick={handleViewLocation}>
+                    查看
+                  </Text>
+                </View>
+                <Text className="text-gray-600">
+                  {vehicle.current_location}
+                </Text>
+                <View className="flex justify-between">
+                  <Text className="text-gray-600">创建时间</Text>
+                  <Text className="font-medium text-xs">
+                    {new Date(vehicle.created_at).toLocaleString('zh-CN')}
+                  </Text>
+                </View>
+              </View>
+            </CardContent>
+          </Card>
+
+          {/* 今日统计 */}
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base">今日统计</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <View className="grid grid-cols-3 gap-3">
+                <View className="text-center">
+                  <Text className="text-lg font-bold text-blue-600 block">
+                    {vehicle.today_internal_orders}
+                  </Text>
+                  <Text className="text-xs text-gray-500 mt-1 block">内部订单</Text>
+                </View>
+                <View className="text-center">
+                  <Text className="text-lg font-bold text-green-600 block">
+                    {vehicle.today_external_orders}
+                  </Text>
+                  <Text className="text-xs text-gray-500 mt-1 block">外部订单</Text>
+                </View>
+                <View className="text-center">
+                  <Text className="text-lg font-bold text-orange-600 block">
+                    {vehicle.today_distance}
+                  </Text>
+                  <Text className="text-xs text-gray-500 mt-1 block">行驶距离</Text>
+                </View>
+              </View>
+            </CardContent>
+          </Card>
+
+          {/* 运营模式说明 */}
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base">运营模式</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Text className="text-sm text-gray-600 block mb-2">
+                {vehicle.usage_mode === 'internal' && '内部专用：仅用于企业内部订单配送'}
+                {vehicle.usage_mode === 'external' && '对外接单：用于外部订单配送'}
+                {vehicle.usage_mode === 'both' && '内外兼顾：可同时接内部和外部订单'}
+              </Text>
+            </CardContent>
+          </Card>
+        </View>
+      </ScrollView>
+
+      {/* 底部操作栏 */}
+      <View style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', borderTop: '1px solid #e5e5e5', padding: '12px', zIndex: 100 }}>
+        <Button
+          className="w-full"
+          onClick={() => Taro.navigateBack()}
+        >
+          <Text>返回</Text>
+        </Button>
+      </View>
+    </View>
+  )
+}
+
+export default VehicleDetailPage
