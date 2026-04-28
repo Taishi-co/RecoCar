@@ -14,12 +14,16 @@ const EnterpriseHomePage: FC = () => {
     console.log('企业首页加载')
   }, [])
 
-  const navigateToFleet = () => {
-    Taro.navigateTo({ url: '/pages/enterprise/fleet/index' })
-  }
-
   const navigateToDispatch = () => {
     Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
+  }
+
+  const navigateToPublish = () => {
+    Taro.navigateTo({ url: '/pages/enterprise/publish/index' })
+  }
+
+  const navigateToFleet = () => {
+    Taro.navigateTo({ url: '/pages/enterprise/fleet/index' })
   }
 
   const navigateToStations = () => {
@@ -123,7 +127,7 @@ const EnterpriseHomePage: FC = () => {
         {/* 快捷入口 */}
         <Text className="text-lg font-bold text-gray-900 mb-4 block">快捷入口</Text>
         <View className="grid grid-cols-2 gap-3">
-          <View className="h-20" onClick={navigateToDispatch}>
+          <View className="h-20" onClick={navigateToPublish}>
             <Button className="w-full h-full" variant="default">
               <Text className="text-white text-sm">发布配送</Text>
             </Button>
