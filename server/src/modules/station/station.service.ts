@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { getSupabaseClient } from '../../storage/database/supabase-client';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class StationService {
@@ -14,9 +15,12 @@ export class StationService {
     phone?: string;
   }) {
     const supabase = getSupabaseClient();
+    const stationId = `station-${uuidv4().split('-')[0]}`; // 生成简短的ID
+    
     const { data: station, error } = await supabase
       .from('dairy_stations')
       .insert({
+        id: stationId,
         enterprise_id: data.enterpriseId,
         name: data.name,
         address: data.address,
