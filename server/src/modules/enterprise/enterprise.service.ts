@@ -135,15 +135,15 @@ export class EnterpriseService {
     const stationStats = (stations || []).map(station => {
       const stationOrders = (todayDemands || []).filter(demand => {
         return demand.delivery_points && demand.delivery_points.some(
-          point => point.name === station.station_name
+          point => point.name === station.name
         );
       }).length;
 
       return {
-        stationName: station.station_name,
+        stationName: station.name,
         orderCount: stationOrders,
       };
-    }).filter(stat => stat.orderCount > 0);
+    });
 
     return {
       todayOrders,

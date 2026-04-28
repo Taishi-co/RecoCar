@@ -173,6 +173,20 @@ const EnterpriseStatsPage: FC = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* 没有奶站时显示提示 */}
+          {stats.stationStats && stats.stationStats.length === 0 && (
+            <Card className="mb-4">
+              <CardHeader>
+                <CardTitle className="text-base">奶站配送统计</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Text className="text-sm text-gray-500 text-center block">
+                  暂无奶站数据
+                </Text>
+              </CardContent>
+            </Card>
+          )}
         </View>
       ) : (
         <Card>
