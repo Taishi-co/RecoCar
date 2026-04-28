@@ -1,4 +1,4 @@
-import { View, Text } from '@tarojs/components'
+import { View, Text, Picker } from '@tarojs/components'
 import { useState, useEffect } from 'react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,16 @@ const EnterprisePublishPage: FC = () => {
 
   const [cargoType, setCargoType] = useState('')
   const [cargoQuantity, setCargoQuantity] = useState('')
-  const [startTime, setStartTime] = useState('')
-  const [endTime, setEndTime] = useState('')
+  const [startTime, setStartTime] = useState('08:00')
+  const [endTime, setEndTime] = useState('10:00')
+
+  // 时间选择器数据
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'))
+
+  const handleStartTimeChange = (e) => {
+    setStartTime(e.detail.value)
+  }
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -229,27 +237,62 @@ const EnterprisePublishPage: FC = () => {
           </CardContent>
         </Card>
 
-        {/* 时间窗口 */}
+        {/* 配送时间 */}
         <Card className="mb-4">
           <CardHeader>
-            <CardTitle className="text-base">时间窗口</CardTitle>
+            <CardTitle className="text-base">配送时间</CardTitle>
           </CardHeader>
           <CardContent>
-            <View className="mb-3">
+            <View className="mb-4">
               <Text className="text-sm text-gray-600 block mb-2">开始时间</Text>
-              <Input
-                placeholder="请选择开始时间（格式：08:00）"
-                value={startTime}
-                onInput={(e) => setStartTime(e.detail.value)}
-              />
+              <Picker
+                mode="selector"
+                range={hours}
+                onChange={handleStartTimeChange}
+                value={parseInt(startTime.split(':')[0])}
+              >
+                <View className="w-full px-4 py-3 bg-gray-50 rounded-lg">
+                  <Text className="text-sm text-gray-900">
+                    {startTime}
+                  </Text>
+                </View>
+              </Picker>
+              <Picker
+                mode="selector"
+                range={minutes}
+                onChange={(e) => setStartTime(`${startTime.split(':')[0]}:${e.detail.value}`)}
+              >
+                <View className="w-full px-4 py-3 bg-gray-50 rounded-lg mt-2">
+                  <Text className="text-sm text-gray-900">
+                    {startTime.split(':')[1]} 分钟
+                  </Text>
+                </View>
+              </Picker>
             </View>
             <View>
               <Text className="text-sm text-gray-600 block mb-2">结束时间</Text>
-              <Input
-                placeholder="请选择结束时间（格式：10:00）"
-                value={endTime}
-                onInput={(e) => setEndTime(e.detail.value)}
-              />
+              <Picker
+                mode="selector"
+                range={hours}
+                onChange={(e) => setEndTime(`${e.detail.value}:${endTime.split(':')[1]}`)}
+              >
+                <View className="w-full px-4 py-3 bg-gray-50 rounded-lg">
+                  <Text className="text-sm text-gray-900">
+                    {endTime}
+                  </Text>
+                </View>
+              </Picker>
+              <Picker
+                mode="selector"
+                range={minutes}
+                onChange={(e) => setEndTime(`${endTime.split(':')[0]}:${e.detail.value}`)}
+              >
+                <View className="w-full px-4 py-3 bg-gray-50 rounded-lg mt-2">
+                  <Text className="text-sm text-gray-900">
+                    {endTime.split(':')[1]} 分钟
+                  </Text>
+                </View>
+              </Picker>
             </View>
           </CardContent>
         </Card>
