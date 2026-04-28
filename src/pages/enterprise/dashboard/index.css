@@ -13,7 +13,7 @@
 }
 
 .header-title {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
   color: #1f2937;
 }
@@ -76,7 +76,7 @@
 }
 
 .stat-value {
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
   color: #1f2937;
   display: block;
@@ -84,7 +84,7 @@
 }
 
 .stat-label {
-  font-size: 16px;
+  font-size: 14px;
   color: #6b7280;
   display: block;
 }
@@ -96,7 +96,7 @@
 }
 
 .card-title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -115,7 +115,7 @@
 }
 
 .view-all-text {
-  font-size: 16px;
+  font-size: 14px;
   color: #1890ff;
 }
 
@@ -156,7 +156,7 @@
 }
 
 .action-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #1f2937;
   text-align: center;
@@ -164,7 +164,7 @@
 }
 
 .action-description {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
   text-align: center;
   display: block;
@@ -180,7 +180,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .status-row:last-child {
@@ -189,15 +189,15 @@
 
 .status-badge {
   flex-shrink: 0;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 4px;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 500;
 }
 
 .status-text {
   flex: 1;
-  font-size: 18px;
+  font-size: 15px;
   color: #374151;
 }
 
@@ -241,7 +241,7 @@
 }
 
 .order-id {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -253,7 +253,7 @@
 }
 
 .order-status-text {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -261,23 +261,23 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .order-title {
-  font-size: 16px;
+  font-size: 14px;
   color: #374151;
 }
 
 .order-time {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
 }
 
 .order-progress {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .progress-bar {
@@ -296,7 +296,7 @@
 }
 
 .progress-text {
-  font-size: 13px;
+  font-size: 12px;
   color: #1890ff;
   font-weight: 500;
 }
@@ -327,16 +327,16 @@
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .task-title {
-  font-size: 17px;
+  font-size: 15px;
   color: #1f2937;
 }
 
 .task-action {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #1890ff;
 }
@@ -357,7 +357,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  padding: 12px;
   background-color: white;
   border-radius: 8px;
 }
@@ -371,14 +371,14 @@
 }
 
 .notification-title {
-  font-size: 16px;
+  font-size: 14px;
   color: #1f2937;
   margin-bottom: 4px;
   display: block;
 }
 
 .notification-time {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
   display: block;
 }
@@ -396,21 +396,21 @@
 }
 
 .today-stat-item {
-  padding: 18px;
+  padding: 16px;
   background-color: #f9fafb;
   border-radius: 8px;
   text-align: center;
 }
 
 .today-stat-label {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   display: block;
 }
 
 .today-stat-value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #1f2937;
   display: block;

@@ -16,7 +16,7 @@
 }
 
 .header-title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -26,10 +26,10 @@
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1f2937;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   display: block;
 }
 
@@ -58,7 +58,7 @@
 }
 
 .vehicle-name {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -70,29 +70,29 @@
 .vehicle-details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .detail-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .detail-label {
-  font-size: 16px;
+  font-size: 14px;
   color: #6b7280;
 }
 
 .detail-value {
-  font-size: 16px;
+  font-size: 14px;
   color: #1f2937;
   font-weight: 500;
 }
 
 .detail-text {
-  font-size: 16px;
+  font-size: 14px;
   color: #374151;
 }
 
@@ -104,10 +104,10 @@
 }
 
 .recommended-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #1f2937;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   display: block;
 }
 
@@ -115,10 +115,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
+  padding: 10px;
   background-color: white;
   border-radius: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .order-item:last-child {
@@ -130,24 +130,24 @@
 }
 
 .order-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #1f2937;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   display: block;
 }
 
 .order-meta {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
   display: block;
 }
 
 .order-action {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
   color: #1890ff;
-  padding: 6px 14px;
+  padding: 4px 12px;
   background-color: #e6f7ff;
   border-radius: 4px;
 }
