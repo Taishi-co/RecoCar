@@ -93,6 +93,12 @@ const EnterpriseHomePage: FC = () => {
           <Button className="h-20" variant="outline" onClick={navigateToFleet}>
             <Text className="text-gray-900 text-sm">车辆管理</Text>
           </Button>
+          <Button className="h-20" variant="outline" onClick={() => Taro.navigateTo({ url: '/pages/enterprise/stations/index' })}>
+            <Text className="text-gray-900 text-sm">奶站管理</Text>
+          </Button>
+          <Button className="h-20" variant="outline">
+            <Text className="text-gray-900 text-sm">数据统计</Text>
+          </Button>
         </View>
       </View>
     </View>
