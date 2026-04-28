@@ -4,6 +4,7 @@ export default typeof definePageConfig === 'function'
         'pages/index/index',                    // 登录/注册页面（默认首页）
         'pages/enterprise/index/index',        // 企业端-首页
         'pages/enterprise/dispatch/index',     // 企业端-调度中心
+        'pages/enterprise/dispatch/detail/index', // 企业端-配送详情
         'pages/enterprise/fleet/index',        // 企业端-车队管理
         'pages/enterprise/stations/index',     // 企业端-奶站管理
         'pages/enterprise/stats/index',        // 企业端-数据统计
@@ -62,6 +63,7 @@ export default typeof definePageConfig === 'function'
         'pages/index/index',                    // 登录/注册页面（默认首页）
         'pages/enterprise/index/index',        // 企业端-首页
         'pages/enterprise/dispatch/index',     // 企业端-调度中心
+        'pages/enterprise/dispatch/detail/index', // 企业端-配送详情
         'pages/enterprise/fleet/index',        // 企业端-车队管理
         'pages/enterprise/stations/index',     // 企业端-奶站管理
         'pages/enterprise/stats/index',        // 企业端-数据统计

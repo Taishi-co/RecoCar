@@ -157,4 +157,32 @@ export class DemandController {
       ),
     };
   }
+
+  /**
+   * 更新配送点状态或移除配送点
+   */
+  @Put(':id/delivery-points')
+  async updateDeliveryPoints(
+    @Param('id') id: string,
+    @Body() body: {
+      action: 'update_status' | 'remove';
+      stationId?: string;
+      status?: string;
+    }
+  ) {
+    try {
+      const result = await this.demandService.updateDeliveryPoints(id, body);
+      return {
+        code: 200,
+        message: 'success',
+        data: result,
+      };
+    } catch (error) {
+      return {
+        code: 500,
+        message: error.message || '操作失败',
+        data: null,
+      };
+    }
+  }
 }

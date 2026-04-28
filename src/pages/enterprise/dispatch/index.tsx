@@ -221,10 +221,8 @@ const EnterpriseDispatchPage: FC = () => {
   }
 
   const handleViewDetail = (demandId: string) => {
-    console.log('查看详情:', demandId)
-    Taro.showToast({
-      title: '详情功能开发中',
-      icon: 'none',
+    Taro.navigateTo({
+      url: `/pages/enterprise/dispatch/detail/index?id=${demandId}`,
     })
   }
 
@@ -266,13 +264,46 @@ const EnterpriseDispatchPage: FC = () => {
             📍 起点：{demand.pickup_point_info?.name || '仓库'} - {demand.pickup_point_info?.address}
           </Text>
           {demand.delivery_points && demand.delivery_points.length > 0 && (
-            <Text className="block mb-1">
-              📦 配送点：{demand.delivery_points.map(p => p.name).join('、')}
-            </Text>
+            <View className="mb-2">
+              <Text className="block mb-1 font-medium">
+                📦 配送点：{demand.delivery_points.length}个奶站
+              </Text>
+              <View className="ml-4">
+                {demand.delivery_points.map((point: any, idx: number) => (
+                  <View key={point.stationId || idx} className="flex items-center justify-between py-1">
+                    <Text className="text-xs text-gray-500">
+                      {idx + 1}. {point.name || point.stationName}
+                    </Text>
+                    {point.status && (
+                      <Text
+                        className={`text-xs px-2 py-1 rounded ${
+                          point.status === 'completed'
+                            ? 'bg-green-100 text-green-600'
+                            : point.status === 'in_transit'
+                              ? 'bg-blue-100 text-blue-600'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {point.status === 'completed'
+                          ? '已完成'
+                          : point.status === 'in_transit'
+                            ? '配送中'
+                            : '待配送'}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
           )}
           <Text className="block">
-            ⏰ 时间窗口：{demand.time_window?.start?.split(' ')[1]} - {demand.time_window?.end?.split(' ')[1]}
+            ⏰ 配送时间：{demand.time_window?.start?.split(' ')[1]} - {demand.time_window?.end?.split(' ')[1]}
           </Text>
+          {demand.status !== 'pending' && demand.vehicle_allocation && (
+            <Text className="block mt-1">
+              🚗 分配车辆：{demand.vehicle_allocation.vehicle_ids?.length || 0}辆
+            </Text>
+          )}
         </View>
 
         <View className="flex gap-2">

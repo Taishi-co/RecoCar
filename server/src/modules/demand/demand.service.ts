@@ -249,4 +249,97 @@ export class DemandService {
 
     return enterpriseDemand;
   }
+
+  /**
+   * 更新配送点状态或移除配送点
+   */
+  async updateDeliveryPoints(demandId: string, body: {
+    action: 'update_status' | 'remove';
+    stationId?: string;
+    status?: string;
+  }) {
+    const supabase = getSupabaseClient();
+
+    // 获取当前需求
+    const { data: demand, error: fetchError } = await supabase
+      .from('enterprise_demands')
+      .select('*')
+      .eq('id', demandId)
+      .single();
+
+    if (fetchError || !demand) {
+      throw new Error('配送需求不存在');
+    }
+
+    // 检查需求状态，只有待调度才能修改配送点
+    if (demand.status !== 'pending' && body.action === 'remove') {
+      throw new Error('只有待调度的配送需求才能移除配送点');
+    }
+
+    let deliveryPoints = demand.delivery_points || [];
+
+    if (body.action === 'remove') {
+      // 移除配送点
+      if (!body.stationId) {
+        throw new Error('stationId 不能为空');
+      }
+
+      const originalCount = deliveryPoints.length;
+      deliveryPoints = deliveryPoints.filter((p: any) => p.stationId !== body.stationId);
+
+      if (deliveryPoints.length === originalCount) {
+        throw new Error('未找到指定的配送点');
+      }
+
+      if (deliveryPoints.length === 0) {
+        throw new Error('不能移除所有配送点');
+      }
+    } else if (body.action === 'update_status') {
+      // 更新配送点状态
+      if (!body.stationId || !body.status) {
+        throw new Error('stationId 和 status 不能为空');
+      }
+
+      const pointExists = deliveryPoints.some((p: any) => p.stationId === body.stationId);
+      if (!pointExists) {
+        throw new Error('未找到指定的配送点');
+      }
+
+      deliveryPoints = deliveryPoints.map((p: any) => {
+        if (p.stationId === body.stationId) {
+          return { ...p, status: body.status };
+        }
+        return p;
+      });
+
+      // 检查是否所有配送点都已完成，如果是则更新整体状态
+      const allCompleted = deliveryPoints.every((p: any) => p.status === 'completed');
+      if (allCompleted && demand.status !== 'completed') {
+        const { error: updateError } = await supabase
+          .from('enterprise_demands')
+          .update({
+            status: 'completed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', demandId);
+
+        if (updateError) throw updateError;
+      }
+    }
+
+    // 更新配送点列表
+    const { data: updatedDemand, error: updateError } = await supabase
+      .from('enterprise_demands')
+      .update({
+        delivery_points: deliveryPoints,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', demandId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    return updatedDemand;
+  }
 }

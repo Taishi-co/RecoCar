@@ -105,6 +105,7 @@ const EnterprisePublishPage: FC = () => {
     try {
       const selectedStationObjs = stations.filter(s => selectedStations.includes(s.id))
       const deliveryPoints = selectedStationObjs.map(s => ({
+        stationId: s.id,
         name: s.name,
         address: s.address,
         contact: s.name,
