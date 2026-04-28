@@ -124,4 +124,125 @@ export class DemandService {
     if (error) throw error;
     return data || [];
   }
+
+  /**
+   * 获取企业需求统计
+   */
+  async getEnterpriseDemandStats(enterpriseId: string) {
+    const supabase = getSupabaseClient();
+
+    const { data: demands, error } = await supabase
+      .from('enterprise_demands')
+      .select('status')
+      .eq('enterprise_id', enterpriseId);
+
+    if (error) throw error;
+
+    const stats = {
+      pending: demands?.filter(d => d.status === 'pending').length || 0,
+      in_transit: demands?.filter(d => d.status === 'in_transit').length || 0,
+      completed: demands?.filter(d => d.status === 'completed').length || 0,
+      cancelled: demands?.filter(d => d.status === 'cancelled').length || 0,
+      total: demands?.length || 0,
+    };
+
+    return stats;
+  }
+
+  /**
+   * 分配车辆到配送需求
+   */
+  async allocateVehicleToDemand(demandId: string, vehicleAllocation: any) {
+    const supabase = getSupabaseClient();
+
+    const { data: demand, error: updateError } = await supabase
+      .from('enterprise_demands')
+      .update({
+        vehicle_allocation: vehicleAllocation,
+        status: 'in_transit',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', demandId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    return demand;
+  }
+
+  /**
+   * 获取待调度外部订单
+   */
+  async getPendingExternalDemands() {
+    const supabase = getSupabaseClient();
+
+    const { data: demands, error } = await supabase
+      .from('demands')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    return demands || [];
+  }
+
+  /**
+   * 企业接外部订单
+   */
+  async acceptExternalDemand(demandId: string, enterpriseId: string, vehicleIds: string[]) {
+    const supabase = getSupabaseClient();
+
+    // 获取外部订单
+    const { data: externalDemand, error: fetchError } = await supabase
+      .from('demands')
+      .select('*')
+      .eq('id', demandId)
+      .single();
+
+    if (fetchError || !externalDemand) {
+      throw new Error('外部需求不存在');
+    }
+
+    // 创建企业需求
+    const { data: enterpriseDemand, error: insertError } = await supabase
+      .from('enterprise_demands')
+      .insert({
+        enterprise_id: enterpriseId,
+        pickup_point_type: 'warehouse',
+        pickup_point_info: {
+          name: externalDemand.pickup_point?.name || '起点',
+          address: externalDemand.pickup_point?.address || '',
+        },
+        delivery_points: externalDemand.delivery_points || [],
+        cargo_info: externalDemand.cargo_info || {},
+        time_window: {
+          start: externalDemand.pickup_time_start,
+          end: externalDemand.pickup_time_end,
+        },
+        vehicle_source: 'internal',
+        status: 'in_transit',
+        vehicle_allocation: {
+          vehicle_ids: vehicleIds,
+          allocated_at: new Date().toISOString(),
+        },
+        external_demand_id: demandId,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    // 更新外部需求状态
+    await supabase
+      .from('demands')
+      .update({
+        status: 'accepted',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', demandId);
+
+    return enterpriseDemand;
+  }
 }

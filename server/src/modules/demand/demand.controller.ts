@@ -98,4 +98,62 @@ export class DemandController {
       data: await this.demandService.getPendingDemands(enterpriseId),
     };
   }
+
+  /**
+   * 获取企业需求统计
+   */
+  @Get('stats/enterprise')
+  async getStats(@Query('enterprise_id') enterpriseId: string) {
+    return {
+      code: 200,
+      message: 'success',
+      data: await this.demandService.getEnterpriseDemandStats(enterpriseId),
+    };
+  }
+
+  /**
+   * 分配车辆到配送需求
+   */
+  @Put(':id/allocate')
+  async allocateVehicle(@Param('id') id: string, @Body() body: any) {
+    return {
+      code: 200,
+      message: 'success',
+      data: await this.demandService.allocateVehicleToDemand(id, body.vehicle_allocation),
+    };
+  }
+
+  /**
+   * 获取待调度外部订单
+   */
+  @Get('external/pending')
+  async getPendingExternalDemands() {
+    return {
+      code: 200,
+      message: 'success',
+      data: await this.demandService.getPendingExternalDemands(),
+    };
+  }
+
+  /**
+   * 企业接外部订单
+   */
+  @Post('external/:id/accept')
+  async acceptExternalDemand(
+    @Param('id') id: string,
+    @Body() body: {
+      enterprise_id: string;
+      vehicle_ids: string[];
+    }
+  ) {
+    return {
+      code: 200,
+      message: 'success',
+      data: await this.demandService.acceptExternalDemand(
+        id,
+        body.enterprise_id,
+        body.vehicle_ids
+      ),
+    };
+  }
 }
