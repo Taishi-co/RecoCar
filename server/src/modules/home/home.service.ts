@@ -301,4 +301,84 @@ export class HomeService {
       data: stats
     }
   }
+
+  // AI分析货品照片
+  async analyzeCargoPhotos(photos: string[]) {
+    try {
+      if (!photos || photos.length === 0) {
+        throw new BadRequestException('请上传至少一张货品照片')
+      }
+
+      const { LLMClient, Config } = await import('coze-coding-dev-sdk')
+
+      const config = new Config()
+      const client = new LLMClient(config)
+
+      // 构建消息内容
+      const messageContent: any[] = [
+        {
+          type: 'text',
+          text: `请分析这些货品照片，识别以下信息并以JSON格式返回：
+{
+  "cargo_name": "货品名称",
+  "cargo_type": "货品类型（食品/建材/设备/日用品/其他）",
+  "weight": "预估重量（公斤）",
+  "volume": "预估体积（立方米）"
+}
+
+要求：
+1. 货品名称要准确描述货品
+2. 货品类型从以下选择：食品、建材、设备、日用品、其他
+3. 重量和体积要合理估计
+4. 只返回JSON，不要其他说明文字`
+        }
+      ]
+
+      // 添加图片
+      photos.forEach(photo => {
+        messageContent.push({
+          type: 'image_url',
+          image_url: {
+            url: photo,
+            detail: 'high'
+          }
+        })
+      })
+
+      const messages = [{
+        role: 'user' as const,
+        content: messageContent
+      }]
+
+      // 使用视觉模型分析
+      const response = await client.invoke(messages, {
+        model: 'doubao-seed-1-6-vision-250815',
+        temperature: 0.3
+      })
+
+      console.log('[HomeService] AI分析响应:', response.content)
+
+      // 解析JSON响应
+      const jsonMatch = response.content.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) {
+        throw new BadRequestException('AI分析失败，无法解析响应')
+      }
+
+      const analysisResult = JSON.parse(jsonMatch[0])
+
+      return {
+        code: 200,
+        message: '分析成功',
+        data: {
+          cargo_name: analysisResult.cargo_name || '',
+          cargo_type: analysisResult.cargo_type || '',
+          weight: analysisResult.weight || '',
+          volume: analysisResult.volume || ''
+        }
+      }
+    } catch (error) {
+      console.error('[HomeService] AI分析失败:', error)
+      throw new BadRequestException(error.message || 'AI分析失败')
+    }
+  }
 }

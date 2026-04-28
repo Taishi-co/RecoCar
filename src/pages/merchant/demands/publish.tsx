@@ -312,6 +312,66 @@ export default function PublishDemand() {
     }
   }
 
+  // AI分析货品照片
+  const handleAIAnalyze = async () => {
+    if (formData.cargo_photos.length === 0) {
+      Taro.showToast({
+        title: '请先上传货品照片',
+        icon: 'none'
+      })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await Network.request({
+        url: '/api/home/analyze-cargo',
+        method: 'POST',
+        data: {
+          photos: formData.cargo_photos
+        }
+      })
+
+      console.log('AI分析响应:', res.data)
+
+      if (res.data.code === 200 && res.data.data) {
+        const analysis = res.data.data
+
+        // 根据AI分析结果自动填充表单
+        if (analysis.cargo_name && !formData.cargo_name) {
+          setFormData(prev => ({ ...prev, cargo_name: analysis.cargo_name }))
+        }
+        if (analysis.cargo_type && !formData.cargo_type) {
+          setFormData(prev => ({ ...prev, cargo_type: analysis.cargo_type }))
+        }
+        if (analysis.weight && !formData.weight) {
+          setFormData(prev => ({ ...prev, weight: analysis.weight.toString() }))
+        }
+        if (analysis.volume && !formData.volume) {
+          setFormData(prev => ({ ...prev, volume: analysis.volume.toString() }))
+        }
+
+        Taro.showToast({
+          title: 'AI分析完成',
+          icon: 'success'
+        })
+      } else {
+        Taro.showToast({
+          title: res.data.message || 'AI分析失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('AI分析失败:', error)
+      Taro.showToast({
+        title: '网络错误，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 选择货品照片（拍照或从相册选择）
   const handleChoosePhotos = async () => {
     try {
@@ -557,16 +617,26 @@ export default function PublishDemand() {
                 货品照片
                 <Text className="text-gray-400 text-xs ml-2">（可选，最多9张）</Text>
               </Label>
-              <Button
-                size="sm"
-                className="w-full bg-blue-500"
-                onClick={handleChoosePhotos}
-                disabled={formData.cargo_photos.length >= 9}
-              >
-                <Text className="text-xs">
-                  {formData.cargo_photos.length >= 9 ? '已达到最大数量' : '📷 拍照或选择图片'}
-                </Text>
-              </Button>
+              <View className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 bg-blue-500"
+                  onClick={handleChoosePhotos}
+                  disabled={formData.cargo_photos.length >= 9}
+                >
+                  <Text className="text-xs">
+                    {formData.cargo_photos.length >= 9 ? '已满' : '📷 拍照'}
+                  </Text>
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-purple-500"
+                  onClick={handleAIAnalyze}
+                  disabled={formData.cargo_photos.length === 0 || loading}
+                >
+                  <Text className="text-xs">🤖 AI分析</Text>
+                </Button>
+              </View>
 
               {/* 图片预览 */}
               {formData.cargo_photos.length > 0 && (

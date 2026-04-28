@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseInterceptors, UploadedFile, BadRequestException, HttpCode } from '@nestjs/common'
+import { Controller, Get, Post, UseInterceptors, UploadedFile, BadRequestException, HttpCode, Body } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { HomeService } from './home.service'
 
@@ -21,5 +21,11 @@ export class HomeController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     return this.homeService.uploadFile(file)
+  }
+
+  @Post('analyze-cargo')
+  @HttpCode(200)
+  async analyzeCargo(@Body() body: { photos: string[] }) {
+    return this.homeService.analyzeCargoPhotos(body.photos)
   }
 }
