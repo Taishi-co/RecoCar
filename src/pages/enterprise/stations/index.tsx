@@ -32,6 +32,7 @@ const EnterpriseStationsPage: FC = () => {
   const [newStationName, setNewStationName] = useState('')
   const [newStationAddress, setNewStationAddress] = useState('')
   const [newStationPhone, setNewStationPhone] = useState('')
+  const [newStationLocation, setNewStationLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -158,6 +159,14 @@ const EnterpriseStationsPage: FC = () => {
       return
     }
 
+    if (!newStationLocation) {
+      Taro.showToast({
+        title: '请选择位置',
+        icon: 'none',
+      })
+      return
+    }
+
     try {
       const res = await Network.request({
         url: '/api/station',
@@ -167,10 +176,7 @@ const EnterpriseStationsPage: FC = () => {
           name: newStationName,
           address: newStationAddress,
           phone: newStationPhone,
-          location: {
-            lat: 39.6,
-            lng: 118.2,
-          },
+          location: newStationLocation,
           status: 'active',
         },
       })
@@ -185,6 +191,7 @@ const EnterpriseStationsPage: FC = () => {
         setNewStationName('')
         setNewStationAddress('')
         setNewStationPhone('')
+        setNewStationLocation(null)
         // 刷新列表
         loadStations(enterpriseId)
       } else {
@@ -197,6 +204,44 @@ const EnterpriseStationsPage: FC = () => {
       console.error('添加失败:', error)
       Taro.showToast({
         title: '添加失败',
+        icon: 'none',
+      })
+    }
+  }
+
+  const handleChooseLocation = async () => {
+    try {
+      const env = Taro.getEnv()
+      const isMiniApp = env === Taro.ENV_TYPE.WEAPP || env === Taro.ENV_TYPE.TT
+
+      if (!isMiniApp) {
+        Taro.showToast({
+          title: '地图功能仅在小程序中可用',
+          icon: 'none',
+        })
+        return
+      }
+
+      const res = await Taro.chooseLocation({
+        latitude: 39.63,
+        longitude: 118.18,
+      })
+
+      if (res.errMsg === 'chooseLocation:ok') {
+        setNewStationAddress(res.address || res.name)
+        setNewStationLocation({
+          lat: res.latitude,
+          lng: res.longitude,
+        })
+        Taro.showToast({
+          title: '位置已选择',
+          icon: 'success',
+        })
+      }
+    } catch (error) {
+      console.error('选择位置失败:', error)
+      Taro.showToast({
+        title: '选择位置失败',
         icon: 'none',
       })
     }
@@ -260,9 +305,14 @@ const EnterpriseStationsPage: FC = () => {
                       <Text className="text-sm text-gray-600 block mb-1">
                         {station.address}
                       </Text>
-                      <Text className="text-sm text-gray-500 block">
+                      <Text className="text-sm text-gray-500 block mb-1">
                         电话: {station.phone || '未设置'}
                       </Text>
+                      {station.location && (
+                        <Text className="text-xs text-blue-500 block">
+                          位置: {station.location.lat.toFixed(6)}, {station.location.lng.toFixed(6)}
+                        </Text>
+                      )}
                     </View>
                     <View className="flex flex-col gap-2">
                       <Button
@@ -283,9 +333,9 @@ const EnterpriseStationsPage: FC = () => {
         {/* 新增奶站弹窗 */}
         {showAddDialog && (
           <View className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <View className="bg-white rounded-lg p-6 w-11/12 max-w-md">
+            <View className="bg-white rounded-lg p-6 w-11/12 max-w-md max-h-[80vh] overflow-y-auto">
               <Text className="text-xl font-bold block mb-4">新增奶站</Text>
-              
+
               <View className="space-y-4">
                 <View>
                   <Text className="text-sm text-gray-600 block mb-2">奶站名称</Text>
@@ -293,15 +343,6 @@ const EnterpriseStationsPage: FC = () => {
                     placeholder="请输入奶站名称"
                     value={newStationName}
                     onInput={(e) => setNewStationName(e.detail.value)}
-                  />
-                </View>
-
-                <View>
-                  <Text className="text-sm text-gray-600 block mb-2">奶站地址</Text>
-                  <Input
-                    placeholder="请输入奶站地址"
-                    value={newStationAddress}
-                    onInput={(e) => setNewStationAddress(e.detail.value)}
                   />
                 </View>
 
@@ -314,11 +355,38 @@ const EnterpriseStationsPage: FC = () => {
                   />
                 </View>
 
+                <View>
+                  <Text className="text-sm text-gray-600 block mb-2">奶站地址</Text>
+                  <View className="flex gap-2">
+                    <View className="flex-1">
+                      <Input
+                        placeholder="请选择或输入地址"
+                        value={newStationAddress}
+                        onInput={(e) => setNewStationAddress(e.detail.value)}
+                      />
+                    </View>
+                    <Button onClick={handleChooseLocation}>
+                      <Text className="text-xs">选择位置</Text>
+                    </Button>
+                  </View>
+                  {newStationLocation && (
+                    <Text className="text-xs text-blue-600 mt-1 block">
+                      已选择位置: {newStationLocation.lat.toFixed(6)}, {newStationLocation.lng.toFixed(6)}
+                    </Text>
+                  )}
+                </View>
+
                 <View className="flex gap-3 mt-6">
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => setShowAddDialog(false)}
+                    onClick={() => {
+                      setShowAddDialog(false)
+                      setNewStationName('')
+                      setNewStationAddress('')
+                      setNewStationPhone('')
+                      setNewStationLocation(null)
+                    }}
                   >
                     <Text>取消</Text>
                   </Button>
