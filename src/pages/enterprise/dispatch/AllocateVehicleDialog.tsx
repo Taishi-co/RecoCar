@@ -71,7 +71,7 @@ const AllocateVehicleDialog: FC<AllocateVehicleDialogProps> = ({
                           {vehicle.vehicle_code} {vehicle.vehicle_type}
                         </Text>
                         <Text className="text-xs text-gray-500 block">
-                          {vehicle.load_capacity}吨 · {vehicle.current_location}
+                          {vehicle.load_capacity}公斤 · {vehicle.current_location}
                         </Text>
                       </View>
                     </View>
