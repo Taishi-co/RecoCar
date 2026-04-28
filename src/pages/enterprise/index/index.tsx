@@ -24,29 +24,21 @@ const EnterpriseHomePage: FC = () => {
 
   const navigateToStations = () => {
     console.log('点击奶站管理 - 开始跳转')
-    const env = Taro.getEnv()
-    console.log('当前环境:', env)
 
-    // H5 环境使用 window.location 跳转
-    if (env === Taro.ENV_TYPE.WEB) {
-      console.log('H5环境，使用 window.location 跳转')
-      window.location.href = '#/pages/enterprise/stations/index'
-    } else {
-      // 小程序环境使用 redirectTo
-      Taro.redirectTo({
-        url: '/pages/enterprise/stations/index',
-        success: () => {
-          console.log('跳转成功')
-        },
-        fail: (err) => {
-          console.error('跳转失败:', err)
-          Taro.showToast({
-            title: '跳转失败',
-            icon: 'none',
-          })
-        }
-      })
-    }
+    // 直接使用 Taro.navigateTo
+    Taro.navigateTo({
+      url: '/pages/enterprise/stations/index',
+      success: () => {
+        console.log('跳转成功')
+      },
+      fail: (err) => {
+        console.error('跳转失败:', err)
+        Taro.showToast({
+          title: '跳转失败',
+          icon: 'none',
+        })
+      }
+    })
   }
 
   return (
@@ -114,18 +106,26 @@ const EnterpriseHomePage: FC = () => {
         {/* 快捷入口 */}
         <Text className="text-lg font-bold text-gray-900 mb-4 block">快捷入口</Text>
         <View className="grid grid-cols-2 gap-3">
-          <Button className="h-20" variant="default" onClick={navigateToDispatch}>
-            <Text className="text-white text-sm">发布配送</Text>
-          </Button>
-          <Button className="h-20" variant="outline" onClick={navigateToFleet}>
-            <Text className="text-gray-900 text-sm">车辆管理</Text>
-          </Button>
-          <Button className="h-20" variant="outline" onClick={navigateToStations}>
-            奶站管理
-          </Button>
-          <Button className="h-20" variant="outline">
-            <Text className="text-gray-900 text-sm">数据统计</Text>
-          </Button>
+          <View className="h-20" onClick={navigateToDispatch}>
+            <Button className="w-full h-full" variant="default">
+              <Text className="text-white text-sm">发布配送</Text>
+            </Button>
+          </View>
+          <View className="h-20" onClick={navigateToFleet}>
+            <Button className="w-full h-full" variant="outline">
+              <Text className="text-gray-900 text-sm">车辆管理</Text>
+            </Button>
+          </View>
+          <View className="h-20" onClick={navigateToStations}>
+            <Button className="w-full h-full" variant="outline">
+              奶站管理
+            </Button>
+          </View>
+          <View className="h-20">
+            <Button className="w-full h-full" variant="outline">
+              <Text className="text-gray-900 text-sm">数据统计</Text>
+            </Button>
+          </View>
         </View>
       </View>
     </View>
