@@ -79,7 +79,7 @@ export default function Index() {
 
       console.log('统计数据响应:', res.data)
 
-      if (res.data?.code === 200) {
+      if (res.data.code === 200) {
         setStatistics(res.data.data)
       }
     } catch (error) {
@@ -96,7 +96,7 @@ export default function Index() {
 
       console.log('最新信息响应:', res.data)
 
-      if (res.data?.code === 200) {
+      if (res.data.code === 200) {
         setLatestInfo(res.data.data)
       }
     } catch (error) {

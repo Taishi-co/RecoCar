@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components'
 import { useEffect } from 'react'
 import type { FC } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -12,6 +13,18 @@ const EnterpriseHomePage: FC = () => {
   useEffect(() => {
     console.log('企业首页加载')
   }, [])
+
+  const navigateToFleet = () => {
+    Taro.navigateTo({ url: '/pages/enterprise/fleet/index' })
+  }
+
+  const navigateToDispatch = () => {
+    Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
+  }
+
+  const navigateToStations = () => {
+    Taro.navigateTo({ url: '/pages/enterprise/stations/index' })
+  }
 
   return (
     <View className="enterprise-home min-h-screen bg-gray-50 pb-20">
@@ -65,90 +78,28 @@ const EnterpriseHomePage: FC = () => {
         <Card className="mb-3">
           <CardContent className="p-4">
             <Text className="text-sm text-gray-900 font-medium block mb-2">📋 3个待调度订单</Text>
-            <View
-              className="w-full h-10 bg-blue-500 rounded flex items-center justify-center"
-              style={{ backgroundColor: '#3b82f6', borderRadius: '6px', height: '40px' }}
-              onClick={() => {
-                console.log('去调度点击')
-                setTimeout(() => {
-                  try {
-                    Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
-                  } catch (e) {
-                    console.error('导航失败:', e)
-                  }
-                }, 100)
-              }}
-            >
-              <Text className="text-white text-sm">去调度</Text>
-            </View>
+            <Button size="sm" className="w-full" onClick={navigateToDispatch}>去调度</Button>
           </CardContent>
         </Card>
         <Card className="mb-6">
           <CardContent className="p-4">
             <Text className="text-sm text-gray-900 font-medium block mb-2">🔔 5个订单已送达</Text>
-            <View
-              className="w-full h-10 border border-gray-300 rounded flex items-center justify-center"
-              style={{ border: '1px solid #d1d5db', borderRadius: '6px', height: '40px' }}
-            >
-              <Text className="text-gray-700 text-sm">查看</Text>
-            </View>
+            <Button size="sm" variant="outline" className="w-full">查看</Button>
           </CardContent>
         </Card>
 
         {/* 快捷入口 */}
         <Text className="text-lg font-bold text-gray-900 mb-4 block">快捷入口</Text>
         <View className="grid grid-cols-2 gap-3">
-          <View
-            className="h-20 bg-blue-500 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: '#3b82f6', borderRadius: '8px' }}
-            onClick={() => {
-              console.log('发布配送点击')
-              setTimeout(() => {
-                try {
-                  Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
-                } catch (e) {
-                  console.error('导航失败:', e)
-                  Taro.showToast({ title: '导航失败', icon: 'none' })
-                }
-              }, 100)
-            }}
-          >
+          <Button className="h-20" variant="default" onClick={navigateToDispatch}>
             <Text className="text-white text-sm">发布配送</Text>
-          </View>
-          <View
-            className="h-20 border border-gray-300 bg-white rounded-lg flex items-center justify-center"
-            style={{ border: '1px solid #d1d5db', borderRadius: '8px' }}
-            onClick={() => {
-              console.log('车辆管理点击')
-              setTimeout(() => {
-                try {
-                  Taro.navigateTo({ url: '/pages/enterprise/fleet/index' })
-                } catch (e) {
-                  console.error('导航失败:', e)
-                  Taro.showToast({ title: '导航失败', icon: 'none' })
-                }
-              }, 100)
-            }}
-          >
+          </Button>
+          <Button className="h-20" variant="outline" onClick={navigateToFleet}>
             <Text className="text-gray-900 text-sm">车辆管理</Text>
-          </View>
-          <View
-            className="h-20 border border-gray-300 bg-white rounded-lg flex items-center justify-center"
-            style={{ border: '1px solid #d1d5db', borderRadius: '8px' }}
-            onClick={() => {
-              console.log('奶站管理点击')
-              setTimeout(() => {
-                try {
-                  Taro.navigateTo({ url: '/pages/enterprise/stations/index' })
-                } catch (e) {
-                  console.error('导航失败:', e)
-                  Taro.showToast({ title: '导航失败', icon: 'none' })
-                }
-              }, 100)
-            }}
-          >
+          </Button>
+          <Button className="h-20" variant="outline" onClick={navigateToStations}>
             <Text className="text-gray-900 text-sm">奶站管理</Text>
-          </View>
+          </Button>
         </View>
       </View>
     </View>

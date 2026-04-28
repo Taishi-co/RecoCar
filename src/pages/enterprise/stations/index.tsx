@@ -8,6 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Network } from '@/network'
 import Taro from '@tarojs/taro'
 import './index.css'
@@ -26,6 +34,14 @@ const EnterpriseStationsPage: FC = () => {
   const [stations, setStations] = useState<Station[]>([])
   const [loading, setLoading] = useState(true)
   const [enterpriseId, setEnterpriseId] = useState('')
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editingStation, setEditingStation] = useState<Station | null>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+    phone: '',
+  })
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -78,27 +94,91 @@ const EnterpriseStationsPage: FC = () => {
   }
 
   const handleAddStation = async () => {
-    Taro.showModal({
-      title: '提示',
-      content: '请在控制台或使用完整表单添加奶站\n（简化版本）',
-      showCancel: false,
-    })
+    if (!formData.name || !formData.address) {
+      Taro.showToast({
+        title: '请填写完整信息',
+        icon: 'none',
+      })
+      return
+    }
+
+    try {
+      const res = await Network.request({
+        url: '/api/station',
+        method: 'POST',
+        data: {
+          enterpriseId,
+          name: formData.name,
+          address: formData.address,
+          phone: formData.phone || undefined,
+        },
+      })
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '添加成功',
+          icon: 'success',
+        })
+        setShowAddDialog(false)
+        setFormData({ name: '', address: '', phone: '' })
+        loadStations(enterpriseId)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '添加失败',
+          icon: 'none',
+        })
+      }
+    } catch (error) {
+      console.error('添加失败:', error)
+      Taro.showToast({
+        title: '添加失败',
+        icon: 'none',
+      })
+    }
   }
 
-  const handleEditStation = async (station: Station) => {
-    Taro.showModal({
-      title: '编辑奶站',
-      content: `名称：${station.name}\n地址：${station.address || '待补充'}`,
-      showCancel: true,
-      success: async (res) => {
-        if (res.confirm) {
-          Taro.showToast({
-            title: '请在完整版本中编辑',
-            icon: 'none',
-          })
-        }
-      },
-    })
+  const handleEditStation = async () => {
+    if (!editingStation || !formData.name || !formData.address) {
+      Taro.showToast({
+        title: '请填写完整信息',
+        icon: 'none',
+      })
+      return
+    }
+
+    try {
+      const res = await Network.request({
+        url: `/api/station/${editingStation.id}`,
+        method: 'PUT',
+        data: {
+          name: formData.name,
+          address: formData.address,
+          phone: formData.phone || undefined,
+        },
+      })
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '更新成功',
+          icon: 'success',
+        })
+        setShowEditDialog(false)
+        setEditingStation(null)
+        setFormData({ name: '', address: '', phone: '' })
+        loadStations(enterpriseId)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '更新失败',
+          icon: 'none',
+        })
+      }
+    } catch (error) {
+      console.error('更新失败:', error)
+      Taro.showToast({
+        title: '更新失败',
+        icon: 'none',
+      })
+    }
   }
 
   const handleDeleteStation = async (stationId: string) => {
@@ -137,6 +217,16 @@ const EnterpriseStationsPage: FC = () => {
     })
   }
 
+  const openEditDialog = (station: Station) => {
+    setEditingStation(station)
+    setFormData({
+      name: station.name,
+      address: station.address,
+      phone: station.phone || '',
+    })
+    setShowEditDialog(true)
+  }
+
   return (
     <View className="enterprise-stations min-h-screen bg-gray-50 pb-20">
       <ScrollView scrollY className="h-full">
@@ -148,7 +238,7 @@ const EnterpriseStationsPage: FC = () => {
             </Text>
             <Button
               size="sm"
-              onClick={handleAddStation}
+              onClick={() => setShowAddDialog(true)}
             >
               <Text className="text-white">添加奶站</Text>
             </Button>
@@ -166,7 +256,7 @@ const EnterpriseStationsPage: FC = () => {
                 <Button
                   size="sm"
                   className="mt-4"
-                  onClick={handleAddStation}
+                  onClick={() => setShowAddDialog(true)}
                 >
                   <Text className="text-white">添加第一个奶站</Text>
                 </Button>
@@ -193,7 +283,7 @@ const EnterpriseStationsPage: FC = () => {
                       size="sm"
                       variant="outline"
                       className="flex-1"
-                      onClick={() => handleEditStation(station)}
+                      onClick={() => openEditDialog(station)}
                     >
                       <Text className="text-xs">编辑</Text>
                     </Button>
@@ -212,6 +302,92 @@ const EnterpriseStationsPage: FC = () => {
           )}
         </View>
       </ScrollView>
+
+      {/* 添加奶站弹窗 */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>添加奶站</DialogTitle>
+          </DialogHeader>
+          <View className="space-y-4 py-4">
+            <View>
+              <Text className="text-sm font-medium mb-2 block">奶站名称</Text>
+              <Input
+                value={formData.name}
+                onInput={(e) => setFormData({ ...formData, name: e.detail.value })}
+                placeholder="请输入奶站名称"
+              />
+            </View>
+            <View>
+              <Text className="text-sm font-medium mb-2 block">地址</Text>
+              <Input
+                value={formData.address}
+                onInput={(e) => setFormData({ ...formData, address: e.detail.value })}
+                placeholder="请输入奶站地址"
+              />
+            </View>
+            <View>
+              <Text className="text-sm font-medium mb-2 block">联系电话（可选）</Text>
+              <Input
+                value={formData.phone}
+                onInput={(e) => setFormData({ ...formData, phone: e.detail.value })}
+                placeholder="请输入联系电话"
+              />
+            </View>
+          </View>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              <Text>取消</Text>
+            </Button>
+            <Button onClick={handleAddStation}>
+              <Text className="text-white">确定</Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 编辑奶站弹窗 */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑奶站</DialogTitle>
+          </DialogHeader>
+          <View className="space-y-4 py-4">
+            <View>
+              <Text className="text-sm font-medium mb-2 block">奶站名称</Text>
+              <Input
+                value={formData.name}
+                onInput={(e) => setFormData({ ...formData, name: e.detail.value })}
+                placeholder="请输入奶站名称"
+              />
+            </View>
+            <View>
+              <Text className="text-sm font-medium mb-2 block">地址</Text>
+              <Input
+                value={formData.address}
+                onInput={(e) => setFormData({ ...formData, address: e.detail.value })}
+                placeholder="请输入奶站地址"
+              />
+            </View>
+            <View>
+              <Text className="text-sm font-medium mb-2 block">联系电话（可选）</Text>
+              <Input
+                value={formData.phone}
+                onInput={(e) => setFormData({ ...formData, phone: e.detail.value })}
+                placeholder="请输入联系电话"
+              />
+            </View>
+          </View>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              <Text>取消</Text>
+            </Button>
+            <Button onClick={handleEditStation}>
+              <Text className="text-white">保存</Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </View>
   )
 }
