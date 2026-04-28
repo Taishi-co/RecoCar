@@ -15,7 +15,6 @@ export class DemandService {
     cargoInfo: any;
     timeWindow: any;
     vehicleSource: string;
-    remark?: string;
   }) {
     const supabase = getSupabaseClient();
     const demandId = `demand-${uuidv4().split('-')[0]}`; // 生成简短的ID
@@ -32,7 +31,6 @@ export class DemandService {
         time_window: data.timeWindow,
         vehicle_source: data.vehicleSource,
         status: 'pending',
-        remark: data.remark,
       })
       .select()
       .single();

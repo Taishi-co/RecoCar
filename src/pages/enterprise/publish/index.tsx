@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Network } from '@/network'
 import Taro from '@tarojs/taro'
 
@@ -29,7 +28,6 @@ const EnterprisePublishPage: FC = () => {
   const [cargoQuantity, setCargoQuantity] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
-  const [remark, setRemark] = useState('')
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -110,32 +108,37 @@ const EnterprisePublishPage: FC = () => {
         phone: s.phone,
       }))
 
+      const requestData = {
+        enterpriseId: enterpriseId,
+        pickupPointType: 'warehouse',
+        pickupPointInfo: {
+          name: '仓库',
+          address: '唐山市路南区配送中心',
+          latitude: 39.9,
+          longitude: 116.4,
+        },
+        deliveryPoints: deliveryPoints,
+        cargoInfo: {
+          type: cargoType,
+          quantity: parseInt(cargoQuantity),
+          unit: '箱',
+        },
+        timeWindow: {
+          start: startTime,
+          end: endTime,
+        },
+        vehicleSource: 'own',
+      }
+
+      console.log('发布配送请求数据:', JSON.stringify(requestData, null, 2))
+
       const res = await Network.request({
         url: '/api/demand',
         method: 'POST',
-        data: {
-          enterpriseId: enterpriseId,
-          pickupPointType: 'warehouse',
-          pickupPointInfo: {
-            name: '仓库',
-            address: '唐山市路南区配送中心',
-            latitude: 39.9,
-            longitude: 116.4,
-          },
-          deliveryPoints: deliveryPoints,
-          cargoInfo: {
-            type: cargoType,
-            quantity: parseInt(cargoQuantity),
-            unit: '箱',
-          },
-          timeWindow: {
-            start: startTime,
-            end: endTime,
-          },
-          vehicleSource: 'own',
-          remark: remark,
-        },
+        data: requestData,
       })
+
+      console.log('发布配送响应:', JSON.stringify(res.data, null, 2))
 
       if (res.data.code === 200) {
         Taro.showToast({
@@ -248,21 +251,6 @@ const EnterprisePublishPage: FC = () => {
                 onInput={(e) => setEndTime(e.detail.value)}
               />
             </View>
-          </CardContent>
-        </Card>
-
-        {/* 备注 */}
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-base">备注（可选）</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="请输入备注信息"
-              value={remark}
-              onInput={(e) => setRemark(e.detail.value)}
-              maxlength={200}
-            />
           </CardContent>
         </Card>
 
