@@ -2,6 +2,9 @@ export default typeof definePageConfig === 'function'
   ? defineAppConfig({
       pages: [
         'pages/index/index',                    // 登录/注册页面（默认首页）
+        'pages/enterprise/index/index',        // 企业端-首页
+        'pages/enterprise/dispatch/index',     // 企业端-调度中心
+        'pages/enterprise/fleet/index',        // 企业端-车队管理
         'pages/owner/vehicles/index',          // 车主端-车辆管理
         'pages/owner/vehicles/rental-settings/index', // 车主端-车辆租赁设置
         'pages/owner/vehicle-mock-demo/index', // 车主端-车机模拟数据Demo
@@ -54,6 +57,9 @@ export default typeof definePageConfig === 'function'
   : {
       pages: [
         'pages/index/index',                    // 登录/注册页面（默认首页）
+        'pages/enterprise/index/index',        // 企业端-首页
+        'pages/enterprise/dispatch/index',     // 企业端-调度中心
+        'pages/enterprise/fleet/index',        // 企业端-车队管理
         'pages/owner/vehicles/index',          // 车主端-车辆管理
         'pages/owner/vehicles/rental-settings/index', // 车主端-车辆租赁设置
         'pages/owner/vehicle-mock-demo/index', // 车主端-车机模拟数据Demo

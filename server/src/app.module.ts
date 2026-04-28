@@ -22,6 +22,9 @@ import { VehicleRentalsModule } from '@/modules/vehicle-rentals/vehicle-rentals.
 import { UserRolesModule } from '@/modules/user-roles/user-roles.module';
 import { RentalRemindersModule } from '@/modules/rental-reminders/rental-reminders.module';
 import { VehicleMockModule } from '@/modules/vehicle-mock/vehicle-mock.module';
+import { EnterpriseModule } from '@/modules/enterprise/enterprise.module';
+import { StationModule } from '@/modules/station/station.module';
+import { EnterpriseDemandsModule } from '@/modules/demand/demand.module';
 
 @Module({
   imports: [
@@ -48,7 +51,10 @@ import { VehicleMockModule } from '@/modules/vehicle-mock/vehicle-mock.module';
     VehicleRentalsModule,
     UserRolesModule,
     RentalRemindersModule,
-    VehicleMockModule
+    VehicleMockModule,
+    EnterpriseModule,
+    StationModule,
+    EnterpriseDemandsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

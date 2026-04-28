@@ -123,3 +123,67 @@ export const orders = pgTable(
     index("orders_created_at_idx").on(table.created_at),
   ]
 );
+
+// 企业表
+export const enterprises = pgTable(
+  "enterprises",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar("name", { length: 100 }).notNull(),
+    type: varchar("type", { length: 50 }).notNull(), // dairy, logistics
+    status: varchar("status", { length: 20 }).notNull().default("active"), // active/disabled
+    admin_id: varchar("admin_id", { length: 36 }).references(() => users.id, { onDelete: "set null" }), // 企业管理员
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("enterprises_type_idx").on(table.type),
+    index("enterprises_status_idx").on(table.status),
+    index("enterprises_admin_id_idx").on(table.admin_id),
+  ]
+);
+
+// 奶站表
+export const dairyStations = pgTable(
+  "dairy_stations",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    enterprise_id: varchar("enterprise_id", { length: 36 }).notNull().references(() => enterprises.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 100 }).notNull(),
+    address: varchar("address", { length: 255 }).notNull(),
+    location: jsonb("location"), // {lat, lng}
+    phone: varchar("phone", { length: 20 }),
+    status: varchar("status", { length: 20 }).notNull().default("active"), // active/disabled
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("dairy_stations_enterprise_id_idx").on(table.enterprise_id),
+    index("dairy_stations_status_idx").on(table.status),
+  ]
+);
+
+// 企业配送需求表
+export const enterpriseDemands = pgTable(
+  "enterprise_demands",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    enterprise_id: varchar("enterprise_id", { length: 36 }).notNull().references(() => enterprises.id, { onDelete: "cascade" }),
+    pickup_point_type: varchar("pickup_point_type", { length: 20 }).notNull(), // warehouse, station
+    pickup_point_info: jsonb("pickup_point_info").notNull(), // {type, name, address, contact, phone, location}
+    delivery_points: jsonb("delivery_points").notNull(), // [{type, name, address, contact, phone, location, cargo}]
+    cargo_info: jsonb("cargo_info").notNull(), // {totalWeight, totalVolume}
+    time_window: jsonb("time_window").notNull(), // {expectedTime, startTime, endTime}
+    vehicle_source: varchar("vehicle_source", { length: 20 }).notNull(), // own, external, mixed
+    vehicle_allocation: jsonb("vehicle_allocation"), // {ownVehicleIds, externalVehicleIds}
+    optimized_routes: jsonb("optimized_routes"), // [{vehicleId, route, points}]
+    status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, dispatched, in_transit, completed, cancelled
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("enterprise_demands_enterprise_id_idx").on(table.enterprise_id),
+    index("enterprise_demands_status_idx").on(table.status),
+    index("enterprise_demands_created_at_idx").on(table.created_at),
+  ]
+);
