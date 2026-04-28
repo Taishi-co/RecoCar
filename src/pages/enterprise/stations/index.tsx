@@ -30,20 +30,28 @@ const EnterpriseStationsPage: FC = () => {
   const [enterpriseId, setEnterpriseId] = useState('')
 
   useEffect(() => {
+    console.log('奶站管理页面加载 - 开始')
     loadEnterpriseInfo()
   }, [])
 
   const loadEnterpriseInfo = async () => {
+    console.log('奶站管理页面 - 加载企业信息')
     try {
       const userInfo = Taro.getStorageSync('userInfo')
+      console.log('奶站管理页面 - userInfo:', userInfo)
+
       if (!userInfo) {
+        console.log('奶站管理页面 - 未登录，跳转到登录页')
         Taro.redirectTo({ url: '/pages/index/index' })
         return
       }
 
+      console.log('奶站管理页面 - 调用企业信息API')
       const enterpriseRes = await Network.request({
         url: `/api/enterprise/admin/${userInfo.id}`,
       })
+
+      console.log('奶站管理页面 - 企业信息响应:', enterpriseRes.data)
 
       if (enterpriseRes.data.code === 200) {
         const entId = enterpriseRes.data.data.id
