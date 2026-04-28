@@ -106,26 +106,18 @@ const EnterpriseHomePage: FC = () => {
         {/* 快捷入口 */}
         <Text className="text-lg font-bold text-gray-900 mb-4 block">快捷入口</Text>
         <View className="grid grid-cols-2 gap-3">
-          <View className="h-20" onClick={navigateToDispatch}>
-            <Button className="w-full h-full" variant="default">
-              <Text className="text-white text-sm">发布配送</Text>
-            </Button>
-          </View>
-          <View className="h-20" onClick={navigateToFleet}>
-            <Button className="w-full h-full" variant="outline">
-              <Text className="text-gray-900 text-sm">车辆管理</Text>
-            </Button>
-          </View>
-          <View className="h-20" onClick={navigateToStations}>
-            <Button className="w-full h-full" variant="outline">
-              奶站管理
-            </Button>
-          </View>
-          <View className="h-20">
-            <Button className="w-full h-full" variant="outline">
-              <Text className="text-gray-900 text-sm">数据统计</Text>
-            </Button>
-          </View>
+          <Button className="h-20" variant="default" onClick={navigateToDispatch}>
+            <Text className="text-white text-sm">发布配送</Text>
+          </Button>
+          <Button className="h-20" variant="outline" onClick={navigateToFleet}>
+            <Text className="text-gray-900 text-sm">车辆管理</Text>
+          </Button>
+          <Button className="h-20" variant="outline" onClick={navigateToDispatch}>
+            奶站管理
+          </Button>
+          <Button className="h-20" variant="outline">
+            <Text className="text-gray-900 text-sm">数据统计</Text>
+          </Button>
         </View>
       </View>
     </View>
