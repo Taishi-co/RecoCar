@@ -1,9 +1,7 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
 import { EnterpriseService } from './enterprise.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('enterprise')
-@UseGuards(JwtAuthGuard)
 export class EnterpriseController {
   constructor(private readonly enterpriseService: EnterpriseService) {}
 

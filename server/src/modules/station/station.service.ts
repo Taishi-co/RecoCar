@@ -1,7 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { dairyStations } from '../../storage/database/shared/schema';
-import { db } from '../../storage/database';
-import { eq, like, sql } from 'drizzle-orm';
+import { getSupabaseClient } from '../../storage/database/supabase-client';
 
 @Injectable()
 export class StationService {
@@ -15,14 +13,22 @@ export class StationService {
     location?: { lat: number; lng: number };
     phone?: string;
   }) {
-    const result = await db
-      .insert(dairyStations)
-      .values({
-        ...data,
+    const supabase = getSupabaseClient();
+    const { data: station, error } = await supabase
+      .from('dairy_stations')
+      .insert({
+        enterprise_id: data.enterpriseId,
+        name: data.name,
+        address: data.address,
+        location: data.location,
+        phone: data.phone,
         status: 'active',
       })
-      .returning();
-    return result[0];
+      .select()
+      .single();
+
+    if (error) throw error;
+    return station;
   }
 
   /**
@@ -35,27 +41,27 @@ export class StationService {
     keyword?: string;
   }) {
     const { enterpriseId, page = 1, pageSize = 20, keyword } = params;
-    const offset = (page - 1) * pageSize;
+    const from = (page - 1) * pageSize;
 
-    let query = db.select().from(dairyStations).where(eq(dairyStations.enterpriseId, enterpriseId));
+    const supabase = getSupabaseClient();
+    let query = supabase
+      .from('dairy_stations')
+      .select('*', { count: 'exact' })
+      .eq('enterprise_id', enterpriseId);
 
     if (keyword) {
-      query = query.where(
-        sql`${dairyStations.name} LIKE ${`%${keyword}%`} OR ${dairyStations.address} LIKE ${`%${keyword}%`}`
-      );
+      query = query.or(`name.ilike.%${keyword}%,address.ilike.%${keyword}%`);
     }
 
-    const stations = await query.limit(pageSize).offset(offset).orderBy(dairyStations.createdAt);
+    const { data, count, error } = await query
+      .range(from, from + pageSize - 1)
+      .order('created_at', { ascending: false });
 
-    // 获取总数
-    const countResult = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(dairyStations)
-      .where(eq(dairyStations.enterpriseId, enterpriseId));
+    if (error) throw error;
 
     return {
-      list: stations,
-      total: countResult[0]?.count || 0,
+      list: data || [],
+      total: count || 0,
       page,
       pageSize,
     };
@@ -65,11 +71,20 @@ export class StationService {
    * 获取奶站详情
    */
   async getStationById(id: string) {
-    const result = await db.select().from(dairyStations).where(eq(dairyStations.id, id)).limit(1);
-    if (!result[0]) {
-      throw new NotFoundException('奶站不存在');
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('dairy_stations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new NotFoundException('奶站不存在');
+      }
+      throw error;
     }
-    return result[0];
+    return data;
   }
 
   /**
@@ -82,33 +97,37 @@ export class StationService {
     phone: string;
     status: string;
   }>) {
-    const result = await db
-      .update(dairyStations)
-      .set({
+    const supabase = getSupabaseClient();
+    const { data: station, error } = await supabase
+      .from('dairy_stations')
+      .update({
         ...data,
-        updatedAt: new Date(),
+        updated_at: new Date().toISOString(),
       })
-      .where(eq(dairyStations.id, id))
-      .returning();
+      .eq('id', id)
+      .select()
+      .single();
 
-    if (!result[0]) {
-      throw new NotFoundException('奶站不存在');
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new NotFoundException('奶站不存在');
+      }
+      throw error;
     }
-    return result[0];
+    return station;
   }
 
   /**
    * 删除奶站
    */
   async deleteStation(id: string) {
-    const result = await db
-      .delete(dairyStations)
-      .where(eq(dairyStations.id, id))
-      .returning();
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from('dairy_stations')
+      .delete()
+      .eq('id', id);
 
-    if (!result[0]) {
-      throw new NotFoundException('奶站不存在');
-    }
+    if (error) throw error;
     return { message: '删除成功' };
   }
 }

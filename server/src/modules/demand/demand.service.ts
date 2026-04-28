@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { enterpriseDemands } from '../../storage/database/shared/schema';
-import { db } from '../../storage/database';
-import { eq, and, gte, sql, desc } from 'drizzle-orm';
+import { getSupabaseClient } from '../../storage/database/supabase-client';
 
 @Injectable()
 export class DemandService {
@@ -17,14 +15,24 @@ export class DemandService {
     timeWindow: any;
     vehicleSource: string;
   }) {
-    const result = await db
-      .insert(enterpriseDemands)
-      .values({
-        ...data,
+    const supabase = getSupabaseClient();
+    const { data: demand, error } = await supabase
+      .from('enterprise_demands')
+      .insert({
+        enterprise_id: data.enterpriseId,
+        pickup_point_type: data.pickupPointType,
+        pickup_point_info: data.pickupPointInfo,
+        delivery_points: data.deliveryPoints,
+        cargo_info: data.cargoInfo,
+        time_window: data.timeWindow,
+        vehicle_source: data.vehicleSource,
         status: 'pending',
       })
-      .returning();
-    return result[0];
+      .select()
+      .single();
+
+    if (error) throw error;
+    return demand;
   }
 
   /**
@@ -37,34 +45,27 @@ export class DemandService {
     pageSize?: number;
   }) {
     const { enterpriseId, status, page = 1, pageSize = 20 } = params;
-    const offset = (page - 1) * pageSize;
+    const from = (page - 1) * pageSize;
 
-    let query = db.select().from(enterpriseDemands).where(eq(enterpriseDemands.enterpriseId, enterpriseId));
-
-    if (status) {
-      query = query.where(eq(enterpriseDemands.status, status));
-    }
-
-    const demands = await query
-      .limit(pageSize)
-      .offset(offset)
-      .orderBy(desc(enterpriseDemands.createdAt));
-
-    // 获取总数
-    let countQuery = db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(enterpriseDemands)
-      .where(eq(enterpriseDemands.enterpriseId, enterpriseId));
+    const supabase = getSupabaseClient();
+    let query = supabase
+      .from('enterprise_demands')
+      .select('*', { count: 'exact' })
+      .eq('enterprise_id', enterpriseId);
 
     if (status) {
-      countQuery = countQuery.where(eq(enterpriseDemands.status, status));
+      query = query.eq('status', status);
     }
 
-    const countResult = await countQuery;
+    const { data, count, error } = await query
+      .range(from, from + pageSize - 1)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
 
     return {
-      list: demands,
-      total: countResult[0]?.count || 0,
+      list: data || [],
+      total: count || 0,
       page,
       pageSize,
     };
@@ -74,8 +75,15 @@ export class DemandService {
    * 获取配送需求详情
    */
   async getDemandById(id: string) {
-    const result = await db.select().from(enterpriseDemands).where(eq(enterpriseDemands.id, id)).limit(1);
-    return result[0] || null;
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('enterprise_demands')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data || null;
   }
 
   /**
@@ -86,31 +94,34 @@ export class DemandService {
     optimizedRoutes: any;
     status: string;
   }>) {
-    const result = await db
-      .update(enterpriseDemands)
-      .set({
+    const supabase = getSupabaseClient();
+    const { data: demand, error } = await supabase
+      .from('enterprise_demands')
+      .update({
         ...data,
-        updatedAt: new Date(),
+        updated_at: new Date().toISOString(),
       })
-      .where(eq(enterpriseDemands.id, id))
-      .returning();
-    return result[0];
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return demand;
   }
 
   /**
    * 获取待调度订单
    */
   async getPendingDemands(enterpriseId: string) {
-    const result = await db
-      .select()
-      .from(enterpriseDemands)
-      .where(
-        and(
-          eq(enterpriseDemands.enterpriseId, enterpriseId),
-          eq(enterpriseDemands.status, 'pending')
-        )
-      )
-      .orderBy(enterpriseDemands.createdAt);
-    return result;
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('enterprise_demands')
+      .select('*')
+      .eq('enterprise_id', enterpriseId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
   }
 }
