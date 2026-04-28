@@ -18,20 +18,8 @@ interface DemandStats {
   total: number
 }
 
-interface Vehicle {
-  id: string
-  vehicle_code: string
-  vehicle_type: string
-  load_capacity: number
-  current_location: string
-  usage_mode: string
-  trip_status: string
-}
-
 const EnterpriseHomePage: FC = () => {
   const [stats, setStats] = useState<DemandStats | null>(null)
-  const [ownVehicles, setOwnVehicles] = useState(0)
-  const [externalVehicles, setExternalVehicles] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -54,28 +42,14 @@ const EnterpriseHomePage: FC = () => {
       if (enterpriseRes.data.code === 200) {
         const entId = enterpriseRes.data.data.id
 
-        // 并行加载统计数据和车辆数据
-        const [statsRes, vehiclesRes] = await Promise.all([
-          Network.request({
-            url: '/api/demand/stats/enterprise',
-            data: { enterprise_id: entId },
-          }),
-          Network.request({
-            url: '/api/enterprise-vehicles',
-            data: { enterprise_id: entId },
-          }),
-        ])
+        // 加载统计数据
+        const statsRes = await Network.request({
+          url: '/api/demand/stats/enterprise',
+          data: { enterprise_id: entId },
+        })
 
         if (statsRes.data.code === 200) {
           setStats(statsRes.data.data)
-        }
-
-        if (vehiclesRes.data.code === 200) {
-          const vehicles = vehiclesRes.data.data || []
-          const own = vehicles.filter((v: Vehicle) => v.usage_mode === 'own').length
-          const external = vehicles.filter((v: Vehicle) => v.usage_mode === 'rental').length
-          setOwnVehicles(own)
-          setExternalVehicles(external)
         }
       }
     } catch (error) {
@@ -176,26 +150,6 @@ const EnterpriseHomePage: FC = () => {
                     {stats?.completed || 0}
                   </Text>
                   <Text className="text-xs text-gray-500 block">已达</Text>
-                </CardContent>
-              </Card>
-            </View>
-
-            {/* 车辆统计 */}
-            <View className="grid grid-cols-2 gap-2 mb-4">
-              <Card>
-                <CardContent className="p-3 text-center">
-                  <Text className="text-xl font-bold text-blue-500 block">
-                    {ownVehicles}
-                  </Text>
-                  <Text className="text-xs text-gray-500 block">自有车</Text>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-3 text-center">
-                  <Text className="text-xl font-bold text-green-500 block">
-                    {externalVehicles}
-                  </Text>
-                  <Text className="text-xs text-gray-500 block">外部车</Text>
                 </CardContent>
               </Card>
             </View>
