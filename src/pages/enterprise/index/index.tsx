@@ -67,7 +67,6 @@ const EnterpriseHomePage: FC = () => {
       {/* 顶部信息栏 */}
       <View className="bg-blue-500 px-4 py-6">
         <Text className="text-white text-xl font-bold">蒙牛奶制品唐山配送中心</Text>
-        <Text className="text-blue-100 text-sm mt-2 block">2026年4月27日 星期一</Text>
       </View>
 
       {/* 今日概览 */}
