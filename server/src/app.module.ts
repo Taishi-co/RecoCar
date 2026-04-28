@@ -25,6 +25,7 @@ import { VehicleMockModule } from '@/modules/vehicle-mock/vehicle-mock.module';
 import { EnterpriseModule } from '@/modules/enterprise/enterprise.module';
 import { StationModule } from '@/modules/station/station.module';
 import { EnterpriseDemandsModule } from '@/modules/demand/demand.module';
+import { EnterpriseVehiclesModule } from '@/modules/enterprise-vehicles/enterprise-vehicles.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { EnterpriseDemandsModule } from '@/modules/demand/demand.module';
     EnterpriseModule,
     StationModule,
     EnterpriseDemandsModule,
+    EnterpriseVehiclesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
