@@ -49,7 +49,8 @@ export class StationService {
       .select('*', { count: 'exact' })
       .eq('enterprise_id', enterpriseId);
 
-    if (keyword) {
+    // 只在 keyword 存在且非空时添加搜索条件
+    if (keyword && keyword.trim()) {
       query = query.or(`name.ilike.%${keyword}%,address.ilike.%${keyword}%`);
     }
 

@@ -69,12 +69,20 @@ const EnterpriseStationsPage: FC = () => {
   const loadStations = async (entId: string) => {
     try {
       setLoading(true)
+      
+      // 构建请求参数，只传递有值的参数
+      const params: any = {
+        enterpriseId: entId,
+      }
+      if (keyword && keyword.trim()) {
+        params.keyword = keyword.trim()
+      }
+
+      console.log('请求参数:', JSON.stringify(params, null, 2))
+
       const res = await Network.request({
         url: '/api/station',
-        data: {
-          enterpriseId: entId,
-          keyword: keyword || undefined,
-        },
+        data: params,
       })
 
       console.log('奶站列表完整响应:', JSON.stringify(res.data, null, 2))
