@@ -43,51 +43,7 @@ export default typeof definePageConfig === 'function'
         'pages/admin/commission/index',        // 运营端-佣金审核
         'pages/admin/stats/index',             // 运营端-数据统计
         'pages/admin/settings/index',          // 运营端-设置
-        'pages/role-select/index',             // 角色选择
-        'pages/enterprise/dashboard/index',    // 企业端-首页
-        'pages/enterprise/fleet/list',         // 企业端-车队管理
-        'pages/enterprise/dispatch/list',      // 企业端-调度中心
-        'pages/enterprise/external/orders',    // 企业端-对外服务
-        'pages/enterprise/profile/index',      // 企业端-我的
       ],
-      tabBar: {
-        color: '#999999',
-        selectedColor: '#1890ff',
-        backgroundColor: '#ffffff',
-        borderStyle: 'black',
-        list: [
-          {
-            pagePath: 'pages/enterprise/dashboard/index',
-            text: '首页',
-            iconPath: './assets/tabbar/house.png',
-            selectedIconPath: './assets/tabbar/house-active.png',
-          },
-          {
-            pagePath: 'pages/enterprise/fleet/list',
-            text: '车队',
-            iconPath: './assets/tabbar/truck.png',
-            selectedIconPath: './assets/tabbar/truck-active.png',
-          },
-          {
-            pagePath: 'pages/enterprise/dispatch/list',
-            text: '调度',
-            iconPath: './assets/tabbar/clipboard.png',
-            selectedIconPath: './assets/tabbar/clipboard-active.png',
-          },
-          {
-            pagePath: 'pages/enterprise/external/orders',
-            text: '外单',
-            iconPath: './assets/tabbar/globe.png',
-            selectedIconPath: './assets/tabbar/globe-active.png',
-          },
-          {
-            pagePath: 'pages/enterprise/profile/index',
-            text: '我的',
-            iconPath: './assets/tabbar/user.png',
-            selectedIconPath: './assets/tabbar/user-active.png',
-          },
-        ],
-      },
       window: {
         backgroundTextStyle: 'light',
         navigationBarBackgroundColor: '#1890ff',
@@ -139,51 +95,7 @@ export default typeof definePageConfig === 'function'
         'pages/admin/commission/index',        // 运营端-佣金审核
         'pages/admin/stats/index',             // 运营端-数据统计
         'pages/admin/settings/index',          // 运营端-设置
-        'pages/role-select/index',             // 角色选择
-        'pages/enterprise/dashboard/index',    // 企业端-首页
-        'pages/enterprise/fleet/list',         // 企业端-车队管理
-        'pages/enterprise/dispatch/list',      // 企业端-调度中心
-        'pages/enterprise/external/orders',    // 企业端-对外服务
-        'pages/enterprise/profile/index',      // 企业端-我的
       ],
-      tabBar: {
-        color: '#999999',
-        selectedColor: '#1890ff',
-        backgroundColor: '#ffffff',
-        borderStyle: 'black',
-        list: [
-          {
-            pagePath: 'pages/enterprise/dashboard/index',
-            text: '首页',
-            iconPath: './assets/tabbar/house.png',
-            selectedIconPath: './assets/tabbar/house-active.png',
-          },
-          {
-            pagePath: 'pages/enterprise/fleet/list',
-            text: '车队',
-            iconPath: './assets/tabbar/truck.png',
-            selectedIconPath: './assets/tabbar/truck-active.png',
-          },
-          {
-            pagePath: 'pages/enterprise/dispatch/list',
-            text: '调度',
-            iconPath: './assets/tabbar/clipboard.png',
-            selectedIconPath: './assets/tabbar/clipboard-active.png',
-          },
-          {
-            pagePath: 'pages/enterprise/external/orders',
-            text: '外单',
-            iconPath: './assets/tabbar/globe.png',
-            selectedIconPath: './assets/tabbar/globe-active.png',
-          },
-          {
-            pagePath: 'pages/enterprise/profile/index',
-            text: '我的',
-            iconPath: './assets/tabbar/user.png',
-            selectedIconPath: './assets/tabbar/user-active.png',
-          },
-        ],
-      },
       window: {
         backgroundTextStyle: 'light',
         navigationBarBackgroundColor: '#1890ff',

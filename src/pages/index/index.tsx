@@ -58,7 +58,7 @@ export default function Index() {
   // 登录/注册弹窗
   const [showAuthDialog, setShowAuthDialog] = useState(false)
   const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [role, setRole] = useState<'owner' | 'merchant' | 'enterprise'>('owner')
+  const [role, setRole] = useState<'owner' | 'merchant'>('owner')
   const [step, setStep] = useState<'role' | 'form'>('role')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
@@ -104,7 +104,7 @@ export default function Index() {
     }
   }
 
-  const handleRoleSelect = (selectedRole: 'owner' | 'merchant' | 'enterprise') => {
+  const handleRoleSelect = (selectedRole: 'owner' | 'merchant') => {
     setRole(selectedRole)
     if (mode === 'register') {
       setStep('form')
@@ -202,13 +202,6 @@ export default function Index() {
       Taro.redirectTo({ url: '/pages/merchant/demands/index' })
     } else if (userRole === 'admin') {
       Taro.redirectTo({ url: '/pages/admin/users/index' })
-    } else if (userRole === 'enterprise') {
-      Taro.switchTab({
-        url: '/pages/enterprise/dashboard/index',
-        fail: () => {
-          Taro.redirectTo({ url: '/pages/enterprise/dashboard/index' })
-        }
-      })
     }
   }
 
@@ -487,16 +480,6 @@ export default function Index() {
                   <View className="text-center">
                     <Text className="block text-base font-semibold">需求方</Text>
                     <Text className="block text-xs text-gray-500 mt-1">发布需求、下单、追踪订单</Text>
-                  </View>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-16"
-                  onClick={() => handleRoleSelect('enterprise')}
-                >
-                  <View className="text-center">
-                    <Text className="block text-base font-semibold">企业端</Text>
-                    <Text className="block text-xs text-gray-500 mt-1">车队管理、调度中心、对外服务</Text>
                   </View>
                 </Button>
               </View>
