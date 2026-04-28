@@ -22,6 +22,31 @@ export class EnterpriseController {
   }
 
   /**
+   * 获取企业统计信息（带查询参数）
+   */
+  @Get('stats')
+  async getStatsByQuery(@Query('enterprise_id') enterpriseId: string) {
+    return {
+      code: 200,
+      message: 'success',
+      data: await this.enterpriseService.getEnterpriseStats(enterpriseId),
+    };
+  }
+
+  /**
+   * 根据管理员获取企业
+   */
+  @Get('admin/:adminId')
+  async getEnterpriseByAdminId(@Param('adminId') adminId: string) {
+    const enterprise = await this.enterpriseService.getEnterpriseByAdminId(adminId);
+    return {
+      code: 200,
+      message: 'success',
+      data: enterprise,
+    };
+  }
+
+  /**
    * 获取企业信息
    */
   @Get(':id')
@@ -34,19 +59,6 @@ export class EnterpriseController {
         data: null,
       };
     }
-    return {
-      code: 200,
-      message: 'success',
-      data: enterprise,
-    };
-  }
-
-  /**
-   * 根据管理员获取企业
-   */
-  @Get('admin/:adminId')
-  async getEnterpriseByAdminId(@Param('adminId') adminId: string) {
-    const enterprise = await this.enterpriseService.getEnterpriseByAdminId(adminId);
     return {
       code: 200,
       message: 'success',

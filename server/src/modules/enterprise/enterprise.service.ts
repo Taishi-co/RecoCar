@@ -87,42 +87,73 @@ export class EnterpriseService {
   async getEnterpriseStats(enterpriseId: string) {
     const supabase = getSupabaseClient();
 
-    // 获取奶站数量
-    const { count: stationCount, error: stationError } = await supabase
-      .from('dairy_stations')
-      .select('*', { count: 'exact', head: true })
-      .eq('enterprise_id', enterpriseId);
-
-    // 获取今日待发订单
+    // 获取今日订单统计
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const { count: pendingCount, error: pendingError } = await supabase
+    const { data: todayDemands } = await supabase
       .from('enterprise_demands')
-      .select('*', { count: 'exact', head: true })
+      .select('*')
       .eq('enterprise_id', enterpriseId)
-      .eq('status', 'pending')
       .gte('created_at', today.toISOString());
 
-    // 获取进行中订单
-    const { count: inTransitCount, error: inTransitError } = await supabase
-      .from('enterprise_demands')
-      .select('*', { count: 'exact', head: true })
-      .eq('enterprise_id', enterpriseId)
-      .eq('status', 'in_transit');
+    const todayOrders = (todayDemands || []).length;
 
-    // 获取已完成订单（今天）
-    const { count: completedCount, error: completedError } = await supabase
+    // 获取本月订单统计
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const { count: monthCount } = await supabase
       .from('enterprise_demands')
       .select('*', { count: 'exact', head: true })
       .eq('enterprise_id', enterpriseId)
-      .eq('status', 'completed')
-      .gte('created_at', today.toISOString());
+      .gte('created_at', monthStart.toISOString());
+
+    const monthOrders = monthCount || 0;
+
+    // 获取车辆统计
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('enterprise_id', enterpriseId);
+
+    const activeVehicles = (vehicles || []).filter(v => v.trip_status === 'in_transit').length;
+    const totalVehicles = (vehicles || []).length;
+    const vehicleUsageRate = totalVehicles > 0 ? Math.round((activeVehicles / totalVehicles) * 100) : 0;
+
+    // 计算总配送距离（从车辆统计）
+    const totalDistance = (vehicles || []).reduce((sum, v) => sum + (v.today_distance || 0), 0);
+
+    // 平均配送时间（模拟数据，实际需要从订单记录中计算）
+    const avgDeliveryTime = 45;
+
+    // 奶站配送统计
+    const { data: stations } = await supabase
+      .from('dairy_stations')
+      .select('*')
+      .eq('enterprise_id', enterpriseId);
+
+    const stationStats = (stations || []).map(station => {
+      const stationOrders = (todayDemands || []).filter(demand => {
+        return demand.delivery_points && demand.delivery_points.some(
+          point => point.name === station.station_name
+        );
+      }).length;
+
+      return {
+        stationName: station.station_name,
+        orderCount: stationOrders,
+      };
+    }).filter(stat => stat.orderCount > 0);
 
     return {
-      stationCount: stationCount || 0,
-      pendingOrders: pendingCount || 0,
-      inTransitOrders: inTransitCount || 0,
-      completedOrders: completedCount || 0,
+      todayOrders,
+      monthOrders,
+      totalDistance,
+      avgDeliveryTime,
+      vehicleUsageRate,
+      activeVehicles,
+      totalVehicles,
+      stationStats,
     };
   }
 }

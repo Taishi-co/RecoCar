@@ -6,7 +6,7 @@ export class DemandController {
   constructor(private readonly demandService: DemandService) {}
 
   /**
-   * 创建配送需求
+   * 创建企业需求（发布配送）
    */
   @Post()
   async createDemand(@Body() body: {
@@ -17,6 +17,7 @@ export class DemandController {
     cargoInfo: any;
     timeWindow: any;
     vehicleSource: string;
+    remark?: string;
   }) {
     return {
       code: 200,
