@@ -6,6 +6,9 @@
 }
 
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 20px;
 }
 
@@ -13,12 +16,25 @@
   font-size: 28px;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 4px;
 }
 
-.header-subtitle {
-  font-size: 16px;
-  color: #6b7280;
+.header-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .stats-container {
@@ -43,7 +59,6 @@
 .stat-icon {
   width: 48px;
   height: 48px;
-  background-color: #e6f7ff;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -74,7 +89,7 @@
   display: block;
 }
 
-.status-card {
+.quick-actions-card {
   margin-bottom: 20px;
   border-radius: 12px;
   overflow: hidden;
@@ -86,8 +101,79 @@
   color: #1f2937;
 }
 
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-header-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.view-all-text {
+  font-size: 14px;
+  color: #1890ff;
+}
+
 .card-content {
   padding: 16px;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.quick-action-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.quick-action-item:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: center;
+  display: block;
+}
+
+.action-description {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  display: block;
+}
+
+.status-card {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .status-row {
@@ -103,11 +189,10 @@
 
 .status-badge {
   flex-shrink: 0;
-}
-
-.status-badge-busy {
-  background-color: #1890ff;
-  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .status-text {
@@ -116,7 +201,108 @@
   color: #374151;
 }
 
+.status-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background-color: currentColor;
+  border-radius: 0 0 12px 12px;
+}
+
+.orders-card {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-item {
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.order-item:active {
+  background-color: #f9fafb;
+}
+
+.order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.order-id {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.order-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.order-status-text {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.order-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.order-title {
+  font-size: 14px;
+  color: #374151;
+}
+
+.order-time {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.order-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #1890ff;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #1890ff;
+  font-weight: 500;
+}
+
 .tasks-card {
+  margin-bottom: 20px;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -133,12 +319,99 @@
   border-bottom: none;
 }
 
+.task-item:active {
+  background-color: #f9fafb;
+}
+
 .task-info {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .task-title {
   font-size: 15px;
+  color: #1f2937;
+}
+
+.task-action {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1890ff;
+}
+
+.notifications-card {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notification-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+}
+
+.notification-icon {
+  flex-shrink: 0;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-title {
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #6b7280;
+  display: block;
+}
+
+.today-stats-card {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.today-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.today-stat-item {
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.today-stat-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.today-stat-value {
+  font-size: 20px;
+  font-weight: 700;
   color: #1f2937;
   display: block;
 }
