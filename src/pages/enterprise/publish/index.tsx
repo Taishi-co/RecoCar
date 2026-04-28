@@ -15,10 +15,9 @@ import Taro from '@tarojs/taro'
 
 interface Station {
   id: string
-  station_name: string
+  name: string
   address: string
-  contact_person: string
-  contact_phone: string
+  phone: string
 }
 
 const EnterprisePublishPage: FC = () => {
@@ -62,7 +61,7 @@ const EnterprisePublishPage: FC = () => {
     try {
       const res = await Network.request({
         url: '/api/station',
-        data: { enterprise_id: entId },
+        data: { enterpriseId: entId },
       })
 
       if (res.data.code === 200) {
@@ -105,10 +104,10 @@ const EnterprisePublishPage: FC = () => {
     try {
       const selectedStationObjs = stations.filter(s => selectedStations.includes(s.id))
       const deliveryPoints = selectedStationObjs.map(s => ({
-        name: s.station_name,
+        name: s.name,
         address: s.address,
-        contact: s.contact_person,
-        phone: s.contact_phone,
+        contact: s.name,
+        phone: s.phone,
       }))
 
       const res = await Network.request({
@@ -208,7 +207,7 @@ const EnterprisePublishPage: FC = () => {
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                   >
                     <View className="flex-1">
-                      <Text className="text-sm font-medium block">{station.station_name}</Text>
+                      <Text className="text-sm font-medium block">{station.name}</Text>
                       <Text className="text-xs text-gray-500 block">{station.address}</Text>
                     </View>
                     <Button
