@@ -66,6 +66,9 @@ export class EnterpriseVehiclesService {
         base_price: 20,
         base_distance: 3,
         price_per_km: 2,
+        today_internal_orders: 0,
+        today_external_orders: 0,
+        today_distance: 0,
       })
       .select()
       .single();

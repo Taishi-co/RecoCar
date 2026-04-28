@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   Card,
   CardContent,
@@ -41,6 +42,13 @@ const EnterpriseFleetPage: FC = () => {
   const [loading, setLoading] = useState(true)
   const [enterpriseId, setEnterpriseId] = useState('')
   const [activeTab, setActiveTab] = useState('all')
+
+  // 添加车辆弹窗状态
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [newVehicleCode, setNewVehicleCode] = useState('')
+  const [newVehicleType, setNewVehicleType] = useState('')
+  const [newLoadCapacity, setNewLoadCapacity] = useState('')
+  const [newCurrentLocation, setNewCurrentLocation] = useState('')
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -183,6 +191,68 @@ const EnterpriseFleetPage: FC = () => {
     })
   }
 
+  const handleAddVehicle = async () => {
+    if (!newVehicleCode || !newVehicleType || !newLoadCapacity || !newCurrentLocation) {
+      Taro.showToast({
+        title: '请填写完整信息',
+        icon: 'none',
+      })
+      return
+    }
+
+    const capacity = parseFloat(newLoadCapacity)
+    if (Number.isNaN(capacity) || capacity <= 0) {
+      Taro.showToast({
+        title: '请输入有效的载重',
+        icon: 'none',
+      })
+      return
+    }
+
+    try {
+      const res = await Network.request({
+        url: '/api/enterprise-vehicles',
+        method: 'POST',
+        data: {
+          enterprise_id: enterpriseId,
+          vehicle_code: newVehicleCode,
+          vehicle_type: newVehicleType,
+          load_capacity: capacity,
+          volume: capacity * 10, // 默认体积为载重的10倍
+          current_location: newCurrentLocation,
+          usage_mode: 'internal',
+        },
+      })
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '添加成功',
+          icon: 'success',
+        })
+        setShowAddDialog(false)
+        // 清空表单
+        setNewVehicleCode('')
+        setNewVehicleType('')
+        setNewLoadCapacity('')
+        setNewCurrentLocation('')
+        // 刷新列表
+        loadVehicles(enterpriseId)
+        loadStats(enterpriseId)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '添加失败',
+          icon: 'none',
+        })
+      }
+    } catch (error) {
+      console.error('添加失败:', error)
+      Taro.showToast({
+        title: '添加失败',
+        icon: 'none',
+      })
+    }
+  }
+
   const handleViewDetail = (vehicleId: string) => {
     Taro.navigateTo({
       url: `/pages/enterprise/fleet/detail/index?id=${vehicleId}`,
@@ -228,6 +298,17 @@ const EnterpriseFleetPage: FC = () => {
     <View className="enterprise-fleet min-h-screen bg-gray-50 pb-20">
       <ScrollView scrollY className="h-full">
         <View className="p-4">
+          {/* 页面标题和操作按钮 */}
+          <View className="flex justify-between items-center mb-4">
+            <Text className="text-lg font-bold text-gray-900">车辆管理</Text>
+            <Button
+              size="sm"
+              onClick={() => setShowAddDialog(true)}
+            >
+              <Text className="text-xs">添加车辆</Text>
+            </Button>
+          </View>
+
           {/* 统计信息 */}
           {stats && (
             <Card className="mb-4">
@@ -353,6 +434,73 @@ const EnterpriseFleetPage: FC = () => {
                 </CardContent>
               </Card>
             ))
+          )}
+
+          {/* 添加车辆弹窗 */}
+          {showAddDialog && (
+            <View className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <View className="bg-white rounded-lg p-6 w-11/12 max-w-md max-h-[80vh] overflow-y-auto">
+                <Text className="text-xl font-bold block mb-4">添加车辆</Text>
+
+                <View className="space-y-4">
+                  <View>
+                    <Text className="text-sm text-gray-600 block mb-2">车牌号</Text>
+                    <Input
+                      placeholder="请输入车牌号"
+                      value={newVehicleCode}
+                      onInput={(e) => setNewVehicleCode(e.detail.value)}
+                    />
+                  </View>
+
+                  <View>
+                    <Text className="text-sm text-gray-600 block mb-2">车型</Text>
+                    <Input
+                      placeholder="请输入车型"
+                      value={newVehicleType}
+                      onInput={(e) => setNewVehicleType(e.detail.value)}
+                    />
+                  </View>
+
+                  <View>
+                    <Text className="text-sm text-gray-600 block mb-2">载重（吨）</Text>
+                    <Input
+                      placeholder="请输入载重"
+                      value={newLoadCapacity}
+                      onInput={(e) => setNewLoadCapacity(e.detail.value)}
+                      type="number"
+                    />
+                  </View>
+
+                  <View>
+                    <Text className="text-sm text-gray-600 block mb-2">当前位置</Text>
+                    <Input
+                      placeholder="请输入当前位置"
+                      value={newCurrentLocation}
+                      onInput={(e) => setNewCurrentLocation(e.detail.value)}
+                    />
+                  </View>
+
+                  <View className="flex gap-3 mt-6">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setShowAddDialog(false)
+                        setNewVehicleCode('')
+                        setNewVehicleType('')
+                        setNewLoadCapacity('')
+                        setNewCurrentLocation('')
+                      }}
+                    >
+                      <Text>取消</Text>
+                    </Button>
+                    <Button className="flex-1" onClick={handleAddVehicle}>
+                      <Text>确认添加</Text>
+                    </Button>
+                  </View>
+                </View>
+              </View>
+            </View>
           )}
         </View>
       </ScrollView>
