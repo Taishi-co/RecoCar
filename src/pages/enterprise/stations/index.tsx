@@ -40,17 +40,24 @@ const EnterpriseStationsPage: FC = () => {
   const loadEnterpriseInfo = async () => {
     try {
       const userInfo = Taro.getStorageSync('userInfo')
+      console.log('当前用户信息:', JSON.stringify(userInfo, null, 2))
+      
       if (!userInfo) {
         Taro.redirectTo({ url: '/pages/index/index' })
         return
       }
 
+      console.log('开始加载企业信息，用户ID:', userInfo.id)
+
       const enterpriseRes = await Network.request({
         url: `/api/enterprise/admin/${userInfo.id}`,
       })
 
+      console.log('企业信息响应:', JSON.stringify(enterpriseRes.data, null, 2))
+
       if (enterpriseRes.data.code === 200) {
         const entId = enterpriseRes.data.data.id
+        console.log('获取到的企业ID:', entId)
         setEnterpriseId(entId)
         loadStations(entId)
       }
@@ -70,9 +77,17 @@ const EnterpriseStationsPage: FC = () => {
         },
       })
 
+      console.log('奶站列表完整响应:', JSON.stringify(res.data, null, 2))
+      console.log('enterpriseId:', entId)
+      console.log('返回的列表数据:', res.data.data?.list)
+      console.log('列表长度:', res.data.data?.list?.length)
+
       if (res.data.code === 200) {
         const list = res.data.data?.list || []
+        console.log('设置到 stations 的数据:', list.length, '条')
         setStations(list)
+      } else {
+        console.error('返回码不是200:', res.data.code, res.data.message)
       }
     } catch (error) {
       console.error('加载奶站列表失败:', error)
@@ -202,6 +217,13 @@ const EnterpriseStationsPage: FC = () => {
           >
             <Text>新增奶站</Text>
           </Button>
+        </View>
+
+        {/* 调试信息 */}
+        <View className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <Text className="text-xs text-blue-600 block">调试信息:</Text>
+          <Text className="text-xs text-blue-600 block">企业ID: {enterpriseId || '未加载'}</Text>
+          <Text className="text-xs text-blue-600 block">奶站数量: {stations.length}</Text>
         </View>
 
         {/* 奶站列表 */}
