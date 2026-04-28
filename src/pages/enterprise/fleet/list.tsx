@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Truck, Plus } from 'lucide-react-taro'
-import './index.css'
+import './list.css'
 
 export default function FleetList() {
   const vehicles = [

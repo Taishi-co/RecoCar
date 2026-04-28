@@ -2,7 +2,7 @@ import { View, Text } from '@tarojs/components'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Globe, MapPin, DollarSign, Clock } from 'lucide-react-taro'
-import './index.css'
+import './orders.css'
 
 export default function ExternalOrders() {
   const vehicles = [
