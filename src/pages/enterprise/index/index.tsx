@@ -22,10 +22,6 @@ const EnterpriseHomePage: FC = () => {
     Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
   }
 
-  const navigateToStations = () => {
-    Taro.navigateTo({ url: '/pages/enterprise/stations/index' })
-  }
-
   return (
     <View className="enterprise-home min-h-screen bg-gray-50 pb-20">
       {/* 顶部信息栏 */}
@@ -96,9 +92,6 @@ const EnterpriseHomePage: FC = () => {
           </Button>
           <Button className="h-20" variant="outline" onClick={navigateToFleet}>
             <Text className="text-gray-900 text-sm">车辆管理</Text>
-          </Button>
-          <Button className="h-20" variant="outline" onClick={navigateToStations}>
-            <Text className="text-gray-900 text-sm">奶站管理</Text>
           </Button>
         </View>
       </View>
