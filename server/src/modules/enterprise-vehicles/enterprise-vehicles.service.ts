@@ -40,10 +40,10 @@ export class EnterpriseVehiclesService {
   ) {
     const client = getSupabaseClient();
 
-    // 验证企业是否存在
+    // 验证企业是否存在并获取管理员ID
     const { data: enterprise, error: enterpriseError } = await client
       .from('enterprises')
-      .select('id')
+      .select('id, admin_id')
       .eq('id', enterpriseId)
       .maybeSingle();
 
@@ -51,11 +51,17 @@ export class EnterpriseVehiclesService {
       throw new NotFoundException('企业不存在');
     }
 
+    // 验证企业管理员是否存在
+    if (!enterprise.admin_id) {
+      throw new BadRequestException('企业管理员未设置');
+    }
+
     // 创建车辆
     const { data: vehicle, error: insertError } = await client
       .from('vehicles')
       .insert({
         id: vehicleId,
+        owner_id: enterprise.admin_id, // 使用企业管理员作为车辆所有者
         enterprise_id: enterpriseId,
         vehicle_code: vehicleData.vehicle_code,
         vehicle_type: vehicleData.vehicle_type,
