@@ -94,20 +94,7 @@ const EnterpriseHomePage: FC = () => {
   }
 
   const navigateToFleet = () => {
-    console.log('点击车辆管理 - 开始跳转')
-    Taro.navigateTo({
-      url: '/pages/enterprise/fleet/index',
-      success: () => {
-        console.log('跳转车辆管理成功')
-      },
-      fail: (err) => {
-        console.error('跳转车辆管理失败:', err)
-        Taro.showToast({
-          title: '跳转失败',
-          icon: 'none',
-        })
-      }
-    })
+    Taro.navigateTo({ url: '/pages/enterprise/fleet/index' })
   }
 
   const navigateToStations = () => {
@@ -253,18 +240,26 @@ const EnterpriseHomePage: FC = () => {
         {/* 快捷入口 */}
         <Text className="text-base font-bold text-gray-900 mb-3 block">快捷入口</Text>
         <View className="grid grid-cols-2 gap-2">
-          <Button className="w-full h-16" variant="default" onClick={navigateToPublish}>
-            <Text className="text-white text-sm">发布配送</Text>
-          </Button>
-          <Button className="w-full h-16" variant="outline" onClick={navigateToFleet}>
-            <Text className="text-gray-900 text-sm">车辆管理</Text>
-          </Button>
-          <Button className="w-full h-16" variant="outline" onClick={navigateToStations}>
-            <Text className="text-gray-900 text-sm">奶站管理</Text>
-          </Button>
-          <Button className="w-full h-16" variant="outline" onClick={navigateToStats}>
-            <Text className="text-gray-900 text-sm">数据统计</Text>
-          </Button>
+          <View className="h-16" onClick={navigateToPublish}>
+            <Button className="w-full h-full" variant="default">
+              <Text className="text-white text-sm">发布配送</Text>
+            </Button>
+          </View>
+          <View className="h-16" onClick={navigateToFleet}>
+            <Button className="w-full h-full" variant="outline">
+              <Text className="text-gray-900 text-sm">车辆管理</Text>
+            </Button>
+          </View>
+          <View className="h-16" onClick={navigateToStations}>
+            <Button className="w-full h-full" variant="outline">
+              <Text className="text-gray-900 text-sm">奶站管理</Text>
+            </Button>
+          </View>
+          <View className="h-16" onClick={navigateToStats}>
+            <Button className="w-full h-full" variant="outline">
+              <Text className="text-gray-900 text-sm">数据统计</Text>
+            </Button>
+          </View>
         </View>
       </View>
     </View>
