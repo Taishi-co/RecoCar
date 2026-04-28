@@ -194,9 +194,14 @@ const EnterpriseHomePage: FC = () => {
         {/* 快捷入口 */}
         <Text className="text-base font-bold text-gray-900 mb-3 block">快捷入口</Text>
         <View className="grid grid-cols-2 gap-2">
-          <View className="h-16" onClick={navigateToPublish}>
+          <View className="h-16" onClick={navigateToDispatch}>
             <Button className="w-full h-full" variant="default">
-              <Text className="text-white text-sm">发布配送</Text>
+              <Text className="text-white text-sm">调度中心</Text>
+            </Button>
+          </View>
+          <View className="h-16" onClick={navigateToPublish}>
+            <Button className="w-full h-full" variant="outline">
+              <Text className="text-gray-900 text-sm">发布配送</Text>
             </Button>
           </View>
           <View className="h-16" onClick={navigateToFleet}>
