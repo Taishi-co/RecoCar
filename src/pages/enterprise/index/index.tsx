@@ -25,7 +25,7 @@ const EnterpriseHomePage: FC = () => {
   const navigateToStations = () => {
     console.log('点击奶站管理 - 开始跳转')
     try {
-      Taro.navigateTo({
+      Taro.redirectTo({
         url: '/pages/enterprise/stations/index',
         success: () => {
           console.log('跳转成功')
