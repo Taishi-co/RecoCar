@@ -68,7 +68,6 @@ export class EnterpriseVehiclesService {
         trip_status: 'idle',
         status: 'active', // 企业车辆直接激活，无需审核
         battery_life: 100,
-        has_cold_chain: true, // 奶制品配送默认需要冷链
         base_price: 20,
         base_distance: 3,
         price_per_km: 2,

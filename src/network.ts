@@ -10,9 +10,17 @@ import Taro from '@tarojs/taro'
  */
 export namespace Network {
     const createUrl = (url: string): string => {
+        // 如果是完整 URL，直接返回
         if (url.startsWith('http://') || url.startsWith('https://')) {
             return url
         }
+
+        // 如果 PROJECT_DOMAIN 为空或未定义，使用相对路径（开发环境）
+        if (typeof PROJECT_DOMAIN !== 'string' || PROJECT_DOMAIN.length === 0) {
+            return url
+        }
+
+        // 使用 PROJECT_DOMAIN 拼接 URL
         return `${PROJECT_DOMAIN}${url}`
     }
 
