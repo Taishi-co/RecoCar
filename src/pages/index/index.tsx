@@ -203,7 +203,7 @@ export default function Index() {
     } else if (userRole === 'admin') {
       Taro.redirectTo({ url: '/pages/admin/users/index' })
     } else if (userRole === 'enterprise_admin' || userRole === 'enterprise') {
-      Taro.switchTab({ url: '/pages/enterprise/index/index' })
+      Taro.redirectTo({ url: '/pages/enterprise/index/index' })
     }
   }
 
