@@ -23,7 +23,17 @@ const EnterpriseHomePage: FC = () => {
   }
 
   const navigateToStations = () => {
-    Taro.navigateTo({ url: '/pages/enterprise/stations/index' })
+    console.log('点击奶站管理按钮')
+    try {
+      Taro.navigateTo({ url: '/pages/enterprise/stations/index' })
+      console.log('跳转成功')
+    } catch (error) {
+      console.error('跳转失败:', error)
+      Taro.showToast({
+        title: '跳转失败',
+        icon: 'none',
+      })
+    }
   }
 
   return (
@@ -91,15 +101,21 @@ const EnterpriseHomePage: FC = () => {
         {/* 快捷入口 */}
         <Text className="text-lg font-bold text-gray-900 mb-4 block">快捷入口</Text>
         <View className="grid grid-cols-2 gap-3">
-          <Button className="h-20" variant="default" onClick={navigateToDispatch}>
-            <Text className="text-white text-sm">发布配送</Text>
-          </Button>
-          <Button className="h-20" variant="outline" onClick={navigateToFleet}>
-            <Text className="text-gray-900 text-sm">车辆管理</Text>
-          </Button>
-          <Button className="h-20" variant="outline" onClick={navigateToStations}>
-            <Text className="text-gray-900 text-sm">奶站管理</Text>
-          </Button>
+          <View className="h-20" onClick={navigateToDispatch}>
+            <Button className="h-20 w-full" variant="default">
+              <Text className="text-white text-sm">发布配送</Text>
+            </Button>
+          </View>
+          <View className="h-20" onClick={navigateToFleet}>
+            <Button className="h-20 w-full" variant="outline">
+              <Text className="text-gray-900 text-sm">车辆管理</Text>
+            </Button>
+          </View>
+          <View className="h-20" onClick={navigateToStations}>
+            <Button className="h-20 w-full" variant="outline">
+              <Text className="text-gray-900 text-sm">奶站管理</Text>
+            </Button>
+          </View>
         </View>
       </View>
     </View>

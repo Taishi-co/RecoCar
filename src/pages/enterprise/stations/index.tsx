@@ -28,6 +28,7 @@ const EnterpriseStationsPage: FC = () => {
   const [enterpriseId, setEnterpriseId] = useState('')
 
   useEffect(() => {
+    console.log('奶站管理页面加载')
     loadEnterpriseInfo()
   }, [])
 
