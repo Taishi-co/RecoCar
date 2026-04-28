@@ -130,7 +130,7 @@ const VehicleDetailPage: FC = () => {
               <View className="text-sm space-y-2">
                 <View className="flex justify-between">
                   <Text className="text-gray-600">载重</Text>
-                  <Text className="font-medium">{vehicle.load_capacity * 1000}公斤</Text>
+                  <Text className="font-medium">{vehicle.load_capacity}公斤</Text>
                 </View>
                 <View className="flex justify-between">
                   <Text className="text-gray-600">空间</Text>

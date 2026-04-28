@@ -263,7 +263,7 @@ const EnterpriseFleetPage: FC = () => {
         vehicle_id: newVehicleId,
         vehicle_code: newVehicleCode,
         vehicle_type: newVehicleType,
-        load_capacity: capacity / 1000,
+        load_capacity: capacity,
         volume: volume,
         length: length,
         width: width,
@@ -279,7 +279,7 @@ const EnterpriseFleetPage: FC = () => {
           vehicle_id: newVehicleId,
           vehicle_code: newVehicleCode,
           vehicle_type: newVehicleType,
-          load_capacity: capacity / 1000, // 公斤转吨
+          load_capacity: capacity,
           volume: volume,
           length: length,
           width: width,
@@ -459,7 +459,7 @@ const EnterpriseFleetPage: FC = () => {
                         </Badge>
                       </View>
                       <Text className="text-sm text-gray-600">
-                        {vehicle.vehicle_type} · {vehicle.load_capacity * 1000}公斤
+                        {vehicle.vehicle_type} · {vehicle.load_capacity}公斤
                       </Text>
                       {vehicle.length && vehicle.width && vehicle.height && (
                         <Text className="text-xs text-gray-500 mt-1">
