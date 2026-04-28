@@ -5,6 +5,7 @@ export default typeof definePageConfig === 'function'
         'pages/enterprise/index/index',        // 企业端-首页
         'pages/enterprise/dispatch/index',     // 企业端-调度中心
         'pages/enterprise/fleet/index',        // 企业端-车队管理
+        'pages/enterprise/stations/index',     // 企业端-奶站管理
         'pages/owner/vehicles/index',          // 车主端-车辆管理
         'pages/owner/vehicles/rental-settings/index', // 车主端-车辆租赁设置
         'pages/owner/vehicle-mock-demo/index', // 车主端-车机模拟数据Demo
