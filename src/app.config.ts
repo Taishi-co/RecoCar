@@ -52,6 +52,38 @@ export default typeof definePageConfig === 'function'
         navigationBarBackgroundColor: '#1890ff',
         navigationBarTitleText: '无人车共享运营平台',
         navigationBarTextStyle: 'white'
+      },
+      tabBar: {
+        color: '#999999',
+        selectedColor: '#1890ff',
+        backgroundColor: '#ffffff',
+        borderStyle: 'black',
+        list: [
+          {
+            pagePath: 'pages/index/index',
+            text: '首页',
+            iconPath: './assets/tabbar/house.png',
+            selectedIconPath: './assets/tabbar/house-active.png',
+          },
+          {
+            pagePath: 'pages/enterprise/index/index',
+            text: '企业',
+            iconPath: './assets/tabbar/building-2.png',
+            selectedIconPath: './assets/tabbar/building-2-active.png',
+          },
+          {
+            pagePath: 'pages/owner/demands/index',
+            text: '车主',
+            iconPath: './assets/tabbar/truck.png',
+            selectedIconPath: './assets/tabbar/truck-active.png',
+          },
+          {
+            pagePath: 'pages/merchant/demands/index',
+            text: '需求',
+            iconPath: './assets/tabbar/shopping-cart.png',
+            selectedIconPath: './assets/tabbar/shopping-cart-active.png',
+          },
+        ]
       }
     })
   : {
@@ -107,5 +139,37 @@ export default typeof definePageConfig === 'function'
         navigationBarBackgroundColor: '#1890ff',
         navigationBarTitleText: '无人车共享运营平台',
         navigationBarTextStyle: 'white'
+      },
+      tabBar: {
+        color: '#999999',
+        selectedColor: '#1890ff',
+        backgroundColor: '#ffffff',
+        borderStyle: 'black',
+        list: [
+          {
+            pagePath: 'pages/index/index',
+            text: '首页',
+            iconPath: './assets/tabbar/house.png',
+            selectedIconPath: './assets/tabbar/house-active.png',
+          },
+          {
+            pagePath: 'pages/enterprise/index/index',
+            text: '企业',
+            iconPath: './assets/tabbar/building-2.png',
+            selectedIconPath: './assets/tabbar/building-2-active.png',
+          },
+          {
+            pagePath: 'pages/owner/demands/index',
+            text: '车主',
+            iconPath: './assets/tabbar/truck.png',
+            selectedIconPath: './assets/tabbar/truck-active.png',
+          },
+          {
+            pagePath: 'pages/merchant/demands/index',
+            text: '需求',
+            iconPath: './assets/tabbar/shopping-cart.png',
+            selectedIconPath: './assets/tabbar/shopping-cart-active.png',
+          },
+        ]
       }
     }
