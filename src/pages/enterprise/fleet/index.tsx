@@ -19,6 +19,10 @@ interface Vehicle {
   vehicle_code: string
   vehicle_type: string
   load_capacity: number
+  volume: number
+  length?: number
+  width?: number
+  height?: number
   current_location: string
   usage_mode: 'internal' | 'external' | 'both'
   trip_status: 'idle' | 'in_transit' | 'maintenance'
@@ -51,6 +55,9 @@ const EnterpriseFleetPage: FC = () => {
   const [newVehicleType, setNewVehicleType] = useState('')
   const [newLoadCapacity, setNewLoadCapacity] = useState('')
   const [newVolume, setNewVolume] = useState('')
+  const [newLength, setNewLength] = useState('')
+  const [newWidth, setNewWidth] = useState('')
+  const [newHeight, setNewHeight] = useState('')
   const [newHasColdChain, setNewHasColdChain] = useState(true)
 
   useEffect(() => {
@@ -221,6 +228,35 @@ const EnterpriseFleetPage: FC = () => {
       return
     }
 
+    // 解析长宽高（可选字段）
+    const length = newLength ? parseFloat(newLength) : undefined
+    const width = newWidth ? parseFloat(newWidth) : undefined
+    const height = newHeight ? parseFloat(newHeight) : undefined
+
+    if (length && (Number.isNaN(length) || length <= 0)) {
+      Taro.showToast({
+        title: '请输入有效的长度',
+        icon: 'none',
+      })
+      return
+    }
+
+    if (width && (Number.isNaN(width) || width <= 0)) {
+      Taro.showToast({
+        title: '请输入有效的宽度',
+        icon: 'none',
+      })
+      return
+    }
+
+    if (height && (Number.isNaN(height) || height <= 0)) {
+      Taro.showToast({
+        title: '请输入有效的高度',
+        icon: 'none',
+      })
+      return
+    }
+
     try {
       console.log('添加车辆请求参数:', {
         enterprise_id: enterpriseId,
@@ -229,6 +265,9 @@ const EnterpriseFleetPage: FC = () => {
         vehicle_type: newVehicleType,
         load_capacity: capacity / 1000,
         volume: volume,
+        length: length,
+        width: width,
+        height: height,
         has_cold_chain: newHasColdChain,
       })
 
@@ -242,6 +281,9 @@ const EnterpriseFleetPage: FC = () => {
           vehicle_type: newVehicleType,
           load_capacity: capacity / 1000, // 公斤转吨
           volume: volume,
+          length: length,
+          width: width,
+          height: height,
           has_cold_chain: newHasColdChain,
           usage_mode: 'internal',
         },
@@ -261,6 +303,9 @@ const EnterpriseFleetPage: FC = () => {
         setNewVehicleType('')
         setNewLoadCapacity('')
         setNewVolume('')
+        setNewLength('')
+        setNewWidth('')
+        setNewHeight('')
         setNewHasColdChain(true)
         // 刷新列表
         loadVehicles(enterpriseId)
@@ -416,6 +461,11 @@ const EnterpriseFleetPage: FC = () => {
                       <Text className="text-sm text-gray-600">
                         {vehicle.vehicle_type} · {vehicle.load_capacity * 1000}公斤
                       </Text>
+                      {vehicle.length && vehicle.width && vehicle.height && (
+                        <Text className="text-xs text-gray-500 mt-1">
+                          尺寸: {vehicle.length}m × {vehicle.width}m × {vehicle.height}m
+                        </Text>
+                      )}
                     </View>
                   </View>
 
@@ -515,6 +565,36 @@ const EnterpriseFleetPage: FC = () => {
                   </View>
 
                   <View>
+                    <Text className="text-sm text-gray-600 block mb-2">长度（米）</Text>
+                    <Input
+                      placeholder="请输入长度"
+                      value={newLength}
+                      onInput={(e) => setNewLength(e.detail.value)}
+                      type="number"
+                    />
+                  </View>
+
+                  <View>
+                    <Text className="text-sm text-gray-600 block mb-2">宽度（米）</Text>
+                    <Input
+                      placeholder="请输入宽度"
+                      value={newWidth}
+                      onInput={(e) => setNewWidth(e.detail.value)}
+                      type="number"
+                    />
+                  </View>
+
+                  <View>
+                    <Text className="text-sm text-gray-600 block mb-2">高度（米）</Text>
+                    <Input
+                      placeholder="请输入高度"
+                      value={newHeight}
+                      onInput={(e) => setNewHeight(e.detail.value)}
+                      type="number"
+                    />
+                  </View>
+
+                  <View>
                     <Text className="text-sm text-gray-600 block mb-2">冷链车</Text>
                     <Switch
                       checked={newHasColdChain}
@@ -536,6 +616,9 @@ const EnterpriseFleetPage: FC = () => {
                         setNewVehicleType('')
                         setNewLoadCapacity('')
                         setNewVolume('')
+                        setNewLength('')
+                        setNewWidth('')
+                        setNewHeight('')
                         setNewHasColdChain(true)
                       }}
                     >

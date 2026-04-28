@@ -17,6 +17,10 @@ interface Vehicle {
   vehicle_code: string
   vehicle_type: string
   load_capacity: number
+  volume: number
+  length?: number
+  width?: number
+  height?: number
   current_location: string
   usage_mode: 'internal' | 'external' | 'both'
   trip_status: 'idle' | 'in_transit' | 'maintenance'
@@ -128,6 +132,18 @@ const VehicleDetailPage: FC = () => {
                   <Text className="text-gray-600">载重</Text>
                   <Text className="font-medium">{vehicle.load_capacity * 1000}公斤</Text>
                 </View>
+                <View className="flex justify-between">
+                  <Text className="text-gray-600">空间</Text>
+                  <Text className="font-medium">{vehicle.volume}立方米</Text>
+                </View>
+                {vehicle.length && vehicle.width && vehicle.height && (
+                  <View className="flex justify-between">
+                    <Text className="text-gray-600">尺寸</Text>
+                    <Text className="font-medium">
+                      {vehicle.length}m × {vehicle.width}m × {vehicle.height}m
+                    </Text>
+                  </View>
+                )}
                 <View className="flex justify-between">
                   <Text className="text-gray-600">创建时间</Text>
                   <Text className="font-medium text-xs">

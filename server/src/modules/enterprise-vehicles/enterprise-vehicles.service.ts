@@ -33,6 +33,9 @@ export class EnterpriseVehiclesService {
       license_plate: string;
       load_capacity: number;
       volume: number;
+      length?: number;
+      width?: number;
+      height?: number;
       has_cold_chain: boolean;
       usage_mode: 'internal' | 'external' | 'both';
     },
@@ -68,6 +71,9 @@ export class EnterpriseVehiclesService {
         license_plate: vehicleData.vehicle_code, // 使用编码作为车牌
         load_capacity: vehicleData.load_capacity,
         volume: vehicleData.volume,
+        length: vehicleData.length || null,
+        width: vehicleData.width || null,
+        height: vehicleData.height || null,
         has_cold_chain: vehicleData.has_cold_chain,
         current_location: '唐山配送中心', // 默认位置
         usage_mode: vehicleData.usage_mode,

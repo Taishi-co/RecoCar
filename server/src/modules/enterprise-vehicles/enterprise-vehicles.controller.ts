@@ -56,6 +56,9 @@ export class EnterpriseVehiclesController {
     vehicle_type: string;
     load_capacity: number;
     volume: number;
+    length?: number;
+    width?: number;
+    height?: number;
     has_cold_chain: boolean;
     usage_mode?: 'internal' | 'external' | 'both';
   }) {
@@ -68,6 +71,9 @@ export class EnterpriseVehiclesController {
           license_plate: body.vehicle_code,
           load_capacity: body.load_capacity,
           volume: body.volume,
+          length: body.length,
+          width: body.width,
+          height: body.height,
           has_cold_chain: body.has_cold_chain,
           usage_mode: body.usage_mode || 'internal',
         },
