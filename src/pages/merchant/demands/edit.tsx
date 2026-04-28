@@ -180,8 +180,19 @@ export default function EditDemand() {
   // 选择货品照片（拍照或从相册选择）
   const handleChoosePhotos = async () => {
     try {
+      // 计算剩余可上传数量
+      const remainingCount = 3 - (formData.cargo_photos?.length || 0)
+
+      if (remainingCount === 0) {
+        Taro.showToast({
+          title: '最多只能上传3张照片',
+          icon: 'none'
+        })
+        return
+      }
+
       const res = await Taro.chooseImage({
-        count: 9 - (formData.cargo_photos?.length || 0), // 剩余可上传数量
+        count: remainingCount, // 最多选择剩余数量
         sizeType: ['compressed'], // 压缩图片
         sourceType: ['album', 'camera'] // 相册和相机
       })
@@ -549,16 +560,16 @@ export default function EditDemand() {
             <View>
               <Label className="block text-sm font-medium mb-2">
                 货品照片
-                <Text className="text-gray-400 text-xs ml-2">（可选，最多9张）</Text>
+                <Text className="text-gray-400 text-xs ml-2">（可选，最多3张）</Text>
               </Label>
               <Button
                 size="sm"
                 className="w-full bg-blue-500"
                 onClick={handleChoosePhotos}
-                disabled={(formData.cargo_photos?.length || 0) >= 9}
+                disabled={(formData.cargo_photos?.length || 0) >= 3}
               >
                 <Text className="text-xs">
-                  {(formData.cargo_photos?.length || 0) >= 9 ? '已达到最大数量' : '📷 拍照或选择图片'}
+                  {(formData.cargo_photos?.length || 0) >= 3 ? '已满' : '📷 拍照或选择图片'}
                 </Text>
               </Button>
 

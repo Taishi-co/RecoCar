@@ -340,7 +340,7 @@ export class HomeService {
           type: 'image_url',
           image_url: {
             url: photo,
-            detail: 'high'
+            detail: 'low'  // 降低图片质量，减少token消耗
           }
         })
       })
@@ -361,7 +361,7 @@ export class HomeService {
       // 解析JSON响应
       const jsonMatch = response.content.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {
-        throw new BadRequestException('AI分析失败，无法解析响应')
+        throw new BadRequestException('AI分析失败，无法解析响应，请尝试减少照片数量或重新拍照')
       }
 
       const analysisResult = JSON.parse(jsonMatch[0])

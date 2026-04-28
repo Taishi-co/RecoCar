@@ -375,8 +375,19 @@ export default function PublishDemand() {
   // 选择货品照片（拍照或从相册选择）
   const handleChoosePhotos = async () => {
     try {
+      // 计算剩余可上传数量
+      const remainingCount = 3 - formData.cargo_photos.length
+
+      if (remainingCount === 0) {
+        Taro.showToast({
+          title: '最多只能上传3张照片',
+          icon: 'none'
+        })
+        return
+      }
+
       const res = await Taro.chooseImage({
-        count: 9, // 最多选择9张
+        count: remainingCount, // 最多选择剩余数量
         sizeType: ['compressed'], // 压缩图片
         sourceType: ['album', 'camera'] // 相册和相机
       })
@@ -615,17 +626,17 @@ export default function PublishDemand() {
             <View>
               <Label className="block text-sm font-medium mb-2">
                 货品照片
-                <Text className="text-gray-400 text-xs ml-2">（可选，最多9张）</Text>
+                <Text className="text-gray-400 text-xs ml-2">（可选，最多3张）</Text>
               </Label>
               <View className="flex gap-2">
                 <Button
                   size="sm"
                   className="flex-1 bg-blue-500"
                   onClick={handleChoosePhotos}
-                  disabled={formData.cargo_photos.length >= 9}
+                  disabled={formData.cargo_photos.length >= 3}
                 >
                   <Text className="text-xs">
-                    {formData.cargo_photos.length >= 9 ? '已满' : '📷 拍照'}
+                    {formData.cargo_photos.length >= 3 ? '已满' : '📷 拍照'}
                   </Text>
                 </Button>
                 <Button
