@@ -25,15 +25,19 @@ export class EnterpriseVehiclesService {
   /**
    * 创建企业车辆
    */
-  async createEnterpriseVehicle(enterpriseId: string, vehicleData: {
-    vehicle_code: string;
-    vehicle_type: string;
-    license_plate: string;
-    load_capacity: number;
-    volume: number;
-    current_location: string;
-    usage_mode: 'internal' | 'external' | 'both';
-  }) {
+  async createEnterpriseVehicle(
+    enterpriseId: string,
+    vehicleData: {
+      vehicle_code: string;
+      vehicle_type: string;
+      license_plate: string;
+      load_capacity: number;
+      volume: number;
+      has_cold_chain: boolean;
+      usage_mode: 'internal' | 'external' | 'both';
+    },
+    vehicleId?: string,
+  ) {
     const client = getSupabaseClient();
 
     // 验证企业是否存在
@@ -51,13 +55,15 @@ export class EnterpriseVehiclesService {
     const { data: vehicle, error: insertError } = await client
       .from('vehicles')
       .insert({
+        id: vehicleId,
         enterprise_id: enterpriseId,
         vehicle_code: vehicleData.vehicle_code,
         vehicle_type: vehicleData.vehicle_type,
         license_plate: vehicleData.vehicle_code, // 使用编码作为车牌
         load_capacity: vehicleData.load_capacity,
         volume: vehicleData.volume,
-        current_location: vehicleData.current_location,
+        has_cold_chain: vehicleData.has_cold_chain,
+        current_location: '唐山配送中心', // 默认位置
         usage_mode: vehicleData.usage_mode,
         trip_status: 'idle',
         status: 'active', // 企业车辆直接激活，无需审核

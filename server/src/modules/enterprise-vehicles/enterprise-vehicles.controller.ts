@@ -51,11 +51,12 @@ export class EnterpriseVehiclesController {
   @Post()
   async createVehicle(@Body() body: {
     enterprise_id: string;
+    vehicle_id: string;
     vehicle_code: string;
     vehicle_type: string;
     load_capacity: number;
     volume: number;
-    current_location: string;
+    has_cold_chain: boolean;
     usage_mode?: 'internal' | 'external' | 'both';
   }) {
     return {
@@ -69,9 +70,10 @@ export class EnterpriseVehiclesController {
           license_plate: body.vehicle_code,
           load_capacity: body.load_capacity,
           volume: body.volume,
-          current_location: body.current_location,
+          has_cold_chain: body.has_cold_chain,
           usage_mode: body.usage_mode || 'internal',
         },
+        body.vehicle_id,
       ),
     };
   }

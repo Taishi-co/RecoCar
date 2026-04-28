@@ -4,6 +4,7 @@ import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   Card,
   CardContent,
@@ -45,10 +46,12 @@ const EnterpriseFleetPage: FC = () => {
 
   // 添加车辆弹窗状态
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [newVehicleId, setNewVehicleId] = useState('')
   const [newVehicleCode, setNewVehicleCode] = useState('')
   const [newVehicleType, setNewVehicleType] = useState('')
   const [newLoadCapacity, setNewLoadCapacity] = useState('')
-  const [newCurrentLocation, setNewCurrentLocation] = useState('')
+  const [newVolume, setNewVolume] = useState('')
+  const [newHasColdChain, setNewHasColdChain] = useState(true)
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -192,7 +195,7 @@ const EnterpriseFleetPage: FC = () => {
   }
 
   const handleAddVehicle = async () => {
-    if (!newVehicleCode || !newVehicleType || !newLoadCapacity || !newCurrentLocation) {
+    if (!newVehicleId || !newVehicleCode || !newVehicleType || !newLoadCapacity || !newVolume) {
       Taro.showToast({
         title: '请填写完整信息',
         icon: 'none',
@@ -209,17 +212,27 @@ const EnterpriseFleetPage: FC = () => {
       return
     }
 
+    const volume = parseFloat(newVolume)
+    if (Number.isNaN(volume) || volume <= 0) {
+      Taro.showToast({
+        title: '请输入有效的空间',
+        icon: 'none',
+      })
+      return
+    }
+
     try {
       const res = await Network.request({
         url: '/api/enterprise-vehicles',
         method: 'POST',
         data: {
           enterprise_id: enterpriseId,
+          vehicle_id: newVehicleId,
           vehicle_code: newVehicleCode,
           vehicle_type: newVehicleType,
-          load_capacity: capacity,
-          volume: capacity * 10, // 默认体积为载重的10倍
-          current_location: newCurrentLocation,
+          load_capacity: capacity / 1000, // 公斤转吨
+          volume: volume,
+          has_cold_chain: newHasColdChain,
           usage_mode: 'internal',
         },
       })
@@ -231,10 +244,12 @@ const EnterpriseFleetPage: FC = () => {
         })
         setShowAddDialog(false)
         // 清空表单
+        setNewVehicleId('')
         setNewVehicleCode('')
         setNewVehicleType('')
         setNewLoadCapacity('')
-        setNewCurrentLocation('')
+        setNewVolume('')
+        setNewHasColdChain(true)
         // 刷新列表
         loadVehicles(enterpriseId)
         loadStats(enterpriseId)
@@ -444,6 +459,15 @@ const EnterpriseFleetPage: FC = () => {
 
                 <View className="space-y-4">
                   <View>
+                    <Text className="text-sm text-gray-600 block mb-2">车辆ID</Text>
+                    <Input
+                      placeholder="请输入车辆ID"
+                      value={newVehicleId}
+                      onInput={(e) => setNewVehicleId(e.detail.value)}
+                    />
+                  </View>
+
+                  <View>
                     <Text className="text-sm text-gray-600 block mb-2">车牌号</Text>
                     <Input
                       placeholder="请输入车牌号"
@@ -462,7 +486,7 @@ const EnterpriseFleetPage: FC = () => {
                   </View>
 
                   <View>
-                    <Text className="text-sm text-gray-600 block mb-2">载重（吨）</Text>
+                    <Text className="text-sm text-gray-600 block mb-2">载重（公斤）</Text>
                     <Input
                       placeholder="请输入载重"
                       value={newLoadCapacity}
@@ -472,12 +496,24 @@ const EnterpriseFleetPage: FC = () => {
                   </View>
 
                   <View>
-                    <Text className="text-sm text-gray-600 block mb-2">当前位置</Text>
+                    <Text className="text-sm text-gray-600 block mb-2">空间（立方米）</Text>
                     <Input
-                      placeholder="请输入当前位置"
-                      value={newCurrentLocation}
-                      onInput={(e) => setNewCurrentLocation(e.detail.value)}
+                      placeholder="请输入空间"
+                      value={newVolume}
+                      onInput={(e) => setNewVolume(e.detail.value)}
+                      type="number"
                     />
+                  </View>
+
+                  <View>
+                    <Text className="text-sm text-gray-600 block mb-2">冷链车</Text>
+                    <Switch
+                      checked={newHasColdChain}
+                      onCheckedChange={setNewHasColdChain}
+                    />
+                    <Text className="text-xs text-gray-500 ml-2">
+                      {newHasColdChain ? '是' : '否'}
+                    </Text>
                   </View>
 
                   <View className="flex gap-3 mt-6">
@@ -486,10 +522,12 @@ const EnterpriseFleetPage: FC = () => {
                       className="flex-1"
                       onClick={() => {
                         setShowAddDialog(false)
+                        setNewVehicleId('')
                         setNewVehicleCode('')
                         setNewVehicleType('')
                         setNewLoadCapacity('')
-                        setNewCurrentLocation('')
+                        setNewVolume('')
+                        setNewHasColdChain(true)
                       }}
                     >
                       <Text>取消</Text>
