@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { getSupabaseClient } from '../../storage/database/supabase-client';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class DemandService {
@@ -14,11 +15,15 @@ export class DemandService {
     cargoInfo: any;
     timeWindow: any;
     vehicleSource: string;
+    remark?: string;
   }) {
     const supabase = getSupabaseClient();
+    const demandId = `demand-${uuidv4().split('-')[0]}`; // 生成简短的ID
+    
     const { data: demand, error } = await supabase
       .from('enterprise_demands')
       .insert({
+        id: demandId,
         enterprise_id: data.enterpriseId,
         pickup_point_type: data.pickupPointType,
         pickup_point_info: data.pickupPointInfo,
@@ -27,6 +32,7 @@ export class DemandService {
         time_window: data.timeWindow,
         vehicle_source: data.vehicleSource,
         status: 'pending',
+        remark: data.remark,
       })
       .select()
       .single();

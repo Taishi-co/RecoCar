@@ -122,17 +122,17 @@ const EnterprisePublishPage: FC = () => {
             latitude: 39.9,
             longitude: 116.4,
           },
-          delivery_points: deliveryPoints,
-          cargo_info: {
+          deliveryPoints: deliveryPoints,
+          cargoInfo: {
             type: cargoType,
             quantity: parseInt(cargoQuantity),
             unit: '箱',
           },
-          time_window: {
+          timeWindow: {
             start: startTime,
             end: endTime,
           },
-          vehicle_source: 'own',
+          vehicleSource: 'own',
           remark: remark,
         },
       })
