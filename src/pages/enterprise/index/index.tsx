@@ -16,17 +16,32 @@ const EnterpriseHomePage: FC = () => {
 
   const navigateToFleet = () => {
     console.log('点击车辆管理')
-    Taro.navigateTo({ url: '/pages/enterprise/fleet/index' })
+    try {
+      Taro.navigateTo({ url: '/pages/enterprise/fleet/index' })
+    } catch (error) {
+      console.error('导航失败:', error)
+      Taro.showToast({ title: '导航失败', icon: 'none' })
+    }
   }
 
   const navigateToDispatch = () => {
     console.log('点击发布配送')
-    Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
+    try {
+      Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
+    } catch (error) {
+      console.error('导航失败:', error)
+      Taro.showToast({ title: '导航失败', icon: 'none' })
+    }
   }
 
   const navigateToStations = () => {
     console.log('点击奶站管理')
-    Taro.navigateTo({ url: '/pages/enterprise/stations/index' })
+    try {
+      Taro.navigateTo({ url: '/pages/enterprise/stations/index' })
+    } catch (error) {
+      console.error('导航失败:', error)
+      Taro.showToast({ title: '导航失败', icon: 'none' })
+    }
   }
 
   return (
@@ -94,27 +109,29 @@ const EnterpriseHomePage: FC = () => {
         {/* 快捷入口 */}
         <Text className="text-lg font-bold text-gray-900 mb-4 block">快捷入口</Text>
         <View className="grid grid-cols-2 gap-3">
-          <View
-            className="h-20 bg-blue-500 rounded-lg flex items-center justify-center"
+          <Button
+            className="h-20"
+            style={{ backgroundColor: '#3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onTap={() => { console.log('发布配送点击'); navigateToDispatch(); }}
-            style={{ backgroundColor: '#3b82f6', borderRadius: '8px' }}
           >
             <Text className="text-white text-sm">发布配送</Text>
-          </View>
-          <View
-            className="h-20 border border-gray-300 bg-white rounded-lg flex items-center justify-center"
+          </Button>
+          <Button
+            className="h-20"
+            variant="outline"
+            style={{ border: '1px solid #d1d5db', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onTap={() => { console.log('车辆管理点击'); navigateToFleet(); }}
-            style={{ border: '1px solid #d1d5db', borderRadius: '8px' }}
           >
             <Text className="text-gray-900 text-sm">车辆管理</Text>
-          </View>
-          <View
-            className="h-20 border border-gray-300 bg-white rounded-lg flex items-center justify-center"
+          </Button>
+          <Button
+            className="h-20"
+            variant="outline"
+            style={{ border: '1px solid #d1d5db', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onTap={() => { console.log('奶站管理点击'); navigateToStations(); }}
-            style={{ border: '1px solid #d1d5db', borderRadius: '8px' }}
           >
             <Text className="text-gray-900 text-sm">奶站管理</Text>
-          </View>
+          </Button>
         </View>
       </View>
     </View>
