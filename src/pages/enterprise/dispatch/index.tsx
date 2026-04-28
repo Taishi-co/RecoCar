@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { useLoad } from '@tarojs/taro'
+import { useEffect } from 'react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -12,9 +12,9 @@ import {
 import './index.css'
 
 const EnterpriseDispatchPage: FC = () => {
-  useLoad(() => {
+  useEffect(() => {
     console.log('调度中心加载')
-  })
+  }, [])
 
   return (
     <View className="enterprise-dispatch min-h-screen bg-gray-50 pb-20">

@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { useLoad } from '@tarojs/taro'
+import { useEffect } from 'react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,9 +9,9 @@ import {
 import './index.css'
 
 const EnterpriseHomePage: FC = () => {
-  useLoad(() => {
+  useEffect(() => {
     console.log('企业首页加载')
-  })
+  }, [])
 
   return (
     <View className="enterprise-home min-h-screen bg-gray-50 pb-20">

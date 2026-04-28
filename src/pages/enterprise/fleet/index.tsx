@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { useLoad } from '@tarojs/taro'
+import { useEffect } from 'react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,9 +11,9 @@ import {
 import './index.css'
 
 const EnterpriseFleetPage: FC = () => {
-  useLoad(() => {
+  useEffect(() => {
     console.log('车队管理加载')
-  })
+  }, [])
 
   return (
     <View className="enterprise-fleet min-h-screen bg-gray-50 pb-20">
