@@ -1,18 +1,89 @@
 import { View, Text } from '@tarojs/components'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
 } from '@/components/ui/card'
+import { Network } from '@/network'
 import Taro from '@tarojs/taro'
 import './index.css'
 
+interface DemandStats {
+  pending: number
+  in_transit: number
+  completed: number
+  cancelled: number
+  total: number
+}
+
+interface Vehicle {
+  id: string
+  vehicle_code: string
+  vehicle_type: string
+  load_capacity: number
+  current_location: string
+  usage_mode: string
+  trip_status: string
+}
+
 const EnterpriseHomePage: FC = () => {
+  const [stats, setStats] = useState<DemandStats | null>(null)
+  const [ownVehicles, setOwnVehicles] = useState(0)
+  const [externalVehicles, setExternalVehicles] = useState(0)
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
-    console.log('企业首页加载')
+    loadDashboardData()
   }, [])
+
+  const loadDashboardData = async () => {
+    try {
+      const userInfo = Taro.getStorageSync('userInfo')
+      if (!userInfo) {
+        Taro.redirectTo({ url: '/pages/index/index' })
+        return
+      }
+
+      // 获取企业ID
+      const enterpriseRes = await Network.request({
+        url: `/api/enterprise/admin/${userInfo.id}`,
+      })
+
+      if (enterpriseRes.data.code === 200) {
+        const entId = enterpriseRes.data.data.id
+
+        // 并行加载统计数据和车辆数据
+        const [statsRes, vehiclesRes] = await Promise.all([
+          Network.request({
+            url: '/api/demand/stats/enterprise',
+            data: { enterprise_id: entId },
+          }),
+          Network.request({
+            url: '/api/enterprise-vehicles',
+            data: { enterprise_id: entId },
+          }),
+        ])
+
+        if (statsRes.data.code === 200) {
+          setStats(statsRes.data.data)
+        }
+
+        if (vehiclesRes.data.code === 200) {
+          const vehicles = vehiclesRes.data.data || []
+          const own = vehicles.filter((v: Vehicle) => v.usage_mode === 'own').length
+          const external = vehicles.filter((v: Vehicle) => v.usage_mode === 'rental').length
+          setOwnVehicles(own)
+          setExternalVehicles(external)
+        }
+      }
+    } catch (error) {
+      console.error('加载仪表盘数据失败:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const navigateToDispatch = () => {
     Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
@@ -71,77 +142,120 @@ const EnterpriseHomePage: FC = () => {
 
       {/* 今日概览 */}
       <View className="p-4">
-        <Text className="text-lg font-bold text-gray-900 mb-4 block">今日概览</Text>
-        <View className="grid grid-cols-3 gap-3 mb-6">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Text className="text-2xl font-bold text-gray-900 block">15</Text>
-              <Text className="text-xs text-gray-500 mt-1 block">待发</Text>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Text className="text-2xl font-bold text-gray-900 block">8</Text>
-              <Text className="text-xs text-gray-500 mt-1 block">进行</Text>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Text className="text-2xl font-bold text-gray-900 block">32</Text>
-              <Text className="text-xs text-gray-500 mt-1 block">已达</Text>
-            </CardContent>
-          </Card>
-        </View>
+        <Text className="text-base font-bold text-gray-900 mb-3 block">今日概览</Text>
 
-        <View className="grid grid-cols-2 gap-3 mb-6">
+        {loading ? (
           <Card>
-            <CardContent className="p-4 text-center">
-              <Text className="text-2xl font-bold text-blue-500 block">12</Text>
-              <Text className="text-xs text-gray-500 mt-1 block">自有车</Text>
+            <CardContent className="p-8 text-center">
+              <Text className="text-gray-500 text-sm">加载中...</Text>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Text className="text-2xl font-bold text-green-500 block">3</Text>
-              <Text className="text-xs text-gray-500 mt-1 block">外部车</Text>
-            </CardContent>
-          </Card>
-        </View>
+        ) : (
+          <View>
+            {/* 订单状态 */}
+            <View className="grid grid-cols-3 gap-2 mb-3">
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <Text className="text-xl font-bold text-gray-900 block">
+                    {stats?.pending || 0}
+                  </Text>
+                  <Text className="text-xs text-gray-500 block">待发</Text>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <Text className="text-xl font-bold text-blue-600 block">
+                    {stats?.in_transit || 0}
+                  </Text>
+                  <Text className="text-xs text-gray-500 block">进行</Text>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <Text className="text-xl font-bold text-green-600 block">
+                    {stats?.completed || 0}
+                  </Text>
+                  <Text className="text-xs text-gray-500 block">已达</Text>
+                </CardContent>
+              </Card>
+            </View>
+
+            {/* 车辆统计 */}
+            <View className="grid grid-cols-2 gap-2 mb-4">
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <Text className="text-xl font-bold text-blue-500 block">
+                    {ownVehicles}
+                  </Text>
+                  <Text className="text-xs text-gray-500 block">自有车</Text>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <Text className="text-xl font-bold text-green-500 block">
+                    {externalVehicles}
+                  </Text>
+                  <Text className="text-xs text-gray-500 block">外部车</Text>
+                </CardContent>
+              </Card>
+            </View>
+          </View>
+        )}
 
         {/* 待处理事项 */}
-        <Text className="text-lg font-bold text-gray-900 mb-4 block">待处理事项</Text>
-        <Card className="mb-3">
-          <CardContent className="p-4">
-            <Text className="text-sm text-gray-900 font-medium block mb-2">📋 3个待调度订单</Text>
-            <Button size="sm" className="w-full" onClick={navigateToDispatch}>去调度</Button>
-          </CardContent>
-        </Card>
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <Text className="text-sm text-gray-900 font-medium block mb-2">🔔 5个订单已送达</Text>
-            <Button size="sm" variant="outline" className="w-full">查看</Button>
-          </CardContent>
-        </Card>
+        <Text className="text-base font-bold text-gray-900 mb-3 block">待处理事项</Text>
+        {loading ? null : (
+          <View>
+            {stats?.pending && stats.pending > 0 && (
+              <Card className="mb-3">
+                <CardContent className="p-3">
+                  <View className="flex justify-between items-center mb-2">
+                    <Text className="text-sm text-gray-900 font-medium block">
+                      📋 {stats.pending}个待调度订单
+                    </Text>
+                  </View>
+                  <Button size="sm" className="w-full" onClick={navigateToDispatch}>
+                    去调度
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {stats?.completed && stats.completed > 0 && (
+              <Card className="mb-4">
+                <CardContent className="p-3">
+                  <View className="flex justify-between items-center mb-2">
+                    <Text className="text-sm text-gray-900 font-medium block">
+                      🔔 {stats.completed}个订单已送达
+                    </Text>
+                  </View>
+                  <Button size="sm" variant="outline" className="w-full" onClick={navigateToStats}>
+                    查看统计
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </View>
+        )}
 
         {/* 快捷入口 */}
-        <Text className="text-lg font-bold text-gray-900 mb-4 block">快捷入口</Text>
-        <View className="grid grid-cols-2 gap-3">
-          <View className="h-20" onClick={navigateToPublish}>
+        <Text className="text-base font-bold text-gray-900 mb-3 block">快捷入口</Text>
+        <View className="grid grid-cols-2 gap-2">
+          <View className="h-16" onClick={navigateToPublish}>
             <Button className="w-full h-full" variant="default">
               <Text className="text-white text-sm">发布配送</Text>
             </Button>
           </View>
-          <View className="h-20" onClick={navigateToFleet}>
+          <View className="h-16" onClick={navigateToFleet}>
             <Button className="w-full h-full" variant="outline">
               <Text className="text-gray-900 text-sm">车辆管理</Text>
             </Button>
           </View>
-          <View className="h-20" onClick={navigateToStations}>
+          <View className="h-16" onClick={navigateToStations}>
             <Button className="w-full h-full" variant="outline">
-              奶站管理
+              <Text className="text-gray-900 text-sm">奶站管理</Text>
             </Button>
           </View>
-          <View className="h-20" onClick={navigateToStats}>
+          <View className="h-16" onClick={navigateToStats}>
             <Button className="w-full h-full" variant="outline">
               <Text className="text-gray-900 text-sm">数据统计</Text>
             </Button>
