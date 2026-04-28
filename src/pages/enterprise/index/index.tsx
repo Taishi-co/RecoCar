@@ -24,7 +24,15 @@ const EnterpriseHomePage: FC = () => {
 
   const navigateToStations = () => {
     console.log('点击奶站管理 - 开始跳转')
-    try {
+    const env = Taro.getEnv()
+    console.log('当前环境:', env)
+
+    // H5 环境使用 window.location 跳转
+    if (env === Taro.ENV_TYPE.WEB) {
+      console.log('H5环境，使用 window.location 跳转')
+      window.location.href = '#/pages/enterprise/stations/index'
+    } else {
+      // 小程序环境使用 redirectTo
       Taro.redirectTo({
         url: '/pages/enterprise/stations/index',
         success: () => {
@@ -33,17 +41,10 @@ const EnterpriseHomePage: FC = () => {
         fail: (err) => {
           console.error('跳转失败:', err)
           Taro.showToast({
-            title: '跳转失败: ' + JSON.stringify(err),
+            title: '跳转失败',
             icon: 'none',
-            duration: 3000
           })
         }
-      })
-    } catch (error) {
-      console.error('跳转异常:', error)
-      Taro.showToast({
-        title: '跳转异常',
-        icon: 'none'
       })
     }
   }
