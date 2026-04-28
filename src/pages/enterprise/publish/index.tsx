@@ -66,7 +66,9 @@ const EnterprisePublishPage: FC = () => {
       })
 
       if (res.data.code === 200) {
-        setStations(res.data.data || [])
+        // 后端返回格式为 { list: [], total: 0, page, pageSize }
+        const data = res.data.data || {}
+        setStations(data.list || [])
       }
     } catch (error) {
       console.error('加载奶站列表失败:', error)
