@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Network } from '@/network'
 import Taro from '@tarojs/taro'
+import AllocateVehicleDialog from './AllocateVehicleDialog'
 import './index.css'
 
 interface Demand {
@@ -32,12 +33,27 @@ interface DemandStats {
   total: number
 }
 
+interface Vehicle {
+  id: string
+  vehicle_code: string
+  vehicle_type: string
+  load_capacity: number
+  current_location: string
+  usage_mode: string
+  trip_status: string
+}
+
 const EnterpriseDispatchPage: FC = () => {
   const [pendingDemands, setPendingDemands] = useState<Demand[]>([])
   const [inTransitDemands, setInTransitDemands] = useState<Demand[]>([])
   const [completedDemands, setCompletedDemands] = useState<Demand[]>([])
   const [stats, setStats] = useState<DemandStats | null>(null)
   const [activeTab, setActiveTab] = useState('pending')
+  const [allocateDialogOpen, setAllocateDialogOpen] = useState(false)
+  const [allocatingDemand, setAllocatingDemand] = useState<Demand | null>(null)
+  const [availableVehicles, setAvailableVehicles] = useState<Vehicle[]>([])
+  const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([])
+  const [enterpriseId, setEnterpriseId] = useState('')
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -57,6 +73,7 @@ const EnterpriseDispatchPage: FC = () => {
 
       if (enterpriseRes.data.code === 200) {
         const entId = enterpriseRes.data.data.id
+        setEnterpriseId(entId)
         loadStats(entId)
         loadPendingDemands(entId)
         loadInTransitDemands(entId)
@@ -126,12 +143,81 @@ const EnterpriseDispatchPage: FC = () => {
     }
   }
 
-  const handleAllocateVehicle = (demandId: string) => {
-    console.log('分配车辆:', demandId)
-    Taro.showToast({
-      title: '功能开发中',
-      icon: 'none',
+  const handleAllocateVehicle = async (demand: Demand) => {
+    try {
+      // 获取可用车辆
+      const res = await Network.request({
+        url: '/api/enterprise-vehicles',
+        data: { enterprise_id: enterpriseId },
+      })
+
+      if (res.data.code === 200) {
+        const vehicles = res.data.data || []
+        // 只显示空闲车辆
+        setAvailableVehicles(vehicles.filter((v: Vehicle) => v.trip_status === 'idle'))
+        setSelectedVehicleIds([])
+        setAllocatingDemand(demand)
+        setAllocateDialogOpen(true)
+      }
+    } catch (error) {
+      console.error('获取车辆列表失败:', error)
+      Taro.showToast({
+        title: '获取车辆列表失败',
+        icon: 'none',
+      })
+    }
+  }
+
+  const handleToggleVehicle = (vehicleId: string) => {
+    setSelectedVehicleIds(prev => {
+      if (prev.includes(vehicleId)) {
+        return prev.filter(id => id !== vehicleId)
+      } else {
+        return [...prev, vehicleId]
+      }
     })
+  }
+
+  const handleConfirmAllocate = async () => {
+    if (!allocatingDemand || selectedVehicleIds.length === 0) {
+      return
+    }
+
+    try {
+      const res = await Network.request({
+        url: `/api/demand/${allocatingDemand.id}/allocate`,
+        method: 'PUT',
+        data: {
+          vehicle_allocation: {
+            vehicle_ids: selectedVehicleIds,
+            allocated_at: new Date().toISOString(),
+          },
+        },
+      })
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '分配成功',
+          icon: 'success',
+        })
+        setAllocateDialogOpen(false)
+        // 刷新订单列表
+        loadPendingDemands(enterpriseId)
+        loadInTransitDemands(enterpriseId)
+        loadStats(enterpriseId)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '分配失败',
+          icon: 'none',
+        })
+      }
+    } catch (error) {
+      console.error('分配车辆失败:', error)
+      Taro.showToast({
+        title: '分配失败',
+        icon: 'none',
+      })
+    }
   }
 
   const handleViewDetail = (demandId: string) => {
@@ -194,7 +280,7 @@ const EnterpriseDispatchPage: FC = () => {
             <Button
               size="sm"
               className="flex-1"
-              onClick={() => handleAllocateVehicle(demand.id)}
+              onClick={() => handleAllocateVehicle(demand)}
             >
               <Text className="text-xs">分配车辆</Text>
             </Button>
@@ -315,6 +401,16 @@ const EnterpriseDispatchPage: FC = () => {
           )}
         </View>
       </ScrollView>
+
+      {/* 分配车辆弹窗 */}
+      <AllocateVehicleDialog
+        open={allocateDialogOpen}
+        onClose={() => setAllocateDialogOpen(false)}
+        vehicles={availableVehicles}
+        selectedVehicles={selectedVehicleIds}
+        onToggleVehicle={handleToggleVehicle}
+        onConfirm={handleConfirmAllocate}
+      />
     </View>
   )
 }
