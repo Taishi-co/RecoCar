@@ -26,16 +26,11 @@ const EnterprisePublishPage: FC = () => {
 
   const [cargoType, setCargoType] = useState('')
   const [cargoQuantity, setCargoQuantity] = useState('')
-  const [startTime, setStartTime] = useState('08:00')
-  const [endTime, setEndTime] = useState('10:00')
+  const [startHourIndex, setStartHourIndex] = useState(8)
+  const [endHourIndex, setEndHourIndex] = useState(10)
 
   // 时间选择器数据
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
-  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'))
-
-  const handleStartTimeChange = (e) => {
-    setStartTime(e.detail.value)
-  }
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -91,7 +86,7 @@ const EnterprisePublishPage: FC = () => {
   }
 
   const handleSubmit = async () => {
-    if (!cargoType || !cargoQuantity || !startTime || !endTime) {
+    if (!cargoType || !cargoQuantity) {
       Taro.showToast({
         title: '请填写完整信息',
         icon: 'none',
@@ -132,8 +127,8 @@ const EnterprisePublishPage: FC = () => {
           unit: '箱',
         },
         timeWindow: {
-          start: startTime,
-          end: endTime,
+          start: `${hours[startHourIndex]}:00`,
+          end: `${hours[endHourIndex]}:00`,
         },
         vehicleSource: 'own',
       }
@@ -248,23 +243,12 @@ const EnterprisePublishPage: FC = () => {
               <Picker
                 mode="selector"
                 range={hours}
-                onChange={handleStartTimeChange}
-                value={parseInt(startTime.split(':')[0])}
+                value={startHourIndex}
+                onChange={(e) => setStartHourIndex(Number(e.detail.value))}
               >
                 <View className="w-full px-4 py-3 bg-gray-50 rounded-lg">
                   <Text className="text-sm text-gray-900">
-                    {startTime}
-                  </Text>
-                </View>
-              </Picker>
-              <Picker
-                mode="selector"
-                range={minutes}
-                onChange={(e) => setStartTime(`${startTime.split(':')[0]}:${e.detail.value}`)}
-              >
-                <View className="w-full px-4 py-3 bg-gray-50 rounded-lg mt-2">
-                  <Text className="text-sm text-gray-900">
-                    {startTime.split(':')[1]} 分钟
+                    {hours[startHourIndex]}:00
                   </Text>
                 </View>
               </Picker>
@@ -274,22 +258,12 @@ const EnterprisePublishPage: FC = () => {
               <Picker
                 mode="selector"
                 range={hours}
-                onChange={(e) => setEndTime(`${e.detail.value}:${endTime.split(':')[1]}`)}
+                value={endHourIndex}
+                onChange={(e) => setEndHourIndex(Number(e.detail.value))}
               >
                 <View className="w-full px-4 py-3 bg-gray-50 rounded-lg">
                   <Text className="text-sm text-gray-900">
-                    {endTime}
-                  </Text>
-                </View>
-              </Picker>
-              <Picker
-                mode="selector"
-                range={minutes}
-                onChange={(e) => setEndTime(`${endTime.split(':')[0]}:${e.detail.value}`)}
-              >
-                <View className="w-full px-4 py-3 bg-gray-50 rounded-lg mt-2">
-                  <Text className="text-sm text-gray-900">
-                    {endTime.split(':')[1]} 分钟
+                    {hours[endHourIndex]}:00
                   </Text>
                 </View>
               </Picker>
