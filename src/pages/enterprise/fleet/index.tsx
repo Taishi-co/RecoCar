@@ -222,6 +222,16 @@ const EnterpriseFleetPage: FC = () => {
     }
 
     try {
+      console.log('添加车辆请求参数:', {
+        enterprise_id: enterpriseId,
+        vehicle_id: newVehicleId,
+        vehicle_code: newVehicleCode,
+        vehicle_type: newVehicleType,
+        load_capacity: capacity / 1000,
+        volume: volume,
+        has_cold_chain: newHasColdChain,
+      })
+
       const res = await Network.request({
         url: '/api/enterprise-vehicles',
         method: 'POST',
@@ -236,6 +246,8 @@ const EnterpriseFleetPage: FC = () => {
           usage_mode: 'internal',
         },
       })
+
+      console.log('添加车辆响应:', res.data)
 
       if (res.data.code === 200) {
         Taro.showToast({

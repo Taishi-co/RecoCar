@@ -51,7 +51,7 @@ export class EnterpriseVehiclesController {
   @Post()
   async createVehicle(@Body() body: {
     enterprise_id: string;
-    vehicle_id: string;
+    vehicle_id?: string;
     vehicle_code: string;
     vehicle_type: string;
     load_capacity: number;
@@ -59,10 +59,8 @@ export class EnterpriseVehiclesController {
     has_cold_chain: boolean;
     usage_mode?: 'internal' | 'external' | 'both';
   }) {
-    return {
-      code: 200,
-      message: 'success',
-      data: await this.enterpriseVehiclesService.createEnterpriseVehicle(
+    try {
+      const vehicle = await this.enterpriseVehiclesService.createEnterpriseVehicle(
         body.enterprise_id,
         {
           vehicle_code: body.vehicle_code,
@@ -74,8 +72,20 @@ export class EnterpriseVehiclesController {
           usage_mode: body.usage_mode || 'internal',
         },
         body.vehicle_id,
-      ),
-    };
+      );
+
+      return {
+        code: 200,
+        message: 'success',
+        data: vehicle,
+      };
+    } catch (error) {
+      return {
+        code: 500,
+        message: error.message || '创建车辆失败',
+        data: null,
+      };
+    }
   }
 
   /**
