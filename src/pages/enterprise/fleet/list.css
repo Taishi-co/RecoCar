@@ -22,7 +22,7 @@
 }
 
 .title-text {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -65,13 +65,13 @@
 }
 
 .vehicle-name {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #1f2937;
 }
 
 .vehicle-type {
-  font-size: 16px;
+  font-size: 14px;
   color: #6b7280;
 }
 
@@ -96,12 +96,12 @@
 }
 
 .detail-label {
-  font-size: 15px;
+  font-size: 14px;
   color: #6b7280;
 }
 
 .detail-value {
-  font-size: 16px;
+  font-size: 15px;
   color: #1f2937;
   font-weight: 500;
 }
@@ -119,14 +119,14 @@
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
   display: block;
   margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1890ff;
   display: block;

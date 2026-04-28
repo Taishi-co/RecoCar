@@ -38,7 +38,7 @@
 }
 
 .user-role {
-  font-size: 16px;
+  font-size: 14px;
   color: #6b7280;
   display: block;
 }
@@ -73,7 +73,7 @@
 
 .menu-text {
   flex: 1;
-  font-size: 16px;
+  font-size: 15px;
   color: #1f2937;
 }
 
@@ -93,7 +93,7 @@
 }
 
 .version-text {
-  font-size: 14px;
+  font-size: 12px;
   color: #9ca3af;
   display: block;
 }
