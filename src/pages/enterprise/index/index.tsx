@@ -1,7 +1,6 @@
 import { View, Text } from '@tarojs/components'
 import { useEffect } from 'react'
 import type { FC } from 'react'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -13,16 +12,6 @@ const EnterpriseHomePage: FC = () => {
   useEffect(() => {
     console.log('企业首页加载')
   }, [])
-
-  const navigateToDispatch = () => {
-    console.log('点击发布配送')
-    try {
-      Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
-    } catch (error) {
-      console.error('导航失败:', error)
-      Taro.showToast({ title: '导航失败', icon: 'none' })
-    }
-  }
 
   return (
     <View className="enterprise-home min-h-screen bg-gray-50 pb-20">
@@ -76,13 +65,33 @@ const EnterpriseHomePage: FC = () => {
         <Card className="mb-3">
           <CardContent className="p-4">
             <Text className="text-sm text-gray-900 font-medium block mb-2">📋 3个待调度订单</Text>
-            <Button size="sm" className="w-full" onClick={navigateToDispatch}>去调度</Button>
+            <View
+              className="w-full h-10 bg-blue-500 rounded flex items-center justify-center"
+              style={{ backgroundColor: '#3b82f6', borderRadius: '6px', height: '40px' }}
+              onClick={() => {
+                console.log('去调度点击')
+                setTimeout(() => {
+                  try {
+                    Taro.navigateTo({ url: '/pages/enterprise/dispatch/index' })
+                  } catch (e) {
+                    console.error('导航失败:', e)
+                  }
+                }, 100)
+              }}
+            >
+              <Text className="text-white text-sm">去调度</Text>
+            </View>
           </CardContent>
         </Card>
         <Card className="mb-6">
           <CardContent className="p-4">
             <Text className="text-sm text-gray-900 font-medium block mb-2">🔔 5个订单已送达</Text>
-            <Button size="sm" variant="outline" className="w-full">查看</Button>
+            <View
+              className="w-full h-10 border border-gray-300 rounded flex items-center justify-center"
+              style={{ border: '1px solid #d1d5db', borderRadius: '6px', height: '40px' }}
+            >
+              <Text className="text-gray-700 text-sm">查看</Text>
+            </View>
           </CardContent>
         </Card>
 
