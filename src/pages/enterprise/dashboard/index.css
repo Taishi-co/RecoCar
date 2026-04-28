@@ -13,7 +13,7 @@
 }
 
 .header-title {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   color: #1f2937;
 }
@@ -76,7 +76,7 @@
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: #1f2937;
   display: block;
@@ -84,7 +84,7 @@
 }
 
 .stat-label {
-  font-size: 15px;
+  font-size: 16px;
   color: #6b7280;
   display: block;
 }
@@ -96,7 +96,7 @@
 }
 
 .card-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -115,7 +115,7 @@
 }
 
 .view-all-text {
-  font-size: 15px;
+  font-size: 16px;
   color: #1890ff;
 }
 
@@ -156,7 +156,7 @@
 }
 
 .action-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #1f2937;
   text-align: center;
@@ -164,7 +164,7 @@
 }
 
 .action-description {
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
   text-align: center;
   display: block;
@@ -191,13 +191,13 @@
   flex-shrink: 0;
   padding: 4px 10px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
 }
 
 .status-text {
   flex: 1;
-  font-size: 16px;
+  font-size: 18px;
   color: #374151;
 }
 
@@ -241,7 +241,7 @@
 }
 
 .order-id {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -253,7 +253,7 @@
 }
 
 .order-status-text {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -265,12 +265,12 @@
 }
 
 .order-title {
-  font-size: 15px;
+  font-size: 16px;
   color: #374151;
 }
 
 .order-time {
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
 }
 
@@ -331,12 +331,12 @@
 }
 
 .task-title {
-  font-size: 16px;
+  font-size: 17px;
   color: #1f2937;
 }
 
 .task-action {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: #1890ff;
 }
@@ -371,14 +371,14 @@
 }
 
 .notification-title {
-  font-size: 15px;
+  font-size: 16px;
   color: #1f2937;
   margin-bottom: 4px;
   display: block;
 }
 
 .notification-time {
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
   display: block;
 }
@@ -403,14 +403,14 @@
 }
 
 .today-stat-label {
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
   margin-bottom: 10px;
   display: block;
 }
 
 .today-stat-value {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: #1f2937;
   display: block;

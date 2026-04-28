@@ -30,7 +30,7 @@
 }
 
 .user-name {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: #1f2937;
   margin-bottom: 8px;
@@ -38,7 +38,7 @@
 }
 
 .user-role {
-  font-size: 15px;
+  font-size: 16px;
   color: #6b7280;
   display: block;
 }
@@ -73,7 +73,7 @@
 
 .menu-text {
   flex: 1;
-  font-size: 16px;
+  font-size: 17px;
   color: #1f2937;
 }
 
