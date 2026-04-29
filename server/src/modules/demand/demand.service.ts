@@ -18,7 +18,8 @@ export class DemandService {
   }) {
     const supabase = getSupabaseClient();
     const demandId = `demand-${uuidv4().split('-')[0]}`; // 生成简短的ID
-    
+
+    // 创建企业需求
     const { data: demand, error } = await supabase
       .from('enterprise_demands')
       .insert({
@@ -36,6 +37,49 @@ export class DemandService {
       .single();
 
     if (error) throw error;
+
+    // 如果是外部运力，同时发布到demands表供接单大厅使用
+    if (data.vehicleSource === 'external') {
+      const publicDemandId = `pub-${uuidv4().split('-')[0]}`;
+
+      // 获取第一个配送点作为送货地址，或者组合多个配送点
+      const firstDeliveryPoint = data.deliveryPoints[0] || {};
+      const deliveryAddress = firstDeliveryPoint.address || '未指定';
+
+      // 计算总重量和体积
+      const totalWeight = data.cargoInfo.quantity || 0;
+      const totalVolume = totalWeight * 0.001; // 假设每箱0.001立方米
+
+      // 创建公共需求记录
+      const { error: pubError } = await supabase
+        .from('demands')
+        .insert({
+          id: publicDemandId,
+          merchant_id: data.enterpriseId, // 企业ID作为merchant_id
+          cargo_name: data.cargoInfo.type || '货物',
+          cargo_type: 'normal',
+          weight: totalWeight.toString(),
+          volume: totalVolume.toString(),
+          pickup_time: `${data.timeWindow.start}-${data.timeWindow.end}`,
+          pickup_address: data.pickupPointInfo?.address || '配送中心',
+          pickup_lat: data.pickupPointInfo?.latitude,
+          pickup_lng: data.pickupPointInfo?.longitude,
+          delivery_address: deliveryAddress,
+          delivery_lat: firstDeliveryPoint.latitude,
+          delivery_lng: firstDeliveryPoint.longitude,
+          status: 'pending',
+          remarks: '企业外部需求',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+      if (pubError) {
+        console.error('发布到接单大厅失败:', pubError);
+      } else {
+        console.log('成功发布到接单大厅，需求ID:', publicDemandId);
+      }
+    }
+
     return demand;
   }
 
