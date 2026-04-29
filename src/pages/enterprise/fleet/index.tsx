@@ -59,6 +59,7 @@ const EnterpriseFleetPage: FC = () => {
   const [newWidth, setNewWidth] = useState('')
   const [newHeight, setNewHeight] = useState('')
   const [newHasColdChain, setNewHasColdChain] = useState(true)
+  const [newUsageMode, setNewUsageMode] = useState<'internal' | 'external' | 'both'>('internal')
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -201,6 +202,40 @@ const EnterpriseFleetPage: FC = () => {
     })
   }
 
+  const handleChangeUsageMode = async (vehicleId: string, currentMode: 'internal' | 'external' | 'both') => {
+    const modeOrder: ('internal' | 'external' | 'both')[] = ['internal', 'external', 'both']
+    const currentIndex = modeOrder.indexOf(currentMode)
+    const nextMode = modeOrder[(currentIndex + 1) % modeOrder.length]
+
+    try {
+      const res = await Network.request({
+        url: `/api/enterprise-vehicles/${vehicleId}/usage-mode`,
+        method: 'PUT',
+        data: { usage_mode: nextMode },
+      })
+
+      if (res.data.code === 200) {
+        Taro.showToast({
+          title: '切换成功',
+          icon: 'success',
+        })
+        loadVehicles(enterpriseId)
+        loadStats(enterpriseId)
+      } else {
+        Taro.showToast({
+          title: res.data.message || '切换失败',
+          icon: 'none',
+        })
+      }
+    } catch (error) {
+      console.error('切换失败:', error)
+      Taro.showToast({
+        title: '切换失败',
+        icon: 'none',
+      })
+    }
+  }
+
   const handleAddVehicle = async () => {
     if (!newVehicleId || !newVehicleCode || !newVehicleType || !newLoadCapacity || !newVolume) {
       Taro.showToast({
@@ -269,6 +304,7 @@ const EnterpriseFleetPage: FC = () => {
         width: width,
         height: height,
         has_cold_chain: newHasColdChain,
+        usage_mode: newUsageMode,
       })
 
       const res = await Network.request({
@@ -285,7 +321,7 @@ const EnterpriseFleetPage: FC = () => {
           width: width,
           height: height,
           has_cold_chain: newHasColdChain,
-          usage_mode: 'internal',
+          usage_mode: newUsageMode,
         },
       })
 
@@ -499,6 +535,14 @@ const EnterpriseFleetPage: FC = () => {
                     </Button>
                     <Button
                       size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleChangeUsageMode(vehicle.id, vehicle.usage_mode)}
+                    >
+                      <Text className="text-xs">切换类型</Text>
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="destructive"
                       onClick={() => handleDeleteVehicle(vehicle.id, vehicle.vehicle_code)}
                     >
@@ -605,6 +649,41 @@ const EnterpriseFleetPage: FC = () => {
                     </Text>
                   </View>
 
+                  <View>
+                    <Text className="text-sm text-gray-600 block mb-2">车辆类型</Text>
+                    <View className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={newUsageMode === 'internal' ? 'default' : 'outline'}
+                        className="flex-1"
+                        onClick={() => setNewUsageMode('internal')}
+                      >
+                        <Text className="text-xs">内部</Text>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={newUsageMode === 'external' ? 'default' : 'outline'}
+                        className="flex-1"
+                        onClick={() => setNewUsageMode('external')}
+                      >
+                        <Text className="text-xs">外部</Text>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={newUsageMode === 'both' ? 'default' : 'outline'}
+                        className="flex-1"
+                        onClick={() => setNewUsageMode('both')}
+                      >
+                        <Text className="text-xs">内外</Text>
+                      </Button>
+                    </View>
+                    <Text className="text-xs text-gray-500 mt-1 block">
+                      {newUsageMode === 'internal' && '仅可接企业内部需求单'}
+                      {newUsageMode === 'external' && '仅可接接单大厅的需求单'}
+                      {newUsageMode === 'both' && '内部和外部都可以接单'}
+                    </Text>
+                  </View>
+
                   <View className="flex gap-3 mt-6">
                     <Button
                       variant="outline"
@@ -620,6 +699,7 @@ const EnterpriseFleetPage: FC = () => {
                         setNewWidth('')
                         setNewHeight('')
                         setNewHasColdChain(true)
+                        setNewUsageMode('internal')
                       }}
                     >
                       <Text>取消</Text>

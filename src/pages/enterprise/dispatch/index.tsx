@@ -145,10 +145,10 @@ const EnterpriseDispatchPage: FC = () => {
 
   const handleAllocateVehicle = async (demand: Demand) => {
     try {
-      // 获取可用车辆
+      // 获取可用车辆（只显示内部运力车辆）
       const res = await Network.request({
         url: '/api/enterprise-vehicles',
-        data: { enterprise_id: enterpriseId },
+        data: { enterprise_id: enterpriseId, usage_mode: 'internal' },
       })
 
       if (res.data.code === 200) {

@@ -86,7 +86,7 @@ const EnterpriseOrderHallPage: FC = () => {
     try {
       const res = await Network.request({
         url: '/api/enterprise-vehicles',
-        data: { enterprise_id: entId },
+        data: { enterprise_id: entId, usage_mode: 'external' },
       })
 
       if (res.data.code === 200) {

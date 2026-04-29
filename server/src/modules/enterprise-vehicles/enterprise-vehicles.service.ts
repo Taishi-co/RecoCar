@@ -6,14 +6,27 @@ export class EnterpriseVehiclesService {
   /**
    * 获取企业车辆列表
    */
-  async getEnterpriseVehicles(enterpriseId: string) {
+  async getEnterpriseVehicles(enterpriseId: string, usageMode?: 'internal' | 'external' | 'both') {
     const client = getSupabaseClient();
-    
-    const { data: vehicles, error } = await client
+
+    let query = client
       .from('vehicles')
       .select('*')
-      .eq('enterprise_id', enterpriseId)
-      .order('created_at', { ascending: false });
+      .eq('enterprise_id', enterpriseId);
+
+    // 如果指定了usage_mode，则过滤
+    if (usageMode) {
+      // 对于'both'，显示所有车辆
+      // 对于'internal'，只显示internal和both的车辆
+      // 对于'external'，只显示external和both的车辆
+      if (usageMode === 'internal') {
+        query = query.or('usage_mode.eq.internal,usage_mode.eq.both');
+      } else if (usageMode === 'external') {
+        query = query.or('usage_mode.eq.external,usage_mode.eq.both');
+      }
+    }
+
+    const { data: vehicles, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       throw new BadRequestException(`查询失败: ${error.message}`);

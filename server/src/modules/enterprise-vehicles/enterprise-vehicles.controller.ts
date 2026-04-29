@@ -9,7 +9,10 @@ export class EnterpriseVehiclesController {
    * 获取企业车辆列表
    */
   @Get()
-  async getVehicles(@Query('enterprise_id') enterpriseId: string) {
+  async getVehicles(
+    @Query('enterprise_id') enterpriseId: string,
+    @Query('usage_mode') usageMode?: 'internal' | 'external' | 'both'
+  ) {
     if (!enterpriseId) {
       return {
         code: 400,
@@ -21,7 +24,7 @@ export class EnterpriseVehiclesController {
     return {
       code: 200,
       message: 'success',
-      data: await this.enterpriseVehiclesService.getEnterpriseVehicles(enterpriseId),
+      data: await this.enterpriseVehiclesService.getEnterpriseVehicles(enterpriseId, usageMode),
     };
   }
 
