@@ -226,6 +226,48 @@ const EnterpriseDispatchPage: FC = () => {
     })
   }
 
+  const handleCancelDemand = async (demandId: string) => {
+    Taro.showModal({
+      title: '确认取消',
+      content: '确定要取消这个配送需求吗？',
+      success: async (modalRes) => {
+        if (modalRes.confirm) {
+          try {
+            const res = await Network.request({
+              url: `/api/demand/${demandId}/cancel`,
+              method: 'PUT',
+            })
+
+            if (res.data.code === 200) {
+              Taro.showToast({
+                title: '取消成功',
+                icon: 'success',
+              })
+              // 刷新列表
+              if (enterpriseId) {
+                loadPendingDemands(enterpriseId)
+                loadInTransitDemands(enterpriseId)
+                loadCompletedDemands(enterpriseId)
+                loadStats(enterpriseId)
+              }
+            } else {
+              Taro.showToast({
+                title: res.data.message || '取消失败',
+                icon: 'none',
+              })
+            }
+          } catch (error) {
+            console.error('取消需求失败:', error)
+            Taro.showToast({
+              title: '取消失败',
+              icon: 'none',
+            })
+          }
+        }
+      },
+    })
+  }
+
   const getStatusText = (status: string) => {
     const statusMap = {
       pending: '待调度',
@@ -308,22 +350,34 @@ const EnterpriseDispatchPage: FC = () => {
 
         <View className="flex gap-2">
           {demand.status === 'pending' && (
+            <>
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={() => handleAllocateVehicle(demand)}
+              >
+                <Text className="text-xs">分配车辆</Text>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={() => handleCancelDemand(demand.id)}
+              >
+                <Text className="text-xs">取消</Text>
+              </Button>
+            </>
+          )}
+          {demand.status !== 'pending' && (
             <Button
               size="sm"
-              className="flex-1"
-              onClick={() => handleAllocateVehicle(demand)}
+              variant="outline"
+              className="w-full"
+              onClick={() => handleViewDetail(demand.id)}
             >
-              <Text className="text-xs">分配车辆</Text>
+              <Text className="text-xs">查看详情</Text>
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1"
-            onClick={() => handleViewDetail(demand.id)}
-          >
-            <Text className="text-xs">查看详情</Text>
-          </Button>
         </View>
       </CardContent>
     </Card>

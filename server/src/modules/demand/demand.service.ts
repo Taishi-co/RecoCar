@@ -407,4 +407,66 @@ export class DemandService {
 
     return updatedDemand;
   }
+
+  /**
+   * 取消配送需求
+   */
+  async cancelDemand(demandId: string) {
+    const supabase = getSupabaseClient();
+
+    // 获取需求信息
+    const { data: demand, error: fetchError } = await supabase
+      .from('enterprise_demands')
+      .select('*')
+      .eq('id', demandId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // 检查需求状态，只能取消pending状态的需求
+    if (demand.status !== 'pending') {
+      throw new Error('只能取消待调度状态的需求');
+    }
+
+    // 更新需求状态为已取消
+    const { error: updateError } = await supabase
+      .from('enterprise_demands')
+      .update({
+        status: 'cancelled',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', demandId);
+
+    if (updateError) throw updateError;
+
+    // 如果是外部运力需求，同时取消demands表中的记录
+    if (demand.vehicle_source === 'external') {
+      // 查找对应的外部需求记录（通过企业ID和创建时间匹配）
+      const { data: externalDemands } = await supabase
+        .from('demands')
+        .select('*')
+        .eq('merchant_id', demand.enterprise_id)
+        .eq('remarks', '企业外部需求')
+        .gte('created_at', demand.created_at)
+        .lt('created_at', new Date(new Date(demand.created_at).getTime() + 10000)) // 10秒内创建的
+        .eq('status', 'pending');
+
+      if (externalDemands && externalDemands.length > 0) {
+        // 取消找到的外部需求
+        const { error: cancelExternalError } = await supabase
+          .from('demands')
+          .update({
+            status: 'cancelled',
+            updated_at: new Date().toISOString(),
+          })
+          .in('id', externalDemands.map((d: any) => d.id));
+
+        if (cancelExternalError) {
+          console.error('取消外部需求失败:', cancelExternalError);
+        }
+      }
+    }
+
+    return { success: true };
+  }
 }

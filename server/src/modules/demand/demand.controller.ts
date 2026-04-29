@@ -185,4 +185,25 @@ export class DemandController {
       };
     }
   }
+
+  /**
+   * 取消配送需求
+   */
+  @Put(':id/cancel')
+  async cancelDemand(@Param('id') id: string) {
+    try {
+      const result = await this.demandService.cancelDemand(id);
+      return {
+        code: 200,
+        message: 'success',
+        data: result,
+      };
+    } catch (error) {
+      return {
+        code: 500,
+        message: error.message || '取消失败',
+        data: null,
+      };
+    }
+  }
 }
