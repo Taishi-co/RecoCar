@@ -47,7 +47,8 @@ export class DemandService {
       const deliveryAddress = firstDeliveryPoint.address || '未指定';
 
       // 计算总重量和体积
-      const totalWeight = data.cargoInfo.quantity || 0;
+      const cargoInfo = data.cargoInfo;
+      const totalWeight = cargoInfo.quantity || 0;
       const totalVolume = totalWeight * 0.001; // 假设每箱0.001立方米
 
       // 获取企业信息，获取管理员ID作为merchant_id
@@ -70,34 +71,47 @@ export class DemandService {
         parseInt(startMinute)
       );
 
-      // 创建公共需求记录
-      const { error: pubError } = await supabase
+      // 检查是否有重复的需求（相同的企业和创建时间窗口）
+      const { data: existingDemands } = await supabase
         .from('demands')
-        .insert({
-          id: publicDemandId,
-          merchant_id: merchantId, // 使用企业管理员ID作为merchant_id
-          cargo_name: data.cargoInfo.type || '货物',
-          cargo_type: 'normal',
-          weight: totalWeight.toString(),
-          volume: totalVolume.toString(),
-          pickup_time: pickupTime.toISOString(),
-          pickup_address: data.pickupPointInfo?.address || '配送中心',
-          pickup_lat: data.pickupPointInfo?.latitude,
-          pickup_lng: data.pickupPointInfo?.longitude,
-          delivery_address: deliveryAddress,
-          delivery_lat: firstDeliveryPoint.latitude,
-          delivery_lng: firstDeliveryPoint.longitude,
-          time_window: data.timeWindow, // 存储时间窗信息
-          status: 'pending',
-          remarks: '企业外部需求',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+        .select('*')
+        .eq('merchant_id', merchantId)
+        .eq('remarks', '企业外部需求')
+        .gte('created_at', demand.created_at)
+        .lt('created_at', new Date(new Date(demand.created_at).getTime() + 10000)); // 10秒内创建的
 
-      if (pubError) {
-        console.error('发布到接单大厅失败:', pubError);
+      // 如果不存在，则创建新的公共需求记录
+      if (!existingDemands || existingDemands.length === 0) {
+        const { error: pubError } = await supabase
+          .from('demands')
+          .insert({
+            id: publicDemandId,
+            merchant_id: merchantId, // 使用企业管理员ID作为merchant_id
+            cargo_name: cargoInfo.type || '货物',
+            cargo_type: 'normal',
+            weight: totalWeight.toString(),
+            volume: totalVolume.toString(),
+            pickup_time: pickupTime.toISOString(),
+            pickup_address: data.pickupPointInfo?.address || '配送中心',
+            pickup_lat: data.pickupPointInfo?.latitude,
+            pickup_lng: data.pickupPointInfo?.longitude,
+            delivery_address: deliveryAddress,
+            delivery_lat: firstDeliveryPoint.latitude,
+            delivery_lng: firstDeliveryPoint.longitude,
+            time_window: data.timeWindow, // 存储时间窗信息
+            status: 'pending',
+            remarks: '企业外部需求',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (pubError) {
+          console.error('发布到接单大厅失败:', pubError);
+        } else {
+          console.log('成功发布到接单大厅，需求ID:', publicDemandId);
+        }
       } else {
-        console.log('成功发布到接单大厅，需求ID:', publicDemandId);
+        console.log('需求已存在于接单大厅，跳过创建');
       }
     }
 
