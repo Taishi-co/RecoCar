@@ -10,6 +10,7 @@ export default typeof definePageConfig === 'function'
         'pages/enterprise/stations/index',     // 企业端-奶站管理
         'pages/enterprise/stats/index',        // 企业端-数据统计
         'pages/enterprise/publish/index',      // 企业端-发布配送
+        'pages/enterprise/order-hall/index',  // 企业端-接单大厅
         'pages/owner/vehicles/index',          // 车主端-车辆管理
         'pages/owner/vehicles/rental-settings/index', // 车主端-车辆租赁设置
         'pages/owner/vehicle-mock-demo/index', // 车主端-车机模拟数据Demo

@@ -15,6 +15,8 @@ export class StationController {
     address: string;
     location?: { lat: number; lng: number };
     phone?: string;
+    customer_type?: 'owned' | 'external';
+    status?: string;
   }) {
     return {
       code: 200,

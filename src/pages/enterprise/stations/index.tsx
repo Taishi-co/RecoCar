@@ -18,6 +18,7 @@ interface Station {
   phone?: string
   location?: { lat: number; lng: number }
   status: string
+  customer_type?: 'owned' | 'external'
   created_at: string
 }
 
@@ -33,6 +34,7 @@ const EnterpriseStationsPage: FC = () => {
   const [newStationAddress, setNewStationAddress] = useState('')
   const [newStationPhone, setNewStationPhone] = useState('')
   const [newStationLocation, setNewStationLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [newCustomerType, setNewCustomerType] = useState<'owned' | 'external'>('owned')
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -177,6 +179,7 @@ const EnterpriseStationsPage: FC = () => {
           address: newStationAddress,
           phone: newStationPhone,
           location: newStationLocation,
+          customer_type: newCustomerType,
           status: 'active',
         },
       })
@@ -192,6 +195,7 @@ const EnterpriseStationsPage: FC = () => {
         setNewStationAddress('')
         setNewStationPhone('')
         setNewStationLocation(null)
+        setNewCustomerType('owned')
         // 刷新列表
         loadStations(enterpriseId)
       } else {
@@ -308,6 +312,9 @@ const EnterpriseStationsPage: FC = () => {
                       <Text className="text-sm text-gray-500 block mb-1">
                         电话: {station.phone || '未设置'}
                       </Text>
+                      <Text className="text-sm text-gray-500 block mb-1">
+                        类型: {station.customer_type === 'owned' ? '自营奶站' : '商超/代理'}
+                      </Text>
                       {station.location && (
                         <Text className="text-xs text-blue-500 block">
                           位置: {station.location.lat.toFixed(6)}, {station.location.lng.toFixed(6)}
@@ -353,6 +360,26 @@ const EnterpriseStationsPage: FC = () => {
                     value={newStationPhone}
                     onInput={(e) => setNewStationPhone(e.detail.value)}
                   />
+                </View>
+
+                <View>
+                  <Text className="text-sm text-gray-600 block mb-2">客户类型</Text>
+                  <View className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={newCustomerType === 'owned' ? 'default' : 'outline'}
+                      onClick={() => setNewCustomerType('owned')}
+                    >
+                      <Text className="text-xs">自营奶站</Text>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={newCustomerType === 'external' ? 'default' : 'outline'}
+                      onClick={() => setNewCustomerType('external')}
+                    >
+                      <Text className="text-xs">商超/代理</Text>
+                    </Button>
+                  </View>
                 </View>
 
                 <View>

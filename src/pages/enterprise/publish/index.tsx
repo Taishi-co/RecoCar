@@ -28,6 +28,7 @@ const EnterprisePublishPage: FC = () => {
   const [cargoQuantity, setCargoQuantity] = useState('')
   const [startHourIndex, setStartHourIndex] = useState(8)
   const [endHourIndex, setEndHourIndex] = useState(10)
+  const [vehicleSource, setVehicleSource] = useState<'own' | 'external'>('own')
 
   // 时间选择器数据
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
@@ -131,7 +132,7 @@ const EnterprisePublishPage: FC = () => {
           start: `${hours[startHourIndex]}:00`,
           end: `${hours[endHourIndex]}:00`,
         },
-        vehicleSource: 'own',
+        vehicleSource: vehicleSource,
       }
 
       console.log('发布配送请求数据:', JSON.stringify(requestData, null, 2))
@@ -195,6 +196,38 @@ const EnterprisePublishPage: FC = () => {
                 onInput={(e) => setCargoQuantity(e.detail.value)}
               />
             </View>
+          </CardContent>
+        </Card>
+
+        {/* 运力来源选择 */}
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="text-base">运力来源</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <View className="flex gap-2">
+              <Button
+                className="flex-1"
+                variant={vehicleSource === 'own' ? 'default' : 'outline'}
+                onClick={() => setVehicleSource('own')}
+              >
+                <Text>自有车辆</Text>
+              </Button>
+              <Button
+                className="flex-1"
+                variant={vehicleSource === 'external' ? 'default' : 'outline'}
+                onClick={() => setVehicleSource('external')}
+              >
+                <Text>外部运力</Text>
+              </Button>
+            </View>
+            {vehicleSource === 'external' && (
+              <View className="mt-3 p-3 bg-yellow-50 rounded-lg">
+                <Text className="text-xs text-yellow-800 block">
+                  注意：选择外部运力后，需求将发布到接单大厅，由外部运力方接单配送。
+                </Text>
+              </View>
+            )}
           </CardContent>
         </Card>
 

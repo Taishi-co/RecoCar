@@ -13,10 +13,12 @@ export class StationService {
     address: string;
     location?: { lat: number; lng: number };
     phone?: string;
+    customer_type?: 'owned' | 'external';
+    status?: string;
   }) {
     const supabase = getSupabaseClient();
     const stationId = `station-${uuidv4().split('-')[0]}`; // 生成简短的ID
-    
+
     const { data: station, error } = await supabase
       .from('dairy_stations')
       .insert({
@@ -26,7 +28,8 @@ export class StationService {
         address: data.address,
         location: data.location,
         phone: data.phone,
-        status: 'active',
+        customer_type: data.customer_type || 'owned',
+        status: data.status || 'active',
       })
       .select()
       .single();
