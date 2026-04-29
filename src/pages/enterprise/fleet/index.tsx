@@ -24,7 +24,7 @@ interface Vehicle {
   width?: number
   height?: number
   current_location: string
-  usage_mode: 'internal' | 'external' | 'both'
+  usage_mode: 'internal' | 'external'
   trip_status: 'idle' | 'in_transit' | 'maintenance'
   today_internal_orders: number
   today_external_orders: number
@@ -38,7 +38,6 @@ interface VehicleStats {
   idle: number
   internal: number
   external: number
-  both: number
 }
 
 const EnterpriseFleetPage: FC = () => {
@@ -59,7 +58,7 @@ const EnterpriseFleetPage: FC = () => {
   const [newWidth, setNewWidth] = useState('')
   const [newHeight, setNewHeight] = useState('')
   const [newHasColdChain, setNewHasColdChain] = useState(true)
-  const [newUsageMode, setNewUsageMode] = useState<'internal' | 'external' | 'both'>('internal')
+  const [newUsageMode, setNewUsageMode] = useState<'internal' | 'external'>('internal')
 
   useEffect(() => {
     loadEnterpriseInfo()
@@ -202,10 +201,8 @@ const EnterpriseFleetPage: FC = () => {
     })
   }
 
-  const handleChangeUsageMode = async (vehicleId: string, currentMode: 'internal' | 'external' | 'both') => {
-    const modeOrder: ('internal' | 'external' | 'both')[] = ['internal', 'external', 'both']
-    const currentIndex = modeOrder.indexOf(currentMode)
-    const nextMode = modeOrder[(currentIndex + 1) % modeOrder.length]
+  const handleChangeUsageMode = async (vehicleId: string, currentMode: 'internal' | 'external') => {
+    const nextMode = currentMode === 'internal' ? 'external' : 'internal'
 
     try {
       const res = await Network.request({
@@ -371,7 +368,6 @@ const EnterpriseFleetPage: FC = () => {
     const modeMap = {
       internal: '内部',
       external: '对外',
-      both: '内外',
     }
     return modeMap[mode] || mode
   }
@@ -398,7 +394,7 @@ const EnterpriseFleetPage: FC = () => {
   const filteredVehicles = vehicles.filter((vehicle) => {
     if (activeTab === 'all') return true
     if (activeTab === 'own') return vehicle.usage_mode === 'internal'
-    if (activeTab === 'external') return vehicle.usage_mode === 'external' || vehicle.usage_mode === 'both'
+    if (activeTab === 'external') return vehicle.usage_mode === 'external'
     return true
   })
 
@@ -668,19 +664,10 @@ const EnterpriseFleetPage: FC = () => {
                       >
                         <Text className="text-xs">外部</Text>
                       </Button>
-                      <Button
-                        size="sm"
-                        variant={newUsageMode === 'both' ? 'default' : 'outline'}
-                        className="flex-1"
-                        onClick={() => setNewUsageMode('both')}
-                      >
-                        <Text className="text-xs">内外</Text>
-                      </Button>
                     </View>
                     <Text className="text-xs text-gray-500 mt-1 block">
                       {newUsageMode === 'internal' && '仅可接企业内部需求单'}
                       {newUsageMode === 'external' && '仅可接接单大厅的需求单'}
-                      {newUsageMode === 'both' && '内部和外部都可以接单'}
                     </Text>
                   </View>
 

@@ -11,7 +11,7 @@ export class EnterpriseVehiclesController {
   @Get()
   async getVehicles(
     @Query('enterprise_id') enterpriseId: string,
-    @Query('usage_mode') usageMode?: 'internal' | 'external' | 'both'
+    @Query('usage_mode') usageMode?: 'internal' | 'external',
   ) {
     if (!enterpriseId) {
       return {
@@ -63,7 +63,7 @@ export class EnterpriseVehiclesController {
     width?: number;
     height?: number;
     has_cold_chain: boolean;
-    usage_mode?: 'internal' | 'external' | 'both';
+    usage_mode?: 'internal' | 'external';
   }) {
     try {
       const vehicle = await this.enterpriseVehiclesService.createEnterpriseVehicle(
@@ -103,7 +103,7 @@ export class EnterpriseVehiclesController {
   @Put(':id/usage-mode')
   async updateUsageMode(
     @Param('id') id: string,
-    @Body('usage_mode') usageMode: 'internal' | 'external' | 'both',
+    @Body('usage_mode') usageMode: 'internal' | 'external',
   ) {
     return {
       code: 200,

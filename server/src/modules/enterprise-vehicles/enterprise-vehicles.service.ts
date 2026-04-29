@@ -6,7 +6,7 @@ export class EnterpriseVehiclesService {
   /**
    * 获取企业车辆列表
    */
-  async getEnterpriseVehicles(enterpriseId: string, usageMode?: 'internal' | 'external' | 'both') {
+  async getEnterpriseVehicles(enterpriseId: string, usageMode?: 'internal' | 'external') {
     const client = getSupabaseClient();
 
     let query = client
@@ -16,14 +16,7 @@ export class EnterpriseVehiclesService {
 
     // 如果指定了usage_mode，则过滤
     if (usageMode) {
-      // 对于'both'，显示所有车辆
-      // 对于'internal'，只显示internal和both的车辆
-      // 对于'external'，只显示external和both的车辆
-      if (usageMode === 'internal') {
-        query = query.or('usage_mode.eq.internal,usage_mode.eq.both');
-      } else if (usageMode === 'external') {
-        query = query.or('usage_mode.eq.external,usage_mode.eq.both');
-      }
+      query = query.eq('usage_mode', usageMode);
     }
 
     const { data: vehicles, error } = await query.order('created_at', { ascending: false });
@@ -50,7 +43,7 @@ export class EnterpriseVehiclesService {
       width?: number;
       height?: number;
       has_cold_chain: boolean;
-      usage_mode: 'internal' | 'external' | 'both';
+      usage_mode: 'internal' | 'external';
     },
     vehicleId?: string,
   ) {
@@ -113,7 +106,7 @@ export class EnterpriseVehiclesService {
   /**
    * 更新车辆使用模式
    */
-  async updateVehicleUsageMode(vehicleId: string, usageMode: 'internal' | 'external' | 'both') {
+  async updateVehicleUsageMode(vehicleId: string, usageMode: 'internal' | 'external') {
     const client = getSupabaseClient();
 
     const { data: vehicle, error } = await client
@@ -150,8 +143,7 @@ export class EnterpriseVehiclesService {
       in_transit: vehicles?.filter(v => v.trip_status === 'in_transit').length || 0,
       idle: vehicles?.filter(v => v.trip_status === 'idle').length || 0,
       internal: vehicles?.filter(v => v.usage_mode === 'internal').length || 0,
-      external: vehicles?.filter(v => v.usage_mode === 'external' || v.usage_mode === 'both').length || 0,
-      both: vehicles?.filter(v => v.usage_mode === 'both').length || 0,
+      external: vehicles?.filter(v => v.usage_mode === 'external').length || 0,
     };
 
     return stats;
