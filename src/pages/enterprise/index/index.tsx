@@ -107,6 +107,23 @@ const EnterpriseHomePage: FC = () => {
     })
   }
 
+  const navigateToOrderHall = () => {
+    console.log('点击接单大厅 - 开始跳转')
+    Taro.navigateTo({
+      url: '/pages/enterprise/order-hall/index',
+      success: () => {
+        console.log('跳转成功')
+      },
+      fail: (err) => {
+        console.error('跳转失败:', err)
+        Taro.showToast({
+          title: '跳转失败',
+          icon: 'none',
+        })
+      }
+    })
+  }
+
   return (
     <View className="enterprise-home min-h-screen bg-gray-50 pb-20">
       {/* 顶部信息栏 */}
@@ -193,10 +210,15 @@ const EnterpriseHomePage: FC = () => {
 
         {/* 快捷入口 */}
         <Text className="text-base font-bold text-gray-900 mb-3 block">快捷入口</Text>
-        <View className="grid grid-cols-2 gap-2">
+        <View className="grid grid-cols-3 gap-2">
           <View className="h-16" onClick={navigateToPublish}>
             <Button className="w-full h-full" variant="default">
               <Text className="text-white text-sm">发布配送</Text>
+            </Button>
+          </View>
+          <View className="h-16" onClick={navigateToOrderHall}>
+            <Button className="w-full h-full" variant="outline">
+              <Text className="text-gray-900 text-sm">接单大厅</Text>
             </Button>
           </View>
           <View className="h-16" onClick={navigateToFleet}>
@@ -207,6 +229,11 @@ const EnterpriseHomePage: FC = () => {
           <View className="h-16" onClick={navigateToStations}>
             <Button className="w-full h-full" variant="outline">
               <Text className="text-gray-900 text-sm">奶站管理</Text>
+            </Button>
+          </View>
+          <View className="h-16" onClick={navigateToDispatch}>
+            <Button className="w-full h-full" variant="outline">
+              <Text className="text-gray-900 text-sm">调度中心</Text>
             </Button>
           </View>
           <View className="h-16" onClick={navigateToStats}>
