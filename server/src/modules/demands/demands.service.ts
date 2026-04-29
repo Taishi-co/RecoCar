@@ -546,9 +546,10 @@ export class DemandsService {
       throw new BadRequestException('车主不存在')
     }
 
-    // 验证用户角色
-    if (owner.role !== 'owner') {
-      throw new BadRequestException('只有车主可以接单')
+    // 验证用户角色 - 允许 owner 和 enterprise_admin 接单
+    const allowedRoles = ['owner', 'enterprise_admin', 'admin']
+    if (!allowedRoles.includes(owner.role)) {
+      throw new BadRequestException('只有车主或企业管理员可以接单')
     }
 
     // 检查需求是否存在
@@ -636,12 +637,32 @@ export class DemandsService {
       }
     } else {
       // 未出租车辆：检查是否属于接单用户
-      if (vehicle.owner_id !== ownerId) {
-        console.log('✗ 权限检查失败：车辆不属于接单用户')
+      let hasPermission = false
+
+      if (vehicle.owner_id === ownerId) {
+        // 车辆属于接单用户
+        hasPermission = true
+        console.log('✓ 权限检查通过：自有车辆（未出租）')
+      } else if (vehicle.enterprise_id && owner.role !== 'owner') {
+        // 对于企业管理员，检查车辆是否属于该企业
+        const { data: enterprise } = await client
+          .from('enterprises')
+          .select('id, admin_id')
+          .eq('admin_id', ownerId)
+          .maybeSingle()
+
+        if (enterprise && enterprise.id === vehicle.enterprise_id) {
+          // 车辆属于该企业
+          hasPermission = true
+          console.log('✓ 权限检查通过：企业车辆（企业管理员接单）')
+        }
+      }
+
+      if (!hasPermission) {
+        console.log('✗ 权限检查失败：车辆不属于接单用户或企业')
         console.log('===================================')
         throw new BadRequestException('所选车辆不存在或不可用')
       }
-      console.log('✓ 权限检查通过：自有车辆（未出租）')
       console.log('===================================')
     }
 
