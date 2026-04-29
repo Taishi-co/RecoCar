@@ -341,6 +341,9 @@ const EnterpriseDispatchPage: FC = () => {
           <Text className="block">
             ⏰ 配送时间：{demand.time_window?.start?.split(' ')[1]} - {demand.time_window?.end?.split(' ')[1]}
           </Text>
+          <Text className="block">
+            🚚 运力来源：{demand.vehicle_source === 'external' ? '外部运力' : '自有车辆'}
+          </Text>
           {demand.status !== 'pending' && demand.vehicle_allocation && (
             <Text className="block mt-1">
               🚗 分配车辆：{demand.vehicle_allocation.vehicle_ids?.length || 0}辆
@@ -351,17 +354,21 @@ const EnterpriseDispatchPage: FC = () => {
         <View className="flex gap-2">
           {demand.status === 'pending' && (
             <>
-              <Button
-                size="sm"
-                className="flex-1"
-                onClick={() => handleAllocateVehicle(demand)}
-              >
-                <Text className="text-xs">分配车辆</Text>
-              </Button>
+              {/* 外部运力需求不显示"分配车辆"按钮 */}
+              {demand.vehicle_source !== 'external' && (
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleAllocateVehicle(demand)}
+                >
+                  <Text className="text-xs">分配车辆</Text>
+                </Button>
+              )}
+              {/* 外部运力需求只显示"取消"按钮，自有运力需求显示两个按钮 */}
               <Button
                 size="sm"
                 variant="outline"
-                className="flex-1"
+                className={demand.vehicle_source === 'external' ? 'flex-1' : 'flex-1'}
                 onClick={() => handleCancelDemand(demand.id)}
               >
                 <Text className="text-xs">取消</Text>
