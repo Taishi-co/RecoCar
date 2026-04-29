@@ -50,23 +50,44 @@ export class DemandService {
       const totalWeight = data.cargoInfo.quantity || 0;
       const totalVolume = totalWeight * 0.001; // 假设每箱0.001立方米
 
+      // 获取企业信息，获取管理员ID作为merchant_id
+      const { data: enterprise } = await supabase
+        .from('enterprises')
+        .select('admin_id')
+        .eq('id', data.enterpriseId)
+        .single();
+
+      const merchantId = enterprise?.admin_id || data.enterpriseId;
+
+      // 构建取货时间（使用今天的时间，加上时间窗的开始时间）
+      const today = new Date();
+      const [startHour, startMinute] = data.timeWindow.start.split(':');
+      const pickupTime = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        parseInt(startHour),
+        parseInt(startMinute)
+      );
+
       // 创建公共需求记录
       const { error: pubError } = await supabase
         .from('demands')
         .insert({
           id: publicDemandId,
-          merchant_id: data.enterpriseId, // 企业ID作为merchant_id
+          merchant_id: merchantId, // 使用企业管理员ID作为merchant_id
           cargo_name: data.cargoInfo.type || '货物',
           cargo_type: 'normal',
           weight: totalWeight.toString(),
           volume: totalVolume.toString(),
-          pickup_time: `${data.timeWindow.start}-${data.timeWindow.end}`,
+          pickup_time: pickupTime.toISOString(),
           pickup_address: data.pickupPointInfo?.address || '配送中心',
           pickup_lat: data.pickupPointInfo?.latitude,
           pickup_lng: data.pickupPointInfo?.longitude,
           delivery_address: deliveryAddress,
           delivery_lat: firstDeliveryPoint.latitude,
           delivery_lng: firstDeliveryPoint.longitude,
+          time_window: data.timeWindow, // 存储时间窗信息
           status: 'pending',
           remarks: '企业外部需求',
           created_at: new Date().toISOString(),
