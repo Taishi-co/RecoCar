@@ -2,20 +2,14 @@ import { Controller, Post, Get, Put, Body, UseInterceptors, UploadedFile, Query,
 import { FileInterceptor } from '@nestjs/platform-express'
 import { VehiclesService } from './vehicles.service'
 import { CreateVehicleDto, UpdateVehicleDto } from './dto/vehicles.dto'
-import { S3Storage } from 'coze-coding-dev-sdk'
+import { createFileStorage, type FileStorage } from '@/storage/file-storage'
 
 @Controller('vehicles')
 export class VehiclesController {
-  private storage: S3Storage
+  private storage: FileStorage
 
   constructor(private readonly vehiclesService: VehiclesService) {
-    this.storage = new S3Storage({
-      endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-      accessKey: '',
-      secretKey: '',
-      bucketName: process.env.COZE_BUCKET_NAME,
-      region: 'cn-beijing'
-    })
+    this.storage = createFileStorage()
   }
 
   @Post('upload-photo')
@@ -28,27 +22,6 @@ export class VehiclesController {
       return {
         code: 400,
         message: '未选择照片'
-      }
-    }
-
-    // 检查对象存储配置
-    const hasObjectStorage = !!(process.env.COZE_BUCKET_ENDPOINT_URL && process.env.COZE_BUCKET_NAME)
-
-    if (!hasObjectStorage) {
-      console.warn('[VehiclesController] 对象存储未配置，使用模拟上传')
-      // 开发环境降级方案：返回模拟 URL
-      const mockFileKey = `vehicles/mock_${Date.now()}_${photo.originalname}`
-      const mockUrl = `https://via.placeholder.com/400x300/1890ff/ffffff?text=Vehicle+Photo`
-
-      console.log('[VehiclesController] 模拟上传成功，fileKey:', mockFileKey)
-
-      return {
-        code: 200,
-        message: '上传成功（演示模式）',
-        data: {
-          fileKey: mockFileKey,
-          url: mockUrl
-        }
       }
     }
 

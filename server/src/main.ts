@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@/app.module';
 import * as express from 'express';
+import * as path from 'node:path';
 import { HttpStatusInterceptor } from '@/interceptors/http-status.interceptor';
 
 function parsePort(): number {
@@ -25,6 +26,13 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(
+    '/api/uploads',
+    express.static(
+      path.resolve(process.env.LOCAL_UPLOAD_DIR || path.join(process.cwd(), 'uploads')),
+      { maxAge: '30d' },
+    ),
+  );
 
   // 全局拦截器：统一将 POST 请求的 201 状态码改为 200
   app.useGlobalInterceptors(new HttpStatusInterceptor());

@@ -1,20 +1,13 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
-import { S3Storage } from 'coze-coding-dev-sdk'
+import { createFileStorage, type FileStorage } from '@/storage/file-storage'
 
 @Injectable()
 export class HomeService {
-  private storage: S3Storage
+  private storage: FileStorage
 
   constructor() {
-    // 初始化对象存储
-    this.storage = new S3Storage({
-      endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-      accessKey: '',
-      secretKey: '',
-      bucketName: process.env.COZE_BUCKET_NAME,
-      region: 'cn-beijing',
-    })
+    this.storage = createFileStorage()
   }
 
   // 上传文件到对象存储

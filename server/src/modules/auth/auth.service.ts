@@ -4,15 +4,9 @@ import { getSupabaseClient } from '@/storage/database/supabase-client'
 import { UserInfo } from './auth.types'
 import * as bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
-import { S3Storage } from 'coze-coding-dev-sdk'
+import { createFileStorage } from '@/storage/file-storage'
 
-const storage = new S3Storage({
-  endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-  accessKey: "",
-  secretKey: "",
-  bucketName: process.env.COZE_BUCKET_NAME,
-  region: "cn-beijing",
-})
+const storage = createFileStorage()
 
 interface UploadedFile {
   buffer: Buffer
