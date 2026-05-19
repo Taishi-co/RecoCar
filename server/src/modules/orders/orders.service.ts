@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, Inject } from '@nestjs/common'
 import { CreateOrderDto } from './dto/orders.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
+import { createFileStorage } from '@/storage/file-storage'
 import { NotificationsService } from '../notifications/notification.service'
 
 @Injectable()
@@ -653,14 +654,7 @@ export class OrdersService {
     let paymentQrUrl: string | null = null
     if (owner?.wechat_payment_qr) {
       try {
-        const { S3Storage } = await import('coze-coding-dev-sdk')
-        const storage = new S3Storage({
-          endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-          accessKey: '',
-          secretKey: '',
-          bucketName: process.env.COZE_BUCKET_NAME,
-          region: 'cn-beijing',
-        })
+        const storage = createFileStorage()
         paymentQrUrl = await storage.generatePresignedUrl({
           key: owner.wechat_payment_qr,
           expireTime: 86400
@@ -765,14 +759,7 @@ export class OrdersService {
 
     if (settings?.commission_payment_qr) {
       try {
-        const { S3Storage } = await import('coze-coding-dev-sdk')
-        const storage = new S3Storage({
-          endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-          accessKey: '',
-          secretKey: '',
-          bucketName: process.env.COZE_BUCKET_NAME,
-          region: 'cn-beijing',
-        })
+        const storage = createFileStorage()
         platformPaymentQrUrl = await storage.generatePresignedUrl({
           key: settings.commission_payment_qr,
           expireTime: 86400

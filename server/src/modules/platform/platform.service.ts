@@ -1,15 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { UpdateSettingsDto } from './dto/platform.dto'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
-import { S3Storage } from 'coze-coding-dev-sdk'
+import { createFileStorage } from '@/storage/file-storage'
 
-const storage = new S3Storage({
-  endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-  accessKey: '',
-  secretKey: '',
-  bucketName: process.env.COZE_BUCKET_NAME,
-  region: 'cn-beijing',
-})
+const storage = createFileStorage()
 
 @Injectable()
 export class PlatformService {
